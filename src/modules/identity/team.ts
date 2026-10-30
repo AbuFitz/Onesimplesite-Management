@@ -5,11 +5,13 @@ import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { newToken } from "@/lib/tokens";
 import { manageLink } from "@/lib/env";
 import { can, ROLE_INFO } from "./permissions";
+import { allocateUsername, baseUsername } from "./username";
 import type { StaffCtx } from "./session";
 
 const ROLES = ["owner", "member", "client_director", "delivery", "sales", "support", "finance"] as const;
 const inviteInput = z.object({
-  name: z.string().trim().min(1, "Enter a name.").max(120),
+  name: z.string().trim().min(1, "Enter a name.").max(120)
+    .refine((n) => baseUsername(n) !== null, "Enter a first name and a surname. The username is made from them."),
   email: z.email("Enter a valid email address.").transform((s) => s.toLowerCase()),
   role: z.enum(ROLES),
 });
@@ -36,8 +38,9 @@ export async function inviteStaff(ctx: StaffCtx, raw: unknown) {
   return db.$transaction(async (tx) => {
     const existing = await tx.staffMembership.findUnique({ where: { workspaceId_email: { workspaceId: ctx.workspaceId, email: i.email } } });
     if (existing && existing.status === "active") throw new DomainError("conflict", "That person already has an active login.");
-    if (existing) await tx.staffMembership.update({ where: { id: existing.id }, data: { displayName: i.name, role: i.role, status: "pending", deactivatedAt: null } });
-    else await tx.staffMembership.create({ data: { workspaceId: ctx.workspaceId, email: i.email, displayName: i.name, role: i.role, status: "pending" } });
+    const username = await allocateUsername(tx, ctx.workspaceId, i.name, existing?.id);
+    if (existing) await tx.staffMembership.update({ where: { id: existing.id }, data: { displayName: i.name, username, role: i.role, status: "pending", deactivatedAt: null } });
+    else await tx.staffMembership.create({ data: { workspaceId: ctx.workspaceId, email: i.email, displayName: i.name, username, role: i.role, status: "pending" } });
     const { link, id, expiresAt } = await issueInvite(tx, ctx, i.email, i.role);
     await enqueue(tx, ctx.workspaceId, "email.staff_invitation", `staff.invite:${id}`, {
       to: i.email, name: i.name, inviter: ctx.name, roleLabel: ROLE_INFO[i.role].label.replace(" (recommended)", ""), link,

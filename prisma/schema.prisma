@@ -126,6 +126,7 @@ model StaffMembership {
   userId      String?
   email       String
   displayName String
+  username    String?
   role        StaffRole
   status      MembershipStatus @default(pending)
   createdAt   DateTime         @default(now())
@@ -135,6 +136,7 @@ model StaffMembership {
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([workspaceId, email])
+  @@unique([workspaceId, username])
   @@index([userId])
 }
 

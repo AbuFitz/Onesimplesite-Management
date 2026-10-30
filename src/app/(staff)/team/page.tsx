@@ -24,7 +24,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ e
             const self = m.id === ctx.staffId;
             return (
               <li key={m.id} className="row py-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-                <div className="min-w-0"><p className="font-semibold break-words">{m.displayName}{self ? " (you)" : ""}</p><p className="text-sm text-muted break-all">{m.email}</p>
+                <div className="min-w-0"><p className="font-semibold break-words">{m.displayName}{self ? " (you)" : ""}</p><p className="text-sm text-muted break-all">{m.username ? `${m.username} · ` : ""}{m.email}</p>
                   <Status label={m.status} kind={m.status === "active" ? "good" : m.status === "pending" ? "warn" : "bad"} /></div>
                 {!self && (
                   <div className="flex flex-wrap items-end gap-2">

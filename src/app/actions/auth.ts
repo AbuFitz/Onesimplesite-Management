@@ -21,15 +21,20 @@ export async function signOutPortal() {
 }
 
 export async function login(_: unknown, fd: FormData) {
-  const email = String(fd.get("email") ?? "").trim().toLowerCase();
+  let email = String(fd.get("email") ?? "").trim().toLowerCase();
   const password = String(fd.get("password") ?? "");
   const portal = await isPortalHost();
+  // Staff can sign in with first.surname as well as their email. Customers always use email.
+  if (!portal && !email.includes("@")) {
+    const m = await db.staffMembership.findFirst({ where: { username: email, status: "active" }, select: { email: true } });
+    email = m?.email ?? "";
+  }
   const auth = portal ? portalAuth() : staffAuth();
   try {
     const r = (await auth.api.signInEmail({ body: { email, password }, headers: await headers() })) as { twoFactorRedirect?: boolean };
     if (r?.twoFactorRedirect) return { mfa: true as const, error: undefined };
   } catch {
-    return { error: "Email or password is incorrect." }; // same message for unknown user and bad password
+    return { error: portal ? "Email or password is incorrect." : "Username, email or password is incorrect." }; // same message for unknown user and bad password
   }
   redirect(portal ? "/overview" : "/");
 }

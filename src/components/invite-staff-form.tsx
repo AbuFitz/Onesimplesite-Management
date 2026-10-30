@@ -11,7 +11,7 @@ export function InviteStaffForm({ roles }: { roles: { value: string; label: stri
     <div className="max-w-xl">
       <form action={act} className="space-y-3">
         <ErrorSummary message={s?.error} />
-        <div><label className="label" htmlFor="tn">Name</label><input id="tn" name="name" className="field" autoComplete="off" required /></div>
+        <div><label className="label" htmlFor="tn">Full name</label><input id="tn" name="name" className="field" autoComplete="off" placeholder="First Surname" required /><p className="hint">Their username is made from this: first.surname.</p></div>
         <div><label className="label" htmlFor="te">Email (their login)</label><input id="te" name="email" type="email" inputMode="email" className="field" autoComplete="off" required /></div>
         <div><label className="label" htmlFor="tr">Level</label>
           <select id="tr" name="role" className="field" value={role} onChange={(e) => setRole(e.target.value)}>{roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select>

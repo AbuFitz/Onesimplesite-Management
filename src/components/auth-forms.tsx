@@ -3,7 +3,7 @@ import { useActionState } from "react";
 import { login, verifyMfa, acceptInvitation } from "@/app/actions/auth";
 import { ErrorSummary } from "./ui";
 
-export function LoginForm() {
+export function LoginForm({ staff = false }: { staff?: boolean }) {
   const [s, act, pending] = useActionState(login, undefined as { error?: string; mfa?: boolean } | undefined);
   const [m, mfaAct, mfaPending] = useActionState(verifyMfa, undefined as { error?: string } | undefined);
   if (s?.mfa) {
@@ -19,8 +19,8 @@ export function LoginForm() {
   return (
     <form action={act} className="space-y-4">
       <ErrorSummary message={s?.error} />
-      <div><label className="label" htmlFor="email">Email</label>
-        <input id="email" name="email" type="email" className="field" autoComplete="username" required /></div>
+      <div><label className="label" htmlFor="email">{staff ? "Username or email" : "Email"}</label>
+        <input id="email" name="email" type={staff ? "text" : "email"} className="field" autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder={staff ? "first.surname" : undefined} required /></div>
       <div><label className="label" htmlFor="password">Password</label>
         <input id="password" name="password" type="password" className="field" autoComplete="current-password" required /></div>
       <button className="btn w-full" disabled={pending}>{pending ? "Signing in…" : "Sign in"}</button>
