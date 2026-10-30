@@ -17,5 +17,10 @@ export default async function Invite({ params }: { params: Promise<{ token: stri
       </AuthShell>
     );
   }
-  return <AuthShell title="Set up your login" intro="Choose a password to finish creating your account."><InviteForm token={token} email={inv.email} /></AuthShell>;
+  const m = inv.kind === "staff" ? await db.staffMembership.findFirst({ where: { workspaceId: inv.workspaceId, email: inv.email }, select: { displayName: true, username: true } }) : null;
+  return (
+    <AuthShell title="Set up your login" intro="Choose a password to finish creating your account.">
+      <InviteForm token={token} email={inv.email} staff={m ? { name: m.displayName, username: m.username } : undefined} />
+    </AuthShell>
+  );
 }

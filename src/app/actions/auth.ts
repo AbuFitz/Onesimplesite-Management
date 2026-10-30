@@ -51,10 +51,13 @@ export async function verifyMfa(_: unknown, fd: FormData) {
 /** Accept an invitation: validates hashed single-use token, creates the user, links membership. */
 export async function acceptInvitation(_: unknown, fd: FormData) {
   const token = String(fd.get("token") ?? "");
-  const name = String(fd.get("name") ?? "").trim();
+  let name = String(fd.get("name") ?? "").trim();
   const password = String(fd.get("password") ?? "");
-  if (!name || password.length < 12) return { error: "Enter your name and a password of at least 12 characters." };
+  if (password.length < 12) return { error: "Use a password of at least 12 characters." };
   const inv = await db.invitation.findUnique({ where: { tokenHash: sha256(token) } });
+  // Staff were named by whoever invited them, so they are not asked again.
+  if (inv?.kind === "staff") name = (await db.staffMembership.findFirst({ where: { workspaceId: inv.workspaceId, email: inv.email }, select: { displayName: true } }))?.displayName ?? name;
+  if (!name) return { error: "Enter your name." };
   if (!inv || inv.acceptedAt || inv.revokedAt || inv.expiresAt <= new Date()) return { error: "This invitation has expired or was already used. Ask for a new one." };
   const claimed = await db.invitation.updateMany({ where: { id: inv.id, acceptedAt: null }, data: { acceptedAt: new Date() } });
   if (claimed.count === 0) return { error: "This invitation was already used." };
