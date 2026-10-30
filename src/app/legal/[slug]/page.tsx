@@ -31,7 +31,7 @@ export default async function PublicLegal({ params }: { params: Promise<{ slug: 
   const date = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(r.doc.publishedAt ?? r.doc.updatedAt);
   return (
     <main id="main" className="min-h-dvh bg-[#eef0ef] px-0 py-0 sm:px-6 sm:py-10">
-      <LegalSheet meta={{ title: r.doc.title, ref: m.ref, version: `${r.doc.number}.0`, status: "Current", date, audience: m.audience }} intro={intro} issued>
+      <LegalSheet meta={{ title: r.doc.title, ref: m.ref, version: `${r.doc.number}.0`, status: "Current", date, audience: m.audience }} intro={intro}>
         <AgreementText text={rest} />
       </LegalSheet>
     </main>

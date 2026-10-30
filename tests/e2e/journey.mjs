@@ -67,7 +67,7 @@ ok(await staff.locator("text=Live: ").count() > 0, "terms published");
 
 // 3. Enquiry -> customer details -> proposal with requirements
 await staff.goto(`${M}/settings/legal`);
-ok((await staff.locator("main li h2").allInnerTexts()).join("|") === ["Terms and Conditions", "Privacy Notice", "Cookie Notice", "Website Terms", "Data Processing Agreement", "Change Request"].join("|"), "all six legal documents are listed");
+ok((await staff.locator("main li h3").allInnerTexts()).join("|") === ["Terms and Conditions", "Privacy Notice", "Cookie Notice", "Website Terms", "Data Processing Agreement", "Change Request"].join("|"), "all six legal documents are listed");
 await staff.goto(`${M}/settings/legal/privacy`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/legal\/privacy\/[0-9a-f-]{36}/);
 ok((await staff.locator("article").first().innerText()).includes("Privacy Notice"), "privacy notice preview renders in the document layout");
 ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "privacy notice can't be published while decisions are open");

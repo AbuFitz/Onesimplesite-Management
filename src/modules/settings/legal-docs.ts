@@ -2,8 +2,9 @@
 export const LEGAL_KINDS = ["terms", "privacy", "cookies", "website_terms", "dpa", "change_request"] as const;
 export type LegalKind = (typeof LEGAL_KINDS)[number];
 
+export type LegalGroup = "website" | "customers";
 export type LegalMeta = {
-  label: string; ref: string;
+  label: string; ref: string; group: LegalGroup;
   audience: "Customer-facing" | "Public document" | "Private & confidential";
   purpose: string;
   /** Public pages are served on the portal domain at /legal/<slug>. */
@@ -11,12 +12,12 @@ export type LegalMeta = {
 };
 
 export const LEGAL: Record<LegalKind, LegalMeta> = {
-  terms: { label: "Terms and Conditions", ref: "OSS-TC-001", audience: "Customer-facing", purpose: "Part of every agreement. Customers accept it when they sign." },
-  privacy: { label: "Privacy Notice", ref: "OSS-PN-001", audience: "Public document", slug: "privacy", purpose: "How we use personal information. Shown on the website." },
-  cookies: { label: "Cookie Notice", ref: "OSS-CN-001", audience: "Public document", slug: "cookies", purpose: "The cookies we use and the choices people have. Shown on the website." },
-  website_terms: { label: "Website Terms", ref: "OSS-WT-001", audience: "Public document", slug: "website-terms", purpose: "Rules for using our website, with our company information." },
-  dpa: { label: "Data Processing Agreement", ref: "OSS-DP-001", audience: "Private & confidential", purpose: "Used when we handle personal data for a client, such as form submissions." },
-  change_request: { label: "Change Request", ref: "OSS-CR-001", audience: "Private & confidential", purpose: "Agrees a change to scope, price or timetable before the work starts." },
+  terms: { label: "Terms and Conditions", ref: "OSS-TC-001", group: "customers", audience: "Customer-facing", purpose: "Part of every agreement. Customers accept it when they sign." },
+  privacy: { label: "Privacy Notice", ref: "OSS-PN-001", group: "website", audience: "Public document", slug: "privacy", purpose: "How onesimplesite.co.uk uses visitors' personal information." },
+  cookies: { label: "Cookie Notice", ref: "OSS-CN-001", group: "website", audience: "Public document", slug: "cookies", purpose: "The cookies onesimplesite.co.uk sets and the choices visitors have." },
+  website_terms: { label: "Website Terms", ref: "OSS-WT-001", group: "website", audience: "Public document", slug: "website-terms", purpose: "Rules for using onesimplesite.co.uk, with our company information." },
+  dpa: { label: "Data Processing Agreement", ref: "OSS-DP-001", group: "customers", audience: "Private & confidential", purpose: "Per customer: used when we handle their visitors' data, such as form submissions." },
+  change_request: { label: "Change Request", ref: "OSS-CR-001", group: "customers", audience: "Private & confidential", purpose: "Per customer: agrees a change to scope, price or timetable before the work starts." },
 };
 
 export const isLegalKind = (v: unknown): v is LegalKind => (LEGAL_KINDS as readonly string[]).includes(String(v));
