@@ -6,7 +6,8 @@ const schema = z.object({
   PORTAL_ORIGIN: z.url().default("http://portal.localhost:3000"),
   APP_ENV: z.enum(["development", "staging", "production", "test"]).default("development"),
   BETTER_AUTH_SECRET: z.string().min(32),
-  RESEND_API_KEY: z.string().optional(),
+  // Pasted keys often carry a trailing newline, quotes or invisible characters, which make the Authorization header invalid.
+  RESEND_API_KEY: z.string().optional().transform((v) => { const k = v?.replace(/[^A-Za-z0-9_-]/g, ""); return k || undefined; }),
   MAIL_ALLOWLIST: z.string().optional(),
 });
 
