@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
-import { sendMail } from "@/lib/mail";
-import { fmtFrom, type SenderKey } from "@/lib/sender-identities";
+import { sendMail, type Mail } from "@/lib/mail";
+import { fmtFrom, SENDERS, type SenderKey } from "@/lib/sender-identities";
+import { internalNoticeTo } from "@/lib/env";
+import { renderEmail, type EmailData, type TemplateName } from "@/emails/templates";
 
 /**
  * Leases pending outbox rows (FOR UPDATE SKIP LOCKED), performs the external effect
@@ -29,19 +31,29 @@ export async function drainOutbox(limit = 20) {
 }
 
 async function handle(topic: string, key: string, p: Record<string, unknown>) {
+  const send = async <K extends TemplateName>(name: K, data: EmailData[K], from: SenderKey, to: string, extra?: Partial<Mail>) => {
+    const r = await renderEmail(name, data);
+    await sendMail({ from: fmtFrom(from), to, subject: r.subject, html: r.html, text: r.text, replyTo: SENDERS.general.address, ...extra }, key);
+  };
+  const finalPdf = async () => {
+    const d = await db.contractDocument.findUnique({ where: { contractId_kind: { contractId: String(p.contractId), kind: "final_pdf" } } });
+    return d ? [{ filename: `${String(p.ref)}-signed.pdf`, content: Buffer.from(d.bytes) }] : undefined;
+  };
   switch (topic) {
-    case "email.proposal": {
-      const link = String(p.link);
-      await sendMail({
-        from: fmtFrom((p.sender as SenderKey) ?? "general"), to: String(p.to),
-        subject: `Proposal ${p.proposalRef}: ${p.title} (version ${p.version})`,
-        text: `Hello,\n\nYour proposal "${p.title}" is ready to review.\n\nReview proposal: ${link}\n\nThe link is personal to you and expires. If it has stopped working, reply to this email and we will send a new one.\n\nOneSimpleSite`,
-      }, key);
-      return;
+    case "email.proposal": return send("proposal", p as EmailData["proposal"], "general", String(p.to));
+    case "email.contract_request": return send("contract_request", p as EmailData["contract_request"], "contracts", String(p.to));
+    case "email.invitation": return send("invitation", p as EmailData["invitation"], "general", String(p.to));
+    case "email.signing_confirmation": {
+      const attachments = await finalPdf();
+      return send("signing_confirmation", { ...(p as EmailData["signing_confirmation"]), hasAttachment: !!attachments }, "contracts", String(p.to), { attachments });
+    }
+    case "email.signing_notice": {
+      const attachments = await finalPdf();
+      return send("signing_notice", p as EmailData["signing_notice"], "contracts", internalNoticeTo(), { attachments });
     }
     case "notify.proposal_accepted":
     case "notify.contract_completed":
-      return; // in-app notifications are derived from records; nothing external to send yet
+      return; // in-app: derived from records
     default:
       throw new Error(`No handler for outbox topic ${topic}`);
   }

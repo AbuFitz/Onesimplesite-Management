@@ -81,3 +81,25 @@ export async function completionAction(fd: FormData) {
   try { projectId = (await recordContractCompletion(ctx, id, { evidence: fd.get("evidence") })).projectId; } catch (e) { return back(`/contracts/${id}`, e); }
   redirect(`/projects/${projectId}`);
 }
+
+import { sendForSigning, voidSigning } from "@/modules/signing/service";
+import { inviteClientContact } from "@/modules/crm/invite";
+
+export async function sendForSigningAction(fd: FormData) {
+  const ctx = await requireStaff("contract.send");
+  const id = String(fd.get("id"));
+  try { await sendForSigning(ctx, id, { name: fd.get("name"), email: fd.get("email") }); } catch (e) { return back(`/contracts/${id}`, e); }
+  redirect(`/contracts/${id}?sent=1`);
+}
+export async function voidSigningAction(fd: FormData) {
+  const ctx = await requireStaff("contract.void");
+  const id = String(fd.get("id"));
+  try { await voidSigning(ctx, id); } catch (e) { return back(`/contracts/${id}`, e); }
+  redirect(`/contracts/${id}`);
+}
+export async function inviteClientAction(fd: FormData) {
+  const ctx = await requireStaff("customer.write");
+  const id = String(fd.get("customerId"));
+  try { await inviteClientContact(ctx, id, String(fd.get("contactId"))); } catch (e) { return back(`/customers/${id}`, e); }
+  redirect(`/customers/${id}?invited=1`);
+}

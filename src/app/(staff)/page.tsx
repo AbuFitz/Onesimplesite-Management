@@ -12,12 +12,13 @@ export default async function Today() {
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(startOfDay.getTime() + 864e5);
   const seeCustomers = can(ctx.role, "customer.read");
-  const [tasks, awaitingSig, sentProposals, assets, events] = await Promise.all([
+  const [tasks, awaitingSig, sentProposals, assets, events, signed] = await Promise.all([
     db.task.findMany({ where: { workspaceId: w, assigneeId: ctx.staffId, doneAt: null }, orderBy: { dueDate: "asc" }, take: 8 }),
     seeCustomers ? db.contract.count({ where: { workspaceId: w, status: "awaiting_signature" } }) : 0,
     seeCustomers ? db.proposal.count({ where: { workspaceId: w, status: "sent" } }) : 0,
     db.project.count({ where: { workspaceId: w, stage: "awaiting_assets", ...(can(ctx.role, "project.read_all") ? {} : { ownerId: ctx.staffId }) } }),
     db.calendarEvent.findMany({ where: { workspaceId: w, status: "scheduled", startsAt: { gte: startOfDay, lt: endOfDay }, OR: [{ organiserId: ctx.staffId }, { attendees: { some: { staffId: ctx.staffId } } }] }, orderBy: { startsAt: "asc" } }),
+    seeCustomers ? db.contract.findMany({ where: { workspaceId: w, status: "completed", completedAt: { gte: new Date(Date.now() - 7 * 864e5) } }, orderBy: { completedAt: "desc" }, take: 5, include: { customer: true } }) : [],
   ]);
   const links = [
     seeCustomers && { href: "/contracts?status=awaiting_signature", n: awaitingSig, label: "Contracts awaiting signature" },
@@ -35,6 +36,10 @@ export default async function Today() {
           ))}
         </ul>
       </section>
+      {signed.length > 0 && (
+        <section aria-labelledby="signed" className="mb-8"><h2 id="signed" className="mb-2">Recently signed</h2>
+          <ul>{signed.map((c) => <li key={c.id} className="row"><Link href={`/contracts/${c.id}`} className="flex justify-between gap-3 min-h-12 py-2 hover:bg-wash px-1"><span>{c.customer.displayName} · {c.title}</span><span className="text-sm text-muted">{c.completedAt && fmtDateTime(c.completedAt)}</span></Link></li>)}</ul></section>
+      )}
       <div className="grid gap-8 lg:grid-cols-2">
         <section aria-labelledby="tasks">
           <h2 id="tasks" className="mb-2">My tasks</h2>

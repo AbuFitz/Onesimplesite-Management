@@ -19,3 +19,5 @@ export function env() {
 export const origins = () => ({ manage: env().MANAGE_ORIGIN, portal: env().PORTAL_ORIGIN });
 export const portalLink = (path: string) => new URL(path, env().PORTAL_ORIGIN).toString();
 export const manageLink = (path: string) => new URL(path, env().MANAGE_ORIGIN).toString();
+
+export const internalNoticeTo = () => process.env.INTERNAL_NOTICE_TO ?? "hello@onesimplesite.co.uk";

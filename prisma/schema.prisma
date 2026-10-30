@@ -402,6 +402,8 @@ model Contract {
   proposalVersion ProposalVersion? @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
   project         Project?
   billingIntents  BillingIntent[]
+  signingRequests SigningRequest[]
+  documents       ContractDocument[]
 
   @@unique([workspaceId, reference])
   @@index([workspaceId, customerId])
@@ -628,4 +630,59 @@ model SequenceCounter {
   value       Int    @default(0)
 
   @@id([workspaceId, name])
+}
+
+// ───────── Original single-signer capture ─────────
+// Electronic acceptance/signature capture. NOT a certificate/PAdES signature and not identity verification:
+// the signer is whoever controlled the emailed link.
+model SigningRequest {
+  id            String    @id @default(uuid()) @db.Uuid
+  workspaceId   String    @db.Uuid
+  contractId    String    @db.Uuid
+  signerName    String
+  signerEmail   String
+  status        String    @default("pending") // pending | signed | declined | voided | expired
+  contentText   String // exact text shown to the signer (frozen at send time)
+  contentSha256 String
+  expiresAt     DateTime
+  sentById      String?   @db.Uuid
+  declineReason String?
+  createdAt     DateTime  @default(now())
+
+  contract  Contract         @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  signature SignatureRecord?
+
+  @@index([workspaceId, contractId])
+}
+
+model SignatureRecord {
+  id               String   @id @default(uuid()) @db.Uuid
+  workspaceId      String   @db.Uuid
+  signingRequestId String   @unique @db.Uuid
+  signerName       String
+  method           String // typed | drawn
+  signatureImage   Bytes?
+  consentText      String
+  consentVersion   String
+  ipAddress        String?
+  userAgent        String?
+  signedAt         DateTime @default(now())
+  evidence         Json
+  evidenceSha256   String
+
+  request SigningRequest @relation(fields: [signingRequestId], references: [id], onDelete: Restrict)
+}
+
+model ContractDocument {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  contractId  String   @db.Uuid
+  kind        String // final_pdf
+  bytes       Bytes
+  sha256      String
+  createdAt   DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
+
+  @@unique([contractId, kind])
 }

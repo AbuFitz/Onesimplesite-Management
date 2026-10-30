@@ -98,7 +98,10 @@ export async function sendProposal(ctx: StaffCtx, proposalId: string, recipientE
     await tx.scopedLinkToken.create({ data: { workspaceId: ctx.workspaceId, purpose: "proposal_accept", entityId: v.id, tokenHash: hash, recipientEmail: email, expiresAt: expires } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "proposal.sent", targetType: "proposal_version", targetId: v.id, customerId: p.customerId, detail: { to: email, version: v.number } });
     await enqueue(tx, ctx.workspaceId, "email.proposal", `proposal.sent:${v.id}`, {
-      to: email, proposalRef: p.reference, title: p.title, version: v.number, sender: "general", link: portalLink(`/p/${token}`),
+      to: email, ref: p.reference, title: p.title, version: v.number, link: portalLink(`/p/${token}`),
+      validUntil: new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(expires),
+      oneOff: new Intl.NumberFormat("en-GB", { style: "currency", currency: v.currency }).format(v.oneOffMinor / 100),
+      recurring: v.recurringMinor > 0 ? `${new Intl.NumberFormat("en-GB", { style: "currency", currency: v.currency }).format(v.recurringMinor / 100)} per ${v.recurringPeriod ?? "period"}` : undefined,
     });
     return { versionId: v.id, token }; // token returned once to the caller only for dev display; never stored raw
   });

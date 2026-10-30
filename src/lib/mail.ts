@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { env } from "./env";
 
-export type Mail = { from: string; to: string; subject: string; text: string; html?: string };
+export type Mail = { from: string; to: string; subject: string; text: string; html?: string; replyTo?: string; attachments?: { filename: string; content: Buffer }[] };
 
 /**
  * Local sink by default: writes .mail-sink/<id>.json. Resend is used only when
@@ -15,7 +15,9 @@ export async function sendMail(m: Mail, idempotencyKey?: string) {
     const dir = path.join(process.cwd(), ".mail-sink");
     await mkdir(dir, { recursive: true });
     const id = randomUUID();
-    await writeFile(path.join(dir, `${id}.json`), JSON.stringify({ ...m, idempotencyKey }, null, 2));
+    const { attachments, ...rest } = m;
+    for (const a of attachments ?? []) await writeFile(path.join(dir, `${id}-${a.filename}`), a.content);
+    await writeFile(path.join(dir, `${id}.json`), JSON.stringify({ ...rest, attachments: attachments?.map((a) => ({ filename: a.filename, bytes: a.content.length })), idempotencyKey }, null, 2));
     return { id, transport: "sink" as const };
   }
   const allow = (e.MAIL_ALLOWLIST ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -24,7 +26,7 @@ export async function sendMail(m: Mail, idempotencyKey?: string) {
   }
   const { Resend } = await import("resend");
   const r = await new Resend(e.RESEND_API_KEY).emails.send(
-    { from: m.from, to: m.to, subject: m.subject, text: m.text, html: m.html },
+    { from: m.from, to: m.to, subject: m.subject, text: m.text, html: m.html, replyTo: m.replyTo, attachments: m.attachments },
     idempotencyKey ? { idempotencyKey } : undefined,
   );
   if (r.error) throw new Error(r.error.message);

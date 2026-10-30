@@ -56,12 +56,74 @@ ok(true, "proposal accepted");
 await pub.goto(link);
 ok(await pub.locator("text=no longer available").count() > 0, "used link no longer opens an acceptance form");
 
+const get = (page, path) => page.evaluate(async (u) => { const r = await fetch(u); const b = new Uint8Array(await r.arrayBuffer()); return { status: r.status, head: String.fromCharCode(...b.slice(0, 5)) }; }, path);
+const drain = () => execSync(`npx tsx --env-file=.env -e "import('./src/modules/outbox/drain.ts').then(m=>m.drainOutbox(200)).then(()=>process.exit(0))"`, { stdio: "ignore" });
+const sink = () => readdirSync(".mail-sink").filter((f) => f.endsWith(".json")).map((f) => JSON.parse(readFileSync(`.mail-sink/${f}`, "utf8")));
+
 await staff.goto(`${M}/contracts`);
 await staff.click(`a:has-text('${title}')`);
-await staff.fill("#ev", "Signed PDF held in drive, signed by Casey Client");
-await staff.click("button:has-text('Record completion')");
-await staff.waitForURL(/\/projects\/[0-9a-f-]{36}$/);
-ok(true, "completion recorded -> project created");
+await staff.waitForURL(/\/contracts\/[0-9a-f-]{36}$/);
+const contractUrl = staff.url();
+ok(await staff.locator("#se").inputValue() === "casey@e2e.test", "signer email prefilled from primary contact");
+await staff.click("button:has-text('Send for signature')");
+await staff.waitForURL(/sent=1/);
+drain();
+const req = sink().filter((m) => m.subject.includes(title) && m.subject.startsWith("Please review"));
+ok(req.length === 1 && req[0].from.includes("contracts@onesimplesite.co.uk") && req[0].html.includes("Review and sign"), "signing request email sent once from contracts@ with HTML");
+const signLink = req[0].text.match(/https?:\/\/\S+\/s\/\S+/)[0];
+ok(signLink.startsWith(P), "signing link uses portal origin");
+
+const signer = await (await browser.newContext({ viewport: { width: 375, height: 700 }, hasTouch: true })).newPage();
+await signer.goto(signLink);
+ok((await signer.locator("article").innerText()).includes("Five pages and a booking form."), "signer sees the contract text");
+ok(!(await signer.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "signing page has no horizontal overflow at 375px");
+await signer.click("button:has-text('Draw')");
+const box = await signer.locator("canvas").boundingBox();
+await signer.mouse.move(box.x + 20, box.y + 80); await signer.mouse.down();
+for (let k = 0; k < 20; k++) await signer.mouse.move(box.x + 20 + k * 10, box.y + 40 + (k % 2) * 40);
+await signer.mouse.up();
+await signer.fill("#name", "Casey Client");
+await signer.screenshot({ path: "/tmp/claude-0/sign-phone.png", fullPage: true });
+await signer.check("input[name=consent]");
+await signer.click("button:has-text('Sign and submit')");
+await signer.waitForURL(/done$/);
+ok(true, "signer submitted drawn signature on phone viewport");
+await signer.goto(signLink);
+ok(await signer.locator("text=already been signed").count() > 0, "link shows already-signed after use");
+
+drain();
+const mine = sink().filter((m) => m.subject.includes(title) || (m.text || "").includes(title));
+const conf = mine.find((m) => m.subject.startsWith("Signed:"));
+const notice = mine.find((m) => m.subject.startsWith("Contract signed"));
+ok(conf && conf.to === "casey@e2e.test" && conf.attachments?.length === 1, "signer got confirmation email with PDF attached");
+ok(notice && notice.to === "hello@onesimplesite.co.uk" && notice.attachments?.length === 1, "hello@ got internal notice with PDF attached");
+
+await staff.goto(contractUrl);
+ok(await staff.locator("text=Completed").count() > 0, "staff contract page shows completed");
+const pdf = await get(staff, new URL(contractUrl).pathname + "/pdf");
+ok(pdf.status === 200 && pdf.head === "%PDF-", "staff can download signed PDF");
+await staff.goto(`${M}/`);
+ok(await staff.locator("text=Recently signed").count() > 0, "Today lists recently signed contract");
+
+// Portal invitation -> account -> signed document in portal
+await staff.goto(`${M}/customers`); await staff.click(`a:has-text('${name}')`);
+await staff.click("button:has-text('Invite to client portal')");
+drain();
+const inv = sink().find((m) => m.to === "casey@e2e.test" && m.subject.includes("invited you"));
+ok(inv, "invitation email queued and sent");
+const invLink = inv.text.match(/https?:\/\/\S+\/invite\/\S+/)[0];
+const cl = await (await browser.newContext()).newPage();
+await cl.goto(invLink); await cl.fill("#name", "Casey Client"); await cl.fill("#password", "a-long-test-password-1");
+await cl.click("button:has-text('Create account')"); await cl.waitForURL(/login/);
+await cl.fill("#email", "casey@e2e.test"); await cl.fill("#password", "a-long-test-password-1"); await cl.click("button:has-text('Sign in')");
+await cl.waitForURL((u) => !u.pathname.startsWith("/login"));
+await cl.goto(`${P}/documents`);
+ok(await cl.locator(`text=${title}`).count() > 0 && await cl.locator("text=signed").count() > 0, "signed contract appears in client portal");
+const dl = await get(cl, `/documents/${contractUrl.split("/").pop()}/pdf`);
+ok(dl.status === 200 && dl.head === "%PDF-", "client can download signed PDF");
+const other = await login(await browser.newContext(), P, "client.b@example.test");
+const od = await get(other, `/documents/${contractUrl.split("/").pop()}/pdf`);
+ok(od.status === 404, "another client cannot download it");
 
 // Delivery role cannot see finance-ish / customer pages
 const delCtx = await browser.newContext();

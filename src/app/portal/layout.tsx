@@ -6,7 +6,7 @@ import { signOutPortal } from "@/app/actions/auth";
 export const dynamic = "force-dynamic";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const c = await requireClient();
-  const links: [string, string][] = [["/overview", "Overview"], ["/projects", "Projects"], ["/help", "Help"], ["/account", "Account"]];
+  const links: [string, string][] = [["/overview", "Overview"], ["/projects", "Projects"], ["/documents", "Documents"], ["/help", "Help"], ["/account", "Account"]];
   return (
     <div className="min-h-dvh">
       <header className="border-b border-line px-4 lg:px-8 py-3 flex flex-wrap items-center gap-x-8 gap-y-2">

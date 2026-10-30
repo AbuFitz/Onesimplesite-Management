@@ -5,12 +5,14 @@ import { can } from "@/modules/identity/permissions";
 import { getCustomer } from "@/modules/crm/service";
 import { db } from "@/lib/db";
 import { createNoteAction } from "@/app/actions/work";
-import { RecordHeader, Status, Empty, money, fmtDateTime } from "@/components/ui";
+import { inviteClientAction } from "@/app/actions/crm";
+import { RecordHeader, Status, Empty, ErrorSummary, money, fmtDateTime } from "@/components/ui";
 
 export const metadata = { title: "Customer" };
-export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string; error?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const { id } = await params;
+  const sp = await searchParams;
   const c = await getCustomer(ctx, id);
   if (!c) notFound();
   const [activity, notes] = await Promise.all([
@@ -24,6 +26,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         status={<Status label={c.lifecycle} kind={c.lifecycle === "active" ? "good" : "neutral"} />}
         meta={<span>{c.reference}</span>}
         action={can(ctx.role, "proposal.write") && <Link className="btn" href={`/proposals/new?customer=${c.id}`}>New proposal</Link>} />
+      <ErrorSummary message={sp.error} />
+      {sp.invited && <p role="status" className="mb-4 text-sm text-moss">Invitation queued.</p>}
       <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-8 min-w-0">
           <section aria-labelledby="work"><h2 id="work" className="mb-2">Work</h2>
@@ -54,6 +58,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 {primary.email && <a className="btn btn-quiet" href={`mailto:${primary.email}`}>Email</a>}
               </div>
               {primary.email && <p className="hint mt-1 break-all">{primary.email}</p>}
+              {primary.email && can(ctx.role, "customer.write") && (
+                <form action={inviteClientAction} className="mt-3"><input type="hidden" name="customerId" value={c.id} /><input type="hidden" name="contactId" value={primary.id} />
+                  <button className="btn btn-quiet">Invite to client portal</button><p className="hint mt-1">Emails a single-use setup link. Adding a contact alone gives no access.</p></form>
+              )}
             </div>
           )}
           <div><p className="label">Opportunities</p>
