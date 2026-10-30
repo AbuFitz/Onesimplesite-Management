@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, UserCog, DatabaseBackup, Home, FolderKanban, NotebookText, FileText, Handshake, ScrollText, Menu } from "lucide-react";
+import { CalendarDays, Users, UserCog, DatabaseBackup, Settings2, Home, FolderKanban, NotebookText, FileText, Handshake, ScrollText, Menu } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: string };
-const icons = { today: Home, customers: Users, pipeline: Handshake, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: NotebookText, team: UserCog, backup: DatabaseBackup } as const;
+const icons = { today: Home, customers: Users, pipeline: Handshake, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: NotebookText, team: UserCog, backup: DatabaseBackup, settings: Settings2 } as const;
 
 const active = (p: string, href: string) => (href === "/" ? p === "/" : p === href || p.startsWith(href + "/"));
 

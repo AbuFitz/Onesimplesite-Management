@@ -82,6 +82,11 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
       y -= 18;
       page.drawLine({ start: { x: M, y }, end: { x: M + W, y }, thickness: 0.4, color: LINE });
       y -= 8;
+    } else if (b.t === "tsec") {
+      ensure(40); y -= 8;
+      page.drawText(b.no, { x: M, y: y - 10, size: 8, font: reg, color: MOSS });
+      page.drawText(safe(b.text), { x: M + 34, y: y - 11, size: 10.5, font: bold, color: INK });
+      y -= 20;
     } else if (b.t === "sub") { y -= 4; line(b.text, bold, 10); }
     else if (b.t === "clause") {
       const ls = wrap(safe(b.text), reg, 9.5, W - 34);
@@ -92,7 +97,7 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
     } else if (b.t === "bullet") { line(`-  ${b.text}`, reg, 9.5, INK, M + 8, W - 8); }
     else if (b.t === "note") {
       const ls = wrap(safe(b.text), reg, 9, W - 20); const h = ls.length * 12.5 + 14;
-      ensure(h + 6); page.drawRectangle({ x: M, y: y - h, width: W, height: h, color: BONE });
+      y -= 8; ensure(h + 6); page.drawRectangle({ x: M, y: y - h, width: W, height: h, color: BONE });
       ls.forEach((l, n) => page.drawText(l, { x: M + 10, y: y - 16 - n * 12.5, size: 9, font: reg, color: INK })); y -= h + 8;
     } else if (b.t === "p") line(b.text, reg, 9.5);
     else y -= 5;

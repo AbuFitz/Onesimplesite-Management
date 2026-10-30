@@ -77,3 +77,32 @@ export async function setOpportunityStage(ctx: StaffCtx, id: string, stage: "new
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "opportunity.stage", targetType: "opportunity", targetId: id, detail: { stage } });
   });
 }
+
+// ───────── Customer details: filled in by the team, required before an agreement can be sent ─────────
+const detailsInput = z.object({
+  kind: z.enum(["business", "individual"]).default("business"),
+  legalName: z.string().trim().max(200).optional(),
+  companyNumber: z.string().trim().max(40).optional(),
+  vatNumber: z.string().trim().max(40).optional(),
+  billingAddress: z.string().trim().max(500).optional(),
+  website: z.string().trim().max(200).optional(),
+  phone: z.string().trim().max(40).optional(),
+});
+
+export async function updateCustomerDetails(ctx: StaffCtx, id: string, expectedVersion: number, raw: unknown) {
+  if (!can(ctx.role, "customer.write")) throw forbidden();
+  const i = detailsInput.parse(raw);
+  await db.$transaction(async (tx) => {
+    const r = await tx.customer.updateMany({
+      where: { id, workspaceId: ctx.workspaceId, version: expectedVersion },
+      data: { kind: i.kind, legalName: i.legalName || null, companyNumber: i.companyNumber || null, vatNumber: i.vatNumber || null, billingAddress: i.billingAddress || null, website: i.website || null, phone: i.phone || null, version: { increment: 1 } },
+    });
+    if (r.count === 0) throw stale();
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "customer.details_updated", targetType: "customer", targetId: id, customerId: id });
+  });
+}
+
+/** What an agreement still needs from us about this customer. Sole traders use their own name; no company number needed. */
+export function customerDetailsMissing(c: { legalName: string | null; billingAddress: string | null; kind: string }) {
+  return [!c.legalName && (c.kind === "individual" ? "full name" : "legal company name"), !c.billingAddress && "address"].filter(Boolean) as string[];
+}

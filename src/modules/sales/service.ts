@@ -18,7 +18,17 @@ const lineInput = z.object({
   unitMinor: z.number().int().min(0).max(100_000_000_00),
   recurring: z.boolean().default(false),
 });
+/** Filled in by hand for every deal. Pricing and payment timing vary, so nothing here is automatic. */
+export const REQUIREMENT_FIELDS = [
+  ["pages", "Pages and structure"], ["features", "Features and functionality"], ["integrations", "Integrations (forms, booking, payments, analytics)"],
+  ["domainHosting", "Domain and hosting"], ["contentBy", "Who supplies content, images and logo"], ["timeline", "Timeline and launch date"],
+  ["payment", "Payment schedule for this order (amounts and dates)"], ["notes", "Other requirements or exclusions"],
+] as const;
+const requirementsInput = z.object(Object.fromEntries(REQUIREMENT_FIELDS.map(([k]) => [k, z.string().trim().max(5000).optional()]))).partial();
+export type Requirements = z.infer<typeof requirementsInput>;
+
 export const draftInput = z.object({
+  requirements: requirementsInput.optional(),
   title: z.string().trim().min(1).max(200),
   scope: z.string().trim().min(1).max(20000),
   terms: z.string().trim().max(20000).default(""),
@@ -54,7 +64,7 @@ async function writeVersion(tx: Tx, workspaceId: string, proposalId: string, num
   return tx.proposalVersion.create({
     data: {
       workspaceId, proposalId, number, scope: i.scope, terms: i.terms, validUntil: i.validUntil ?? null,
-      recurringPeriod: i.recurringPeriod ?? null, ...t,
+      recurringPeriod: i.recurringPeriod ?? null, requirements: i.requirements ?? undefined, ...t,
       lines: { create: i.lines.map((l, idx) => ({ position: idx + 1, ...l })) },
     },
   });
@@ -75,7 +85,7 @@ export async function saveDraft(ctx: StaffCtx, proposalId: string, expectedVersi
     await tx.proposalLine.deleteMany({ where: { versionId: v.id } });
     await tx.proposalVersion.update({
       where: { id: v.id },
-      data: { scope: i.scope, terms: i.terms, validUntil: i.validUntil ?? null, recurringPeriod: i.recurringPeriod ?? null, ...t, lines: { create: i.lines.map((l, idx) => ({ position: idx + 1, ...l })) } },
+      data: { scope: i.scope, terms: i.terms, validUntil: i.validUntil ?? null, recurringPeriod: i.recurringPeriod ?? null, requirements: i.requirements ?? undefined, ...t, lines: { create: i.lines.map((l, idx) => ({ position: idx + 1, ...l })) } },
     });
   });
 }
@@ -117,10 +127,20 @@ export async function reviseProposal(ctx: StaffCtx, proposalId: string) {
     const old = await tx.proposalVersion.findFirstOrThrow({ where: { proposalId, number: p.currentVersion }, include: { lines: true } });
     await tx.proposalVersion.update({ where: { id: old.id }, data: { supersededAt: new Date() } });
     await tx.scopedLinkToken.updateMany({ where: { workspaceId: ctx.workspaceId, purpose: "proposal_accept", entityId: old.id, revokedAt: null }, data: { revokedAt: new Date() } });
+    // An agreement already sent for this version is withdrawn: the customer's link stops working.
+    const sentContract = await tx.contract.findFirst({ where: { proposalVersionId: old.id, status: "awaiting_signature" } });
+    if (sentContract) {
+      const reqs = await tx.signingRequest.findMany({ where: { contractId: sentContract.id, status: "pending" } });
+      for (const r of reqs) {
+        await tx.signingRequest.update({ where: { id: r.id }, data: { status: "voided" } });
+        await tx.scopedLinkToken.updateMany({ where: { entityId: r.id, purpose: "contract_sign", revokedAt: null }, data: { revokedAt: new Date() } });
+      }
+      await tx.contract.update({ where: { id: sentContract.id }, data: { status: "voided", proposalVersionId: null, version: { increment: 1 } } });
+    }
     await tx.proposalVersion.create({
       data: {
         workspaceId: ctx.workspaceId, proposalId, number: old.number + 1, scope: old.scope, terms: old.terms, currency: old.currency,
-        oneOffMinor: old.oneOffMinor, recurringMinor: old.recurringMinor, recurringPeriod: old.recurringPeriod,
+        oneOffMinor: old.oneOffMinor, recurringMinor: old.recurringMinor, recurringPeriod: old.recurringPeriod, requirements: old.requirements ?? undefined,
         lines: { create: old.lines.map((l) => ({ position: l.position, description: l.description, quantity: l.quantity, unitMinor: l.unitMinor, recurring: l.recurring })) },
       },
     });

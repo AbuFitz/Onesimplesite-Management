@@ -11,6 +11,7 @@
 export type Block =
   | { t: "party"; label: string; name: string; lines: string[] }
   | { t: "h"; no: string; text: string }
+  | { t: "tsec"; no: string; text: string }
   | { t: "sub"; text: string }
   | { t: "clause"; n: string; text: string }
   | { t: "bullet"; text: string }
@@ -22,12 +23,13 @@ const SUBS = new Set(["Deliverables", "Exclusions", "Revisions"]);
 
 export function parseDoc(text: string): Block[] {
   const out: Block[] = [];
-  let section = 0;
-  for (const raw of text.split("\n")) {
+  let section = 0, tsec = 0;
+  for (const raw of normalizeNewlines(text).split("\n")) {
     const l = raw.trimEnd();
     if (!l.trim()) { if (out.length && out[out.length - 1].t !== "gap") out.push({ t: "gap" }); continue; }
     let m: RegExpMatchArray | null;
     if ((m = l.match(/^party:\s*([^|]*)\|([^|]*)\|?(.*)$/i))) out.push({ t: "party", label: m[1].trim(), name: m[2].trim(), lines: m[3].split(";").map((s) => s.trim()).filter(Boolean) });
+    else if ((m = l.match(/^###\s+(.*)$/))) out.push({ t: "tsec", no: String(++tsec), text: m[1].trim() });
     else if ((m = l.match(/^##\s+(.*)$/))) out.push({ t: "h", no: String(++section).padStart(2, "0"), text: m[1].trim() });
     else if ((m = l.match(/^note:\s*(.*)$/i))) out.push({ t: "note", text: m[1].trim() });
     else if ((m = l.match(/^(\d+(?:\.\d+)+)\s+(.*)$/))) out.push({ t: "clause", n: m[1], text: m[2] });
@@ -38,5 +40,23 @@ export function parseDoc(text: string): Block[] {
   return out;
 }
 
+/** Browsers submit textareas with CRLF; everything downstream assumes LF. */
+export const normalizeNewlines = (t: string) => t.replace(/\r\n?/g, "\n");
+
 export const hasPlaceholders = (text: string) => /\[TBC[:\]]/i.test(text);
 export const placeholderCount = (text: string) => (text.match(/\[TBC[:\]]/gi) ?? []).length;
+
+/**
+ * Terms are authored with "## Heading" and clause lines. When embedded in an agreement, sections and clauses
+ * are renumbered automatically (section 3 -> clauses 3.1, 3.2 ...) so authors never number by hand.
+ */
+export function renumberTerms(body: string): string {
+  let k = 0, j = 0;
+  return normalizeNewlines(body).split("\n").map((l) => {
+    const h = l.match(/^##\s+(.*)$/);
+    if (h) { k++; j = 0; return `### ${h[1].trim()}`; }
+    const c = l.match(/^\d+(?:\.\d+)*\s+(.*)$/);
+    if (c && k > 0) return `${k}.${++j} ${c[1]}`;
+    return l;
+  }).join("\n");
+}

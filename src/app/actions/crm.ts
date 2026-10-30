@@ -35,7 +35,8 @@ function parseProposal(fd: FormData) {
     if (!d) continue;
     lines.push({ description: d, quantity: Number(fd.get(`l${i}q`) || 1), unitMinor: Math.round(Number(fd.get(`l${i}p`) || 0) * 100), recurring: fd.get(`l${i}r`) === "on" });
   }
-  return { title: String(fd.get("title") ?? ""), scope: String(fd.get("scope") ?? ""), terms: String(fd.get("terms") ?? ""), validUntil: fd.get("validUntil") || undefined, recurringPeriod: (fd.get("recurringPeriod") || undefined) as "month" | "year" | undefined, lines };
+  const requirements = Object.fromEntries(["pages", "features", "integrations", "domainHosting", "contentBy", "timeline", "payment", "notes"].map((k) => [k, String(fd.get(`req_${k}`) ?? "")]).filter(([, v]) => v.trim()));
+  return { requirements, title: String(fd.get("title") ?? ""), scope: String(fd.get("scope") ?? ""), terms: String(fd.get("terms") ?? ""), validUntil: fd.get("validUntil") || undefined, recurringPeriod: (fd.get("recurringPeriod") || undefined) as "month" | "year" | undefined, lines };
 }
 
 export async function createProposalAction(fd: FormData) {
@@ -103,4 +104,22 @@ export async function inviteClientAction(fd: FormData) {
   const id = String(fd.get("customerId"));
   try { await inviteClientContact(ctx, id, String(fd.get("contactId"))); flushEmails(); } catch (e) { return back(`/customers/${id}`, e); }
   redirect(`/customers/${id}?invited=1`);
+}
+
+import { updateCustomerDetails } from "@/modules/crm/service";
+export async function updateDetailsAction(fd: FormData) {
+  const ctx = await requireStaff("customer.write");
+  const id = String(fd.get("id"));
+  try {
+    await updateCustomerDetails(ctx, id, Number(fd.get("version")), { kind: fd.get("kind") || "business", legalName: fd.get("legalName") || undefined, companyNumber: fd.get("companyNumber") || undefined, vatNumber: fd.get("vatNumber") || undefined, billingAddress: fd.get("billingAddress") || undefined, website: fd.get("website") || undefined, phone: fd.get("phone") || undefined });
+  } catch (e) { return back(`/customers/${id}/details`, e); }
+  redirect(`/customers/${id}?details=saved`);
+}
+
+import { sendAgreement } from "@/modules/signing/service";
+export async function sendAgreementAction(fd: FormData) {
+  const ctx = await requireStaff("proposal.send");
+  const id = String(fd.get("id"));
+  try { await sendAgreement(ctx, id, { name: fd.get("name"), email: fd.get("email") }); flushEmails(); } catch (e) { return back(`/proposals/${id}`, e); }
+  redirect(`/proposals/${id}?sent=1`);
 }

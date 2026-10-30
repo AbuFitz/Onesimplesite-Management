@@ -1,13 +1,19 @@
 import { money } from "./ui";
+import { REQUIREMENT_FIELDS } from "@/modules/sales/service";
 
 type Line = { description: string; quantity: number; unitMinor: number; recurring: boolean };
-export function ProposalFields({ initial }: { initial?: { title: string; scope: string; terms: string; validUntil?: Date | null; recurringPeriod?: string | null; lines: Line[] } }) {
+export function ProposalFields({ initial }: { initial?: { title: string; scope: string; terms: string; validUntil?: Date | null; recurringPeriod?: string | null; lines: Line[]; requirements?: Record<string, string | undefined> | null } }) {
   const rows = Array.from({ length: 6 }, (_, i) => initial?.lines[i]);
   return (
     <>
       <div><label className="label" htmlFor="title">Title</label><input id="title" name="title" className="field" defaultValue={initial?.title} required /></div>
       <div><label className="label" htmlFor="scope">Scope, deliverables and exclusions</label><textarea id="scope" name="scope" className="field min-h-40" defaultValue={initial?.scope} required /></div>
-      <div><label className="label" htmlFor="terms">Terms</label><textarea id="terms" name="terms" className="field" defaultValue={initial?.terms} /></div>
+      <div><label className="label" htmlFor="terms">Deal-specific terms (optional)</label><textarea id="terms" name="terms" className="field" defaultValue={initial?.terms} /><p className="hint mt-1">Anything unique to this deal. Our standard Terms &amp; Conditions are attached automatically.</p></div>
+      <fieldset className="space-y-3"><legend className="label">Website requirements (filled in for each deal)</legend>
+        {REQUIREMENT_FIELDS.map(([k, label]) => (
+          <div key={k}><label className="hint" htmlFor={`req_${k}`}>{label}</label><textarea id={`req_${k}`} name={`req_${k}`} className="field min-h-20" defaultValue={initial?.requirements?.[k]} /></div>
+        ))}
+      </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         <div><label className="label" htmlFor="validUntil">Valid until</label><input id="validUntil" name="validUntil" type="date" className="field" defaultValue={initial?.validUntil?.toISOString().slice(0, 10)} /><p className="hint">Defaults to 30 days after sending.</p></div>
         <div><label className="label" htmlFor="rp">Recurring period</label><select id="rp" name="recurringPeriod" className="field" defaultValue={initial?.recurringPeriod ?? ""}><option value="">None</option><option value="month">Monthly</option><option value="year">Annual</option></select></div>

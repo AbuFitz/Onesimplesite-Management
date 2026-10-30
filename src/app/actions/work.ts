@@ -98,3 +98,24 @@ export async function retryEmailsAction() {
   flushEmails();
   redirect("/team");
 }
+
+import { updateCompany, saveTermsDraft, publishTerms } from "@/modules/settings/service";
+
+export async function updateCompanyAction(fd: FormData) {
+  const ctx = await requireStaff("settings.write");
+  try { await updateCompany(ctx, { legalName: fd.get("legalName") || undefined, companyNumber: fd.get("companyNumber") || undefined, registeredAddress: fd.get("registeredAddress") || undefined, vatNumber: fd.get("vatNumber") || undefined }); } catch (e) { return back("/settings", e); }
+  redirect("/settings?saved=1");
+}
+export async function saveTermsAction(fd: FormData) {
+  const ctx = await requireStaff("settings.write");
+  const id = String(fd.get("id") || "") || null;
+  let nid: string;
+  try { nid = (await saveTermsDraft(ctx, id, { title: fd.get("title"), body: fd.get("body") })).id; } catch (e) { return back(id ? `/settings/terms/${id}` : "/settings/terms", e); }
+  redirect(`/settings/terms/${nid}?saved=1`);
+}
+export async function publishTermsAction(fd: FormData) {
+  const ctx = await requireStaff("settings.write");
+  const id = String(fd.get("id"));
+  try { await publishTerms(ctx, id); } catch (e) { return back(`/settings/terms/${id}`, e); }
+  redirect("/settings/terms?published=1");
+}

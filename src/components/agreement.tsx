@@ -23,6 +23,8 @@ export function AgreementText({ text }: { text: string }) {
       );
     } else if (b.t === "h") {
       out.push(<h2 key={i} className="mt-8 mb-2 flex items-baseline gap-3 border-b border-line pb-1 text-[15px] font-extrabold uppercase tracking-tight"><span className="text-xs font-medium text-moss tabular-nums">{b.no}</span>{b.text}</h2>);
+    } else if (b.t === "tsec") {
+      out.push(<h3 key={i} className="mt-6 mb-1 flex items-baseline gap-3 text-[15px] font-bold"><span className="w-8 text-xs font-medium text-moss tabular-nums">{b.no}</span>{b.text}</h3>);
     } else if (b.t === "sub") {
       out.push(<h3 key={i} className="mt-4 mb-1 text-sm font-bold">{b.text}</h3>);
     } else if (b.t === "clause") {

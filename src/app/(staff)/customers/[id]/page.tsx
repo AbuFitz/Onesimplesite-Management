@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
-import { getCustomer } from "@/modules/crm/service";
+import { getCustomer, customerDetailsMissing } from "@/modules/crm/service";
 import { db } from "@/lib/db";
 import { createNoteAction } from "@/app/actions/work";
 import { inviteClientAction } from "@/app/actions/crm";
@@ -19,6 +19,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
     db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id }, orderBy: { createdAt: "desc" }, take: 15 }),
     db.note.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id, archivedAt: null, OR: [{ visibility: "team" }, { ownerId: ctx.staffId }] }, orderBy: { updatedAt: "desc" }, take: 5 }),
   ]);
+  const missingDetails = customerDetailsMissing(c);
   const primary = c.contacts.find((x) => x.isPrimary) ?? c.contacts[0];
   return (
     <>
@@ -64,6 +65,9 @@ export default async function CustomerPage({ params, searchParams }: { params: P
               )}
             </div>
           )}
+          <div><p className="label">Agreement details</p>
+            {missingDetails.length === 0 ? <p className="text-sm">{c.legalName}<br /><span className="text-muted">{c.companyNumber ? `Company no. ${c.companyNumber}` : "No company number"}</span></p> : <p className="text-sm text-warn">Missing: {missingDetails.join(", ")}</p>}
+            {can(ctx.role, "customer.write") && <a className="btn btn-quiet mt-2" href={`/customers/${c.id}/details`}>{missingDetails.length === 0 ? "Edit details" : "Add details"}</a>}</div>
           <div><p className="label">Opportunities</p>
             {c.opportunities.map((o) => <p key={o.id} className="text-sm">{o.title} · <Status label={o.stage} /> · {money(o.valueMinor)}</p>)}
           </div>

@@ -5,7 +5,7 @@ import { ErrorSummary } from "./ui";
 
 export function SignForm({ token, defaultName, consent }: { token: string; defaultName: string; consent: string }) {
   const [state, act, pending] = useActionState(signAction, undefined as { error?: string } | undefined);
-  const [method, setMethod] = useState<"typed" | "drawn">("typed");
+  const [method, setMethod] = useState<"typed" | "drawn">("drawn");
   const [name, setName] = useState(defaultName);
   const [image, setImage] = useState("");
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -40,8 +40,8 @@ export function SignForm({ token, defaultName, consent }: { token: string; defau
       <fieldset>
         <legend className="label">Signature</legend>
         <div className="flex gap-2 mb-3" role="radiogroup" aria-label="Signature method">
-          {(["typed", "drawn"] as const).map((m) => (
-            <button type="button" key={m} role="radio" aria-checked={method === m} onClick={() => setMethod(m)} className={`btn ${method === m ? "" : "btn-quiet"}`}>{m === "typed" ? "Type my name" : "Draw"}</button>
+          {(["drawn", "typed"] as const).map((m) => (
+            <button type="button" key={m} role="radio" aria-checked={method === m} onClick={() => setMethod(m)} className={`btn ${method === m ? "" : "btn-quiet"}`}>{m === "drawn" ? "Draw" : "Type my name"}</button>
           ))}
         </div>
         {method === "typed" ? (
