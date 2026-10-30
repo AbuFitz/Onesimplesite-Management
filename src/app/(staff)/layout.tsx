@@ -1,3 +1,6 @@
+import { db } from "@/lib/db";
+import { NewJob } from "@/components/new-job";
+import { LiveRefresh } from "@/components/live-refresh";
 import Image from "next/image";
 import Link from "next/link";
 import { Search } from "lucide-react";
@@ -15,21 +18,29 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   // Only built modules appear. Unfinished modules are hidden, not faked.
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
-    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Pipeline", icon: "pipeline" }, { href: "/proposals", label: "Proposals", icon: "proposals" }, { href: "/contracts", label: "Agreements", icon: "contracts" }] }] : []),
-    { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/notes", label: "Notes", icon: "notes" }] },
+    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Deals", icon: "pipeline" }, { href: "/proposals", label: "Quotes", icon: "proposals" }, { href: "/contracts", label: "Agreements", icon: "contracts" }] }] : []),
+    { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/notes", label: "Notes", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
     { label: "Admin", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Settings", icon: "settings" }] : []),
       ...(can(ctx.role, "data.export") ? [{ href: "/backup", label: "Backup", icon: "backup" }] : []),
       ...(can(ctx.role, "staff.manage") ? [{ href: "/team", label: "Team", icon: "team" }] : []),
     ] },
   ].filter((g) => g.items.length) as NavGroup[];
+  const jobCustomers = can(ctx.role, "proposal.write")
+    ? (await db.customer.findMany({ where: { workspaceId: ctx.workspaceId }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true }, take: 300 })).map((c) => ({ id: c.id, name: c.displayName }))
+    : [];
+  const jobTeam = can(ctx.role, "proposal.write")
+    ? (await db.staffMembership.findMany({ where: { workspaceId: ctx.workspaceId, status: "active", id: { not: ctx.staffId } }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true } })).map((m) => ({ id: m.id, name: m.displayName }))
+    : [];
   const create = [
-    ...(can(ctx.role, "customer.write") ? [{ href: "/customers/new", label: "New enquiry" }] : []),
+    ...(can(ctx.role, "proposal.write") ? [{ href: "?new=job", label: "New job" }] : []),
     ...(can(ctx.role, "calendar.write") ? [{ href: "/calendar/new", label: "New event" }] : []),
     ...(can(ctx.role, "notes.write") ? [{ href: "/notes", label: "New note" }] : []),
   ];
   return (
     <div className="min-h-dvh bg-white">
+      <LiveRefresh />
+      {can(ctx.role, "proposal.write") && <NewJob customers={jobCustomers} team={jobTeam} />}
       <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
           <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[11rem]">

@@ -21,7 +21,7 @@ async function login(ctx, origin, email) {
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 15000 });
   return page;
 }
-const stamp = Date.now(), name = `E2E Bakery ${stamp}`, title = `Website ${stamp}`, email = `casey.${stamp}@e2e.test`;
+const stamp = Date.now(), name = `E2E Bakery ${stamp}`, title = `Website with bookings for E2E Bakery ${stamp}`, email = `casey.${stamp}@e2e.test`;
 const staff = await login(await browser.newContext({ viewport: { width: 1280, height: 900 } }), M, "demo.owner@example.test");
 
 // 1. Settings: company details
@@ -34,8 +34,9 @@ ok(true, "company details saved in Settings");
 await staff.goto(`${M}/settings/terms`);
 await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/terms\/[0-9a-f-]{36}/);
 if (await staff.locator("button:has-text('Publish version')").count()) {
-  ok(await staff.locator("button:has-text('Publish version')").isDisabled() || (await staff.locator("#body").inputValue()).includes("[TBC") === false, "publish is blocked while [TBC] placeholders remain");
-  await staff.fill("#body", "## The Services\n1.1 The Provider will deliver the website described in the Order Summary.\n\n## Payment\n2.1 The Client will pay each invoice for the amounts and dates in the Order Summary.");
+  ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "publish is blocked while [TBC] placeholders remain");
+  const clauses = staff.locator("textarea[aria-label^='Clause']");
+  for (let k = 0, n = await clauses.count(); k < n; k++) await clauses.nth(k).fill("The Provider and the Client will act reasonably and in line with the Order Summary.");
   await staff.click("button:has-text('Save draft')"); await staff.waitForURL(/saved=1/);
   await staff.click("button:has-text('Publish version')"); await staff.waitForURL(/published=1/);
 }
@@ -43,20 +44,33 @@ await staff.goto(`${M}/settings/terms`);
 ok(await staff.locator("text=Current terms").count() > 0, "terms published");
 
 // 3. Enquiry -> customer details -> proposal with requirements
-await staff.goto(`${M}/customers/new`);
-await staff.fill("#displayName", name); await staff.fill("#contactName", "Casey Morgan"); await staff.fill("#email", email);
-await staff.click("button:has-text('Save enquiry')"); await staff.waitForURL(/\/customers\/[0-9a-f-]{36}$/);
+await staff.goto(`${M}/settings/emails?e=signing_confirmation&w=phone`);
+ok(await staff.locator("iframe").count() === 1 && (await staff.locator("main").innerText()).includes("Signed copy"), "email preview page renders the customer emails");
+await staff.goto(`${M}/settings/terms`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/terms\/[0-9a-f-]{36}/);
+const termsUrl = staff.url().split("?")[0];
+await staff.goto(`${termsUrl}/preview`);
+ok((await staff.locator("article").first().innerText()).includes("Order summary".toUpperCase()) || (await staff.locator("article").first().innerText()).toLowerCase().includes("order summary"), "full document preview shows the whole agreement");
+ok((await get(staff, `${termsUrl}/sample.pdf`)).head === "%PDF-", "sample PDF downloads");
+await staff.goto(`${M}/?new=job`);
+await staff.fill("#j-biz", name); await staff.fill("#j-contact", "Casey Morgan"); await staff.fill("#j-email", email);
+await staff.click("dialog button:has-text('Continue')");
+await staff.click("dialog label:has-text('Food and drink')"); await staff.fill("#j-town", "Bristol");
+await staff.click("dialog button:has-text('Continue')");
+await staff.click("dialog label:has-text('A website with bookings')"); await staff.click("dialog label:has-text('Contact form')");
+await staff.click("dialog button:has-text('Continue')");
+await staff.click("dialog label:has-text('Up to 5 pages')"); await staff.click("dialog label:has-text('As soon as possible')");
+await staff.click("dialog button:has-text('Continue')");
+await staff.fill("input[name=l0d]", "Website build"); await staff.fill("input[name=l0p]", "1500"); await staff.fill("input[name=l1d]", "Hosting"); await staff.fill("input[name=l1p]", "25"); await staff.check("input[name=l1r]");
+await staff.click("dialog button:has-text('Create job')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
+ok(true, "one popup created the customer and a draft quote");
+const earlyProposal = staff.url();
+await staff.goto(`${M}/customers`); await staff.click(`a:has-text('${name}')`); await staff.waitForURL(/\/customers\/[0-9a-f-]{36}$/);
 const customerUrl = staff.url();
 await staff.click("a:has-text('Add details')"); await staff.waitForURL(/details$/);
 await staff.fill("#legalName", `${name} Ltd`); await staff.fill("#companyNumber", "07654321"); await staff.fill("#billingAddress", "2 Quay Road, Bristol");
 await staff.click("button:has-text('Save details')"); await staff.waitForURL(/details=saved/);
 ok(true, "customer details entered by the team");
-
-await staff.click("a:has-text('New proposal')");
-await staff.fill("#title", title); await staff.fill("#scope", "Five pages and a booking form.");
-await staff.fill("#req_pages", "Home\nMenu\nContact"); await staff.fill("#req_payment", "50% on signing\n50% on launch");
-await staff.fill("#l0d", "Website build"); await staff.fill("#l0p", "1500"); await staff.fill("#l1d", "Hosting"); await staff.fill("#l1p", "25"); await staff.check("input[name=l1r]");
-await staff.click("button:has-text('Save draft')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
+await staff.goto(earlyProposal);
 const proposalUrl = staff.url();
 ok(await staff.locator("button:has-text('Send agreement')").isEnabled(), "send is enabled once company, customer and terms are ready");
 await staff.fill("#sn", "Casey Morgan");
@@ -72,7 +86,7 @@ const link = mails[0].text.match(/https?:\/\/\S+\/s\/\S+/)[0];
 const phone = await (await browser.newContext({ viewport: { width: 375, height: 800 }, hasTouch: true })).newPage();
 await phone.goto(link);
 const body = await phone.locator("article").innerText();
-for (const n of ["OneSimpleSite Ltd", `${name} Ltd`, "07654321", "Five pages and a booking form.", "Menu", "50% on signing", "£1,500.00", "The Provider will deliver the website", "2.1"]) ok(body.includes(n), `agreement shows: ${n}`);
+for (const n of ["OneSimpleSite Ltd", `${name} Ltd`, "07654321", "A website with bookings in Bristol", "Up to 5 pages", "Contact form", "50% on signing", "£1,500.00", "Terms and Conditions", "2.1"]) ok(body.includes(n), `agreement shows: ${n}`);
 ok(!(await phone.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "no horizontal overflow at 375px");
 if (process.env.SHOTS) {
   await phone.screenshot({ path: `${process.env.SHOTS}/agree-phone.png`, fullPage: true });

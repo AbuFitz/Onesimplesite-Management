@@ -28,11 +28,11 @@ export async function createLead(ctx: StaffCtx, raw: unknown) {
       data: { workspaceId: ctx.workspaceId, customerId: customer.id, name: i.contactName, email: i.email || null, phone: i.phone || null, isPrimary: true },
     });
     const opp = await tx.opportunity.create({
-      data: { workspaceId: ctx.workspaceId, customerId: customer.id, title: i.opportunityTitle || `${i.displayName} enquiry`, ownerId: ctx.staffId },
+      data: { workspaceId: ctx.workspaceId, customerId: customer.id, title: i.opportunityTitle || `Website for ${i.displayName}`, ownerId: ctx.staffId },
     });
     if (i.note) {
       await tx.note.create({
-        data: { workspaceId: ctx.workspaceId, title: "Enquiry note", body: i.note, ownerId: ctx.staffId, customerId: customer.id, visibility: "team" },
+        data: { workspaceId: ctx.workspaceId, title: "First note", body: i.note, ownerId: ctx.staffId, customerId: customer.id, visibility: "team" },
       });
     }
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "lead.created", targetType: "customer", targetId: customer.id, customerId: customer.id });
@@ -67,11 +67,10 @@ export async function listCustomers(ctx: StaffCtx, q: { search?: string; page?: 
 
 export async function setOpportunityStage(ctx: StaffCtx, id: string, stage: "new" | "qualified" | "proposal_sent" | "contract_pending" | "won" | "lost", expectedVersion: number, lossReason?: string) {
   if (!can(ctx.role, "opportunity.write")) throw forbidden();
-  if (stage === "lost" && !lossReason?.trim()) throw new DomainError("validation", "A loss reason is required.");
   return db.$transaction(async (tx) => {
     const r = await tx.opportunity.updateMany({
       where: { id, workspaceId: ctx.workspaceId, version: expectedVersion },
-      data: { stage, lossReason: stage === "lost" ? lossReason : null, version: { increment: 1 } },
+      data: { stage, lossReason: stage === "lost" ? (lossReason?.trim() || null) : null, version: { increment: 1 } },
     });
     if (r.count === 0) throw stale();
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "opportunity.stage", targetType: "opportunity", targetId: id, detail: { stage } });

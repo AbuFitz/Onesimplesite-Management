@@ -33,7 +33,7 @@ export default async function Today() {
       {backupDue && <p className="mb-8 rounded-lg bg-[#fff3da] px-4 py-3 text-sm text-[#5c3b00]"><strong className="font-semibold">Weekly backup due.</strong> <Link className="underline" href="/backup">Download a backup</Link></p>}
       <div className="mb-12 grid grid-cols-2 gap-x-8 gap-y-4 border-b border-line pb-8 sm:grid-cols-4">
         {seeCustomers && <Stat label="Awaiting signature" value={awaitingSig} href="/contracts?status=awaiting_signature" />}
-        {seeCustomers && <Stat label="Proposals out" value={sentProposals} href="/proposals?status=sent" />}
+        {seeCustomers && <Stat label="Quotes out" value={sentProposals} href="/proposals?status=sent" />}
         <Stat label="Projects in progress" value={activeProjects} href="/projects" hint={assets ? `${assets} waiting on client assets` : undefined} />
         {seeCustomers && <Stat label="Active customers" value={activeCustomers} href="/customers" />}
       </div>

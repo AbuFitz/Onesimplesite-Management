@@ -1,4 +1,5 @@
 "use server";
+import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
 import { flushEmails } from "@/lib/flush-email";
@@ -43,8 +44,11 @@ export async function createProposalAction(fd: FormData) {
   const ctx = await requireStaff("proposal.write");
   const customerId = String(fd.get("customerId"));
   let id: string;
-  try { id = (await createProposal(ctx, customerId, String(fd.get("opportunityId") || "") || null, parseProposal(fd))).id; }
-  catch (e) { return back(`/proposals/new?customer=${customerId}`, e); }
+  try {
+    // Link to the customer's open deal so it moves along when the quote is sent and signed.
+    const opp = await db.opportunity.findFirst({ where: { customerId, workspaceId: ctx.workspaceId, stage: { notIn: ["won", "lost"] } }, orderBy: { updatedAt: "desc" }, select: { id: true } });
+    id = (await createProposal(ctx, customerId, String(fd.get("opportunityId") || "") || opp?.id || null, parseProposal(fd))).id;
+  } catch (e) { return back(customerId ? `/proposals/new?customer=${customerId}` : "/proposals/new", e); }
   redirect(`/proposals/${id}`);
 }
 

@@ -16,7 +16,7 @@ export default async function TermsList({ searchParams }: { searchParams: Promis
       <RecordHeader title="Terms & Conditions" meta="Versioned. A published version never changes; edits create a new version." />
       <ErrorSummary message={sp.error} />
       {sp.published && <p role="status" className="mb-4 text-sm text-moss">Published. New agreements will use this version.</p>}
-      <nav aria-label="Settings sections" className="mb-8 flex gap-2"><Link className="btn btn-quiet" href="/settings">Company details</Link><Link className="btn" href="/settings/terms">Terms &amp; Conditions</Link></nav>
+      <nav aria-label="Settings sections" className="mb-8 flex gap-2"><Link className="btn btn-quiet" href="/settings">Company details</Link><Link className="btn" href="/settings/terms">Terms &amp; Conditions</Link><Link className="btn btn-quiet" href="/settings/emails">Emails</Link></nav>
       <p className="mb-4">{current ? <>Current terms: <strong>version {current.number}</strong>, published {current.publishedAt && fmtDateTime(current.publishedAt)} by {current.publishedBy}.</> : <strong>No terms are published yet, so agreements can't be sent.</strong>}</p>
       <ul>
         {versions.map((v) => (

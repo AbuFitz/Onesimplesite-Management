@@ -4,6 +4,7 @@ import { requireStaff } from "@/modules/identity/session";
 import { getTerms } from "@/modules/settings/service";
 import { saveTermsAction, publishTermsAction } from "@/app/actions/work";
 import { placeholderCount } from "@/documents/parse";
+import { TermsBuilder } from "@/components/terms-builder";
 import { AgreementText } from "@/components/agreement";
 import { RecordHeader, Status, ErrorSummary } from "@/components/ui";
 
@@ -18,17 +19,17 @@ export default async function TermsEditor({ params, searchParams }: { params: Pr
   const todo = placeholderCount(t.body);
   return (
     <>
-      <RecordHeader back={{ href: "/settings/terms", label: "Terms & Conditions" }} title={`${t.title}, version ${t.number}`} status={<Status label={t.status} kind={t.status === "published" ? "good" : draft ? "warn" : "neutral"} />} />
+      <RecordHeader back={{ href: "/settings/terms", label: "Terms & Conditions" }} action={<Link className="btn" href={`/settings/terms/${t.id}/preview`}>Preview full document</Link>} title={`${t.title}, version ${t.number}`} status={<Status label={t.status} kind={t.status === "published" ? "good" : draft ? "warn" : "neutral"} />} />
       <ErrorSummary message={sp.error} />
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
-      <div className="grid gap-10 lg:grid-cols-2">
+      <div className="grid gap-10 xl:grid-cols-2">
         <section aria-labelledby="ed">
           <h2 id="ed" className="mb-2">{draft ? "Edit draft" : "Read-only"}</h2>
           {!draft && <p className="mb-3 text-sm text-muted">{t.status === "published" ? "This version is published and can't be changed." : "This version is retired."} Saving creates a new draft based on it.</p>}
           <form action={saveTermsAction} className="space-y-3"><input type="hidden" name="id" value={t.id} />
             <div><label className="label" htmlFor="title">Title</label><input id="title" name="title" className="field" defaultValue={t.title} required /></div>
-            <div><label className="label" htmlFor="body">Wording</label><textarea id="body" name="body" className="field min-h-[60dvh] font-mono text-sm" defaultValue={t.body} required />
-              <p className="hint mt-1">Use <code>## Heading</code> for a section and <code>1.1 Clause text</code> for a numbered clause. Replace every <code>[TBC: …]</code> with real wording before publishing.</p></div>
+            <div><p className="label">Wording</p><TermsBuilder initial={t.body} />
+              <p className="hint mt-2">Write each clause in plain sentences. Numbers are added for you. Clauses marked [TBC: …] need real wording before you can publish.</p></div>
             <button className="btn">{draft ? "Save draft" : "Save as new draft"}</button>
           </form>
           {draft && (

@@ -6,7 +6,7 @@ export const CAPS = [
   "contract.send", "contract.record_completion", "contract.void",
   "project.read_all", "project.read_assigned", "project.write",
   "billing.read", "billing.write", "billing.refund",
-  "calendar.write", "notes.write", "audit.read", "staff.manage", "settings.write", "email.send_as_department", "data.export",
+  "calendar.write", "notes.write", "audit.read", "staff.manage", "settings.write", "email.send_as_department", "data.export", "vault.use",
 ] as const;
 export type Cap = (typeof CAPS)[number];
 
@@ -18,10 +18,10 @@ export const ROLE_CAPS: Record<StaffRole, ReadonlySet<Cap>> = {
   // Everyone on the team gets every business capability, but cannot manage logins or settings.
   member: without("staff.manage"),
   client_director: without("staff.manage", "settings.write", "billing.refund", "audit.read"),
-  delivery: new Set<Cap>(["customer.read", "project.read_assigned", "project.write", "calendar.write", "notes.write"]),
-  sales: new Set<Cap>(["customer.read", "customer.write", "opportunity.write", "proposal.write", "proposal.send", "calendar.write", "notes.write"]),
-  support: new Set<Cap>(["customer.read", "project.read_all", "calendar.write", "notes.write"]),
-  finance: new Set<Cap>(["customer.read", "billing.read", "billing.write", "calendar.write", "notes.write"]),
+  delivery: new Set<Cap>(["vault.use", "customer.read", "project.read_assigned", "project.write", "calendar.write", "notes.write"]),
+  sales: new Set<Cap>(["vault.use", "customer.read", "customer.write", "opportunity.write", "proposal.write", "proposal.send", "calendar.write", "notes.write"]),
+  support: new Set<Cap>(["vault.use", "customer.read", "project.read_all", "calendar.write", "notes.write"]),
+  finance: new Set<Cap>(["vault.use", "customer.read", "billing.read", "billing.write", "calendar.write", "notes.write"]),
 };
 
 export const can = (role: StaffRole, cap: Cap) => ROLE_CAPS[role].has(cap);

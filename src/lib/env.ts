@@ -9,6 +9,8 @@ const schema = z.object({
   // Pasted keys often carry a trailing newline, quotes or invisible characters, which make the Authorization header invalid.
   RESEND_API_KEY: z.string().optional().transform((v) => { const k = v?.replace(/[^A-Za-z0-9_-]/g, ""); return k || undefined; }),
   MAIL_ALLOWLIST: z.string().optional(),
+  // Optional. Without it the vault key is derived from BETTER_AUTH_SECRET.
+  VAULT_KEY: z.string().optional(),
 });
 
 let cached: z.infer<typeof schema> | undefined;

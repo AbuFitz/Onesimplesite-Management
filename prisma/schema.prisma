@@ -90,6 +90,7 @@ model TwoFactor {
 
 // ───────── Workspace, access ─────────
 model Workspace {
+  vaultEntries VaultEntry[]
   id        String   @id @default(uuid()) @db.Uuid
   name      String
   timezone  String   @default("Europe/London")
@@ -258,6 +259,8 @@ model Opportunity {
   currency    String           @default("GBP")
   ownerId     String?          @db.Uuid
   lossReason  String?
+  priority    String           @default("normal") // low | normal | high | urgent
+  dueDate     DateTime?
   version     Int              @default(1)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -714,4 +717,24 @@ model TermsVersion {
 
   @@unique([workspaceId, number])
   @@index([workspaceId, status])
+}
+
+/// Shared team password vault. The secret is AES-256-GCM encrypted by the app before it is stored; never plain text.
+model VaultEntry {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  title       String
+  category    String   @default("general")
+  username    String?
+  url         String?
+  notes       String?
+  secret      String // "v1:<iv>:<tag>:<ciphertext>" (base64)
+  createdBy   String
+  updatedBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, title])
 }

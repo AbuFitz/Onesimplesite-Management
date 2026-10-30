@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, Home, FolderKanban, NotebookText, FileText, Handshake, ScrollText, Menu, UserCog, DatabaseBackup, Settings2 } from "lucide-react";
+import { CalendarDays, Users, Home, FolderKanban, NotebookText, FileText, Handshake, ScrollText, Menu, UserCog, DatabaseBackup, Settings2, KeyRound } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: string };
 export type NavGroup = { label?: string; items: NavItem[] };
-const icons = { today: Home, customers: Users, pipeline: Handshake, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: NotebookText, team: UserCog, backup: DatabaseBackup, settings: Settings2 } as const;
+const icons = { today: Home, customers: Users, pipeline: Handshake, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: NotebookText, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound } as const;
 const active = (p: string, href: string) => (href === "/" ? p === "/" : p === href || p.startsWith(href + "/"));
 
 export function SideNav({ groups }: { groups: NavGroup[] }) {

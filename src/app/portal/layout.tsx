@@ -1,3 +1,4 @@
+import { LiveRefresh } from "@/components/live-refresh";
 import Image from "next/image";
 import Link from "next/link";
 import { requireClient } from "@/modules/identity/session";
@@ -10,6 +11,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const c = await requireClient();
   return (
     <div className="min-h-dvh bg-white">
+      <LiveRefresh seconds={15} />
       <header className="border-b border-line" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto max-w-4xl px-5">
           <div className="flex h-14 items-center justify-between">

@@ -34,7 +34,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         action={<>
           {primary?.phone && <a className="btn btn-quiet" href={`tel:${primary.phone}`}>Call</a>}
           {primary?.email && <a className="btn btn-quiet" href={`mailto:${primary.email}`}>Email</a>}
-          {can(ctx.role, "proposal.write") && <Link className="btn" href={`/proposals/new?customer=${c.id}`}>New proposal</Link>}
+          {can(ctx.role, "proposal.write") && <Link className="btn" href={`?new=job&customer=${c.id}`}>New quote</Link>}
         </>} />
       <ErrorSummary message={sp.error} />
       {sp.invited && <p role="status" className="mb-6 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Invitation sent.</p>}
@@ -50,7 +50,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       {tab === "overview" && (
         <>
           <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4">
-            <Stat label="Proposals" value={c.proposals.length} href={href("agreements")} />
+            <Stat label="Quotes" value={c.proposals.length} href={href("agreements")} />
             <Stat label="Signed agreements" value={c.contracts.filter((k) => k.status === "completed").length} href={href("agreements")} />
             <Stat label="Signed value (one-off)" value={money(signedValue)} />
             <Stat label="Projects" value={c.projects.length} href={href("projects")} />
@@ -79,8 +79,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       )}
 
       {tab === "agreements" && (
-        <Section title="Proposals and agreements">
-          {c.proposals.length + c.contracts.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`/proposals/new?customer=${c.id}`}>Create the first proposal</Link></Empty> : (
+        <Section title="Quotes and agreements">
+          {c.proposals.length + c.contracts.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`?new=job&customer=${c.id}`}>Create the first quote</Link></Empty> : (
             <ul>
               {c.proposals.map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Proposal {p.reference}</span></span><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
               {c.contracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}
