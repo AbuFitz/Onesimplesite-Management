@@ -8,7 +8,7 @@ Create a **new** Supabase project just for OneSimpleSite Manage (e.g. `oss-manag
 ## 1. Collect three connection strings (Project → Connect)
 | Use | Which string | Goes in |
 |---|---|---|
-| Migrations | **Direct connection** (port 5432), user `postgres` | `MIGRATE_DATABASE_URL` (only on your laptop / CI, never the web host) |
+| Migrations | **Session pooler** (port 5432 on the pooler host, user `postgres.<project-ref>`). The "Direct connection" host is IPv6-only and often unreachable from home networks | `MIGRATE_DATABASE_URL` (only on your laptop / CI, never the web host) |
 | Web app | **Transaction pooler** (port 6543) using the `oss_app` user (step 3) | `DATABASE_URL` |
 | Worker (pg-boss) | **Session pooler** or direct (port 5432) using `oss_app`... see note | `DATABASE_URL` for the worker process |
 
@@ -21,7 +21,7 @@ cp .env.example .env
 npm install
 npx prisma migrate deploy
 ```
-Expect "All migrations have been successfully applied" (7 migrations).
+Expect "All migrations have been successfully applied" (6 migrations).
 
 ## 3. Create the restricted app user
 Open **SQL Editor** in Supabase. Paste the contents of `docs/db/roles.sql`, replace `CHANGE_ME` with a long random password, run it. Then paste and run `docs/db/lock-down-data-api.sql` (stops the anon/authenticated API roles seeing any table). Build the runtime URL from the pooler string but with user `oss_app.<project-ref>` (Supabase poolers need the `user.projectref` form) and your new password.
@@ -49,3 +49,9 @@ With `APP_ENV=production` run `npm run db:seed`. It creates Abukar/Farhan/Matthe
 3. Set `MANAGE_ORIGIN=https://manage.<yourdomain>` and `PORTAL_ORIGIN=https://portal.<yourdomain>` (no trailing slash) in the project's environment variables, plus the others in step 5 above, then **redeploy** (env changes need a new deployment).
 4. While `APP_ENV` is not `production`, any other hostname (like `xyz.vercel.app`) serves the staff app so you can look around. With `APP_ENV=production` unknown hosts get a 421 explaining which variable is wrong.
 5. Visiting `https://manage.<yourdomain>/` should redirect to `/login`. `https://portal.<yourdomain>/` should redirect to the portal login.
+
+
+## This project's values
+Project ref `mxjgysmphfsofqiucxxz` · domains `manage.onesimplesite.co.uk` and `portal.onesimplesite.co.uk`.
+Production env: `MANAGE_ORIGIN=https://manage.onesimplesite.co.uk`, `PORTAL_ORIGIN=https://portal.onesimplesite.co.uk`, `APP_ENV=production`.
+Production seed: `APP_ENV=production DATABASE_URL=<owner session-pooler URL> npm run db:seed` prints invite paths; open them as `https://manage.onesimplesite.co.uk/invite/<token>`.
