@@ -19,7 +19,7 @@ export function InviteStaffForm({ roles }: { roles: { value: string; label: stri
         <button className="btn" disabled={pending}>{pending ? "Creating…" : "Create login link"}</button>
       </form>
       {s?.link && (
-        <div role="status" className="mt-6 border-l-4 border-moss bg-wash px-3 py-3 text-sm">
+        <div role="status" className="mt-6 border-l-4 border-moss bg-soft px-3 py-3 text-sm">
           <p className="font-semibold">Login link for {s.email}</p>
           <p className="break-all my-2 select-all">{s.link}</p>
           <button type="button" className="btn btn-quiet" onClick={() => navigator.clipboard.writeText(s.link!).then(() => setCopied(true))}>{copied ? "Copied" : "Copy link"}</button>

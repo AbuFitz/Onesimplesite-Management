@@ -2,19 +2,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { requireClient } from "@/modules/identity/session";
 import { signOutPortal } from "@/app/actions/auth";
+import { PortalNav } from "@/components/portal-nav";
+import { Avatar } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const c = await requireClient();
-  const links: [string, string][] = [["/overview", "Overview"], ["/projects", "Projects"], ["/documents", "Documents"], ["/help", "Help"], ["/account", "Account"]];
   return (
-    <div className="min-h-dvh">
-      <header className="border-b border-line px-4 lg:px-8 py-3 flex flex-wrap items-center gap-x-8 gap-y-2">
-        <Link href="/overview" aria-label="Client Portal home"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={140} height={28} priority /></Link>
-        <nav aria-label="Portal" className="flex flex-wrap gap-1">{links.map(([h, l]) => <Link key={h} href={h} className="px-3 min-h-11 inline-flex items-center rounded-[8px] text-sm hover:bg-wash">{l}</Link>)}</nav>
-        <form action={signOutPortal} className="ml-auto"><button className="btn btn-quiet">Sign out</button></form>
+    <div className="min-h-dvh bg-white">
+      <header className="border-b border-line" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto max-w-4xl px-5">
+          <div className="flex h-14 items-center justify-between">
+            <Link href="/overview" aria-label="Client Portal home" className="flex items-center gap-3"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={126} height={26} priority /><span className="hidden text-sm text-muted sm:inline">Client Portal</span></Link>
+            <div className="flex items-center gap-3"><span className="hidden text-sm text-muted sm:inline">{c.memberships.map((m) => m.customer.displayName).join(", ")}</span><Avatar name={c.name} size={32} />
+              <form action={signOutPortal}><button className="text-sm text-muted hover:text-ink min-h-10">Sign out</button></form></div>
+          </div>
+          <PortalNav />
+        </div>
       </header>
-      <main id="main" className="px-4 lg:px-8 py-6 max-w-4xl"><p className="text-xs text-muted mb-4">Client Portal · {c.memberships.map((m) => m.customer.displayName).join(", ")}</p>{children}</main>
+      <main id="main" className="mx-auto max-w-4xl px-5 pb-20 pt-8">{children}</main>
     </div>
   );
 }

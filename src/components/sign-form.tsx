@@ -27,11 +27,11 @@ export function SignForm({ token, defaultName, consent }: { token: string; defau
   const clear = () => { const c = canvas.current!; c.getContext("2d")!.clearRect(0, 0, c.width, c.height); dirty.current = false; setImage(""); };
 
   return (
-    <form action={act} className="mt-10 space-y-5 border-t border-line pt-6">
+    <form action={act} className="mt-12 space-y-5 border-t border-line pt-8">
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="method" value={method} />
       <input type="hidden" name="image" value={method === "drawn" ? image : ""} />
-      <h2>Sign this agreement</h2>
+      <h2 className="text-xl">Sign this agreement</h2>
       <ErrorSummary message={state?.error} />
       <div>
         <label className="label" htmlFor="name">Your full name</label>

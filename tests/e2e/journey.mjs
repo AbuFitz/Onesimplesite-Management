@@ -32,7 +32,7 @@ ok(true, "company details saved in Settings");
 
 // 2. Terms: starter has placeholders -> publish blocked -> write real terms -> publish
 await staff.goto(`${M}/settings/terms`);
-await staff.click("ul a >> nth=0"); await staff.waitForURL(/\/settings\/terms\/[0-9a-f-]{36}/);
+await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/terms\/[0-9a-f-]{36}/);
 if (await staff.locator("button:has-text('Publish version')").count()) {
   ok(await staff.locator("button:has-text('Publish version')").isDisabled() || (await staff.locator("#body").inputValue()).includes("[TBC") === false, "publish is blocked while [TBC] placeholders remain");
   await staff.fill("#body", "## The Services\n1.1 The Provider will deliver the website described in the Order Summary.\n\n## Payment\n2.1 The Client will pay each invoice for the amounts and dates in the Order Summary.");
@@ -109,7 +109,7 @@ await staff.goto(`${M}/projects`);
 ok(await staff.locator(`text=${title}`).count() === 1, "exactly one project created");
 
 // 7. Portal invitation -> signed document visible only to that customer
-await staff.goto(customerUrl); await staff.click("button:has-text('Invite to client portal')"); drain();
+await staff.goto(customerUrl); await staff.click("button:has-text('Invite to portal')"); drain();
 const inv = sink().find((m) => m.to === email && m.subject.includes("invited you"));
 const cl = await (await browser.newContext()).newPage();
 await cl.goto(inv.text.match(/https?:\/\/\S+\/invite\/\S+/)[0]);

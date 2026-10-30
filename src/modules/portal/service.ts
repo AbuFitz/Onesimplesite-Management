@@ -42,3 +42,15 @@ export const STAGE_COPY: Record<string, string> = {
   held: "This project is currently on hold.",
   cancelled: "This project was cancelled.",
 };
+
+/** Everything the overview needs, scoped to the client's own accounts. No internal notes, tasks or staff fields. */
+export async function clientOverview(c: ClientCtx) {
+  const ids = c.memberships.map((m) => m.customerId);
+  const [projects, assets, updates, documents] = await Promise.all([
+    db.project.findMany({ where: { customerId: { in: ids } }, orderBy: { updatedAt: "desc" }, select: { id: true, name: true, stage: true, dueDate: true } }),
+    db.assetRequest.findMany({ where: { project: { customerId: { in: ids } }, receivedAt: null }, orderBy: { createdAt: "asc" }, select: { id: true, label: true, required: true, dueDate: true, projectId: true } }),
+    db.projectUpdate.findMany({ where: { clientVisible: true, project: { customerId: { in: ids } } }, orderBy: { createdAt: "desc" }, take: 3, select: { id: true, body: true, createdAt: true, projectId: true } }),
+    db.contract.findMany({ where: { customerId: { in: ids }, status: "completed", documents: { some: {} } }, orderBy: { completedAt: "desc" }, take: 3, select: { id: true, title: true, reference: true, completedAt: true } }),
+  ]);
+  return { projects, assets, updates, documents };
+}

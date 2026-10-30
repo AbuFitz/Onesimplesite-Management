@@ -13,7 +13,7 @@ export function AgreementText({ text }: { text: string }) {
       out.push(
         <div key={`p${i}`} className="grid gap-3 sm:grid-cols-2 my-4">
           {parties.map((p) => (
-            <div key={p.label + p.name} className="bg-wash rounded-[8px] px-4 py-3">
+            <div key={p.label + p.name} className="bg-soft rounded-[8px] px-4 py-3">
               <p className="text-[11px] font-bold uppercase tracking-[.12em] text-moss">{p.label}</p>
               <p className="font-bold">{p.name}</p>
               {p.lines.map((l) => <p key={l} className="text-sm leading-snug">{l}</p>)}
@@ -32,7 +32,7 @@ export function AgreementText({ text }: { text: string }) {
     } else if (b.t === "bullet") {
       out.push(<p key={i} className="my-0.5 pl-5 relative"><span className="absolute left-1">•</span>{b.text}</p>);
     } else if (b.t === "note") {
-      out.push(<p key={i} className="my-3 bg-wash rounded-[8px] px-4 py-3 text-sm">{b.text}</p>);
+      out.push(<p key={i} className="my-3 bg-soft rounded-[8px] px-4 py-3 text-sm">{b.text}</p>);
     } else if (b.t === "p") {
       out.push(<p key={i} className="my-1.5">{b.text}</p>);
     } else out.push(<div key={i} className="h-2" />);

@@ -14,7 +14,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
       <RecordHeader title="Projects" meta={stage ? `Filtered: ${stage.replaceAll("_", " ")}` : undefined} />
       {rows.length === 0 ? <Empty title={stage ? "No projects at this stage" : "No projects yet"}>Projects are created when a contract is completed.</Empty> : (
         <ul>{rows.map((p) => (
-          <li key={p.id} className="row"><Link href={`/projects/${p.id}`} className="flex flex-wrap justify-between gap-2 py-3 min-h-12 hover:bg-wash px-1"><span><strong>{p.name}</strong><span className="block text-sm text-muted">{p.customer.displayName} · {p.reference}</span></span><Status label={p.stage} /></Link></li>
+          <li key={p.id} className="row"><Link href={`/projects/${p.id}`} className="flex flex-wrap justify-between gap-2 py-3 min-h-12 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span><strong>{p.name}</strong><span className="block text-sm text-muted">{p.customer.displayName} · {p.reference}</span></span><Status label={p.stage} /></Link></li>
         ))}</ul>
       )}
     </>
