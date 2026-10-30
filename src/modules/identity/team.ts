@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { audit } from "@/lib/audit";
+import { audit, enqueue } from "@/lib/audit";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { newToken } from "@/lib/tokens";
 import { manageLink } from "@/lib/env";
-import { can } from "./permissions";
+import { can, ROLE_INFO } from "./permissions";
 import type { StaffCtx } from "./session";
 
 const ROLES = ["owner", "member", "client_director", "delivery", "sales", "support", "finance"] as const;
@@ -24,8 +24,9 @@ export async function listTeam(ctx: StaffCtx) {
 async function issueInvite(tx: Parameters<Parameters<typeof db.$transaction>[0]>[0], ctx: StaffCtx, email: string, role: (typeof ROLES)[number]) {
   await tx.invitation.updateMany({ where: { workspaceId: ctx.workspaceId, kind: "staff", email, acceptedAt: null, revokedAt: null }, data: { revokedAt: new Date() } });
   const { token, hash } = newToken();
-  await tx.invitation.create({ data: { workspaceId: ctx.workspaceId, kind: "staff", email, tokenHash: hash, staffRole: role, expiresAt: new Date(Date.now() + 7 * 864e5) } });
-  return manageLink(`/invite/${token}`);
+  const expiresAt = new Date(Date.now() + 7 * 864e5);
+  const inv = await tx.invitation.create({ data: { workspaceId: ctx.workspaceId, kind: "staff", email, tokenHash: hash, staffRole: role, expiresAt } });
+  return { link: manageLink(`/invite/${token}`), id: inv.id, expiresAt };
 }
 
 /** Invite (or re-issue the link for a pending member). The link is returned once and only its hash is stored. */
@@ -37,7 +38,11 @@ export async function inviteStaff(ctx: StaffCtx, raw: unknown) {
     if (existing && existing.status === "active") throw new DomainError("conflict", "That person already has an active login.");
     if (existing) await tx.staffMembership.update({ where: { id: existing.id }, data: { displayName: i.name, role: i.role, status: "pending", deactivatedAt: null } });
     else await tx.staffMembership.create({ data: { workspaceId: ctx.workspaceId, email: i.email, displayName: i.name, role: i.role, status: "pending" } });
-    const link = await issueInvite(tx, ctx, i.email, i.role);
+    const { link, id, expiresAt } = await issueInvite(tx, ctx, i.email, i.role);
+    await enqueue(tx, ctx.workspaceId, "email.staff_invitation", `staff.invite:${id}`, {
+      to: i.email, name: i.name, inviter: ctx.name, roleLabel: ROLE_INFO[i.role].label.replace(" (recommended)", ""), link,
+      expires: new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(expiresAt),
+    });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: existing ? "staff.reinvited" : "staff.invited", targetType: "staff", targetId: i.email, detail: { role: i.role } });
     return { link, email: i.email, name: i.name };
   });

@@ -6,6 +6,7 @@ import { transitionProject, postUpdate, requestAsset, addTask } from "@/modules/
 import { createEvent, cancelEvent } from "@/modules/calendar/service";
 import { createNote, saveNote, archiveNote } from "@/modules/notes/service";
 import { DomainError } from "@/lib/errors";
+import { flushEmails } from "@/lib/flush-email";
 
 const msg = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join("; ") : "Something went wrong. Nothing was changed.");
 const back = (path: string, e: unknown): never => redirect(`${path}${path.includes("?") ? "&" : "?"}error=${encodeURIComponent(msg(e))}`);
@@ -75,6 +76,7 @@ export async function inviteStaffAction(_: unknown, fd: FormData): Promise<{ err
   const ctx = await requireStaff("staff.manage");
   try {
     const r = await inviteStaff(ctx, { name: fd.get("name"), email: fd.get("email"), role: fd.get("role") });
+    flushEmails();
     return { link: r.link, email: r.email };
   } catch (e) { return { error: msg(e) }; }
 }
@@ -86,5 +88,13 @@ export async function changeRoleAction(fd: FormData) {
 export async function setActiveAction(fd: FormData) {
   const ctx = await requireStaff("staff.manage");
   try { await setActive(ctx, String(fd.get("id")), fd.get("active") === "1"); } catch (e) { return back("/team", e); }
+  redirect("/team");
+}
+
+import { retryFailed } from "@/modules/outbox/drain";
+export async function retryEmailsAction() {
+  const ctx = await requireStaff("staff.manage");
+  await retryFailed(ctx.workspaceId);
+  flushEmails();
   redirect("/team");
 }

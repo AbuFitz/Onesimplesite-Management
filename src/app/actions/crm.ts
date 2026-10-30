@@ -1,6 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
+import { flushEmails } from "@/lib/flush-email";
 import { createLead, setOpportunityStage } from "@/modules/crm/service";
 import { createProposal, saveDraft, sendProposal, reviseProposal } from "@/modules/sales/service";
 import { markContractSent, recordContractCompletion } from "@/modules/contracts/service";
@@ -56,7 +57,7 @@ export async function saveDraftAction(fd: FormData) {
 export async function sendProposalAction(fd: FormData) {
   const ctx = await requireStaff("proposal.send");
   const id = String(fd.get("id"));
-  try { await sendProposal(ctx, id, String(fd.get("email"))); } catch (e) { return back(`/proposals/${id}`, e); }
+  try { await sendProposal(ctx, id, String(fd.get("email"))); flushEmails(); } catch (e) { return back(`/proposals/${id}`, e); }
   redirect(`/proposals/${id}?sent=1`);
 }
 
@@ -78,7 +79,7 @@ export async function completionAction(fd: FormData) {
   const ctx = await requireStaff("contract.record_completion");
   const id = String(fd.get("id"));
   let projectId: string;
-  try { projectId = (await recordContractCompletion(ctx, id, { evidence: fd.get("evidence") })).projectId; } catch (e) { return back(`/contracts/${id}`, e); }
+  try { projectId = (await recordContractCompletion(ctx, id, { evidence: fd.get("evidence") })).projectId; flushEmails(); } catch (e) { return back(`/contracts/${id}`, e); }
   redirect(`/projects/${projectId}`);
 }
 
@@ -88,7 +89,7 @@ import { inviteClientContact } from "@/modules/crm/invite";
 export async function sendForSigningAction(fd: FormData) {
   const ctx = await requireStaff("contract.send");
   const id = String(fd.get("id"));
-  try { await sendForSigning(ctx, id, { name: fd.get("name"), email: fd.get("email") }); } catch (e) { return back(`/contracts/${id}`, e); }
+  try { await sendForSigning(ctx, id, { name: fd.get("name"), email: fd.get("email") }); flushEmails(); } catch (e) { return back(`/contracts/${id}`, e); }
   redirect(`/contracts/${id}?sent=1`);
 }
 export async function voidSigningAction(fd: FormData) {
@@ -100,6 +101,6 @@ export async function voidSigningAction(fd: FormData) {
 export async function inviteClientAction(fd: FormData) {
   const ctx = await requireStaff("customer.write");
   const id = String(fd.get("customerId"));
-  try { await inviteClientContact(ctx, id, String(fd.get("contactId"))); } catch (e) { return back(`/customers/${id}`, e); }
+  try { await inviteClientContact(ctx, id, String(fd.get("contactId"))); flushEmails(); } catch (e) { return back(`/customers/${id}`, e); }
   redirect(`/customers/${id}?invited=1`);
 }

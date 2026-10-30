@@ -26,6 +26,16 @@ function make(ns: "staff" | "portal", allowSignUp: boolean) {
       resetPasswordTokenExpiresIn: 60 * 60,
       revokeSessionsOnPasswordReset: true,
       // Needs RESEND_API_KEY in production; the forgot-password screen says so when it is missing.
+      onPasswordReset: async ({ user }) => {
+        try {
+          const { renderEmail } = await import("@/emails/templates");
+          const { sendMail } = await import("./mail");
+          const { fmtFrom } = await import("./sender-identities");
+          const when = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/London" }).format(new Date());
+          const r = await renderEmail("password_changed", { to: user.email, name: user.name, when });
+          await sendMail({ from: fmtFrom("general"), to: user.email, subject: r.subject, html: r.html, text: r.text });
+        } catch { /* a failed notice must never block the reset itself */ }
+      },
       sendResetPassword: async ({ user, url }) => {
         const { renderEmail } = await import("@/emails/templates");
         const { sendMail } = await import("./mail");

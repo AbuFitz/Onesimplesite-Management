@@ -11,6 +11,8 @@ export type EmailData = {
   signing_notice: { to: string; title: string; ref: string; business: string; signerName: string; signerEmail: string; signedAt: string; link: string; fileSha: string };
   invitation: { to: string; businessName: string; inviter: string; link: string; expires: string };
   password_reset: { to: string; name: string; link: string; minutes: number };
+  password_changed: { to: string; name: string; when: string };
+  staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
 };
 export type TemplateName = keyof EmailData;
 
@@ -91,6 +93,29 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Reset your password\n\nHello ${d.name},\n\nChoose a new password: ${d.link}\n\nThis link works once and expires in ${d.minutes} minutes. If you did not ask for this, ignore this email and your password stays the same.\n\nOneSimpleSite`,
+  }),
+  password_changed: (d) => ({
+    subject: "Your OneSimpleSite password was changed",
+    node: (
+      <Layout preview="Your password was just changed">
+        <H>Your password was changed</H>
+        <P>Hello {d.name}, your OneSimpleSite password was changed on {d.when}.</P>
+        <P>If this was you, there is nothing to do. If it was not, reply to this email straight away and we will lock the account.</P>
+      </Layout>
+    ),
+    text: `Your password was changed\n\nHello ${d.name},\n\nYour OneSimpleSite password was changed on ${d.when}.\n\nIf this was you, there is nothing to do. If it was not, reply to this email straight away and we will lock the account.\n\nOneSimpleSite`,
+  }),
+  staff_invitation: (d) => ({
+    subject: `${d.inviter} added you to OneSimpleSite Manage`,
+    node: (
+      <Layout preview={`Set up your login as ${d.roleLabel}`}>
+        <H>Set up your login</H>
+        <P>Hello {d.name}, {d.inviter} has added you to OneSimpleSite Manage as {d.roleLabel}. Choose a password to get started.</P>
+        <Action href={d.link}>Set up my login</Action>
+        <P>This link works once and expires on {d.expires}. You can change your password any time from My account.</P>
+      </Layout>
+    ),
+    text: `Set up your login\n\nHello ${d.name},\n\n${d.inviter} has added you to OneSimpleSite Manage as ${d.roleLabel}.\n\nSet up my login: ${d.link}\n\nThis link works once and expires on ${d.expires}.\n\nOneSimpleSite`,
   }),
 };
 

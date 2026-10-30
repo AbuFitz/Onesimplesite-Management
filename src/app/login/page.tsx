@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { headers } from "next/headers";
 import { LoginForm } from "@/components/auth-forms";
+import { AuthShell } from "@/components/auth-shell";
 import { origins } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -9,12 +9,9 @@ export const metadata = { title: "Sign in" };
 export default async function Login() {
   const portal = (await headers()).get("host") === new URL(origins().portal).host;
   return (
-    <main className="mx-auto max-w-sm px-4 py-16">
-      <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={180} height={36} priority />
-      <h1 className="mt-8 mb-6 text-[22px]">{portal ? "Client Portal" : "Manage"} sign in</h1>
+    <AuthShell title={portal ? "Client Portal sign in" : "Sign in to Manage"} intro={portal ? "Access is by invitation. Use the details from your invitation email." : "Staff access is by invitation."}>
       <LoginForm />
-      <p className="mt-4 text-sm"><a className="underline" href="/forgot-password">Forgot your password?</a></p>
-      <p className="hint mt-6">{portal ? "Access is by invitation. Contact your OneSimpleSite project owner if you need help." : "Staff access is invite-only."}</p>
-    </main>
+      <p className="mt-5 text-sm"><a className="underline" href="/forgot-password">Forgot your password?</a></p>
+    </AuthShell>
   );
 }

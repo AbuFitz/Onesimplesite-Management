@@ -3,6 +3,9 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { env } from "./env";
 
+/** True when real delivery is possible (Resend key) or we are in local development (file sink). */
+export const mailConfigured = () => !!env().RESEND_API_KEY || env().APP_ENV === "development" || env().APP_ENV === "test";
+
 export type Mail = { from: string; to: string; subject: string; text: string; html?: string; replyTo?: string; attachments?: { filename: string; content: Buffer }[] };
 
 /**
@@ -12,6 +15,7 @@ export type Mail = { from: string; to: string; subject: string; text: string; ht
 export async function sendMail(m: Mail, idempotencyKey?: string) {
   const e = env();
   if (!e.RESEND_API_KEY) {
+    if (!mailConfigured()) throw new Error("Email is not configured: set RESEND_API_KEY");
     const dir = path.join(process.cwd(), ".mail-sink");
     await mkdir(dir, { recursive: true });
     const id = randomUUID();

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { acceptProposal } from "@/modules/sales/service";
 import { DomainError } from "@/lib/errors";
+import { flushEmails } from "@/lib/flush-email";
 import { submitSignature, declineSigning } from "@/modules/signing/service";
 
 export async function acceptProposalAction(fd: FormData) {
@@ -13,6 +14,7 @@ export async function acceptProposalAction(fd: FormData) {
   const ip = process.env.TRUST_PROXY === "1" ? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null : null;
   try {
     await acceptProposal(token, { name: fd.get("name"), consent: fd.get("consent") === "on" }, { ip, userAgent: h.get("user-agent") });
+    flushEmails();
   } catch (e) {
     const m = e instanceof DomainError ? e.message : e instanceof ZodError ? "Enter your name and tick the confirmation." : "Something went wrong. Nothing was recorded; please try again.";
     redirect(`/p/${encodeURIComponent(token)}?error=${encodeURIComponent(m)}`);
@@ -26,6 +28,7 @@ export async function signAction(_: unknown, fd: FormData): Promise<{ error?: st
   const ip = process.env.TRUST_PROXY === "1" ? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null : null;
   try {
     await submitSignature(token, { name: fd.get("name"), method: fd.get("method"), image: String(fd.get("image") ?? "") || undefined, consent: fd.get("consent") === "on" }, { ip, userAgent: h.get("user-agent") });
+    flushEmails();
   } catch (e) {
     if (e instanceof DomainError) return { error: e.message };
     if (e instanceof ZodError) return { error: e.issues.map((i) => i.message).join(" ") };

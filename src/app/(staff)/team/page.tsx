@@ -3,12 +3,15 @@ import { listTeam } from "@/modules/identity/team";
 import { ROLE_INFO } from "@/modules/identity/permissions";
 import { changeRoleAction, setActiveAction } from "@/app/actions/work";
 import { InviteStaffForm } from "@/components/invite-staff-form";
+import { queueStatus } from "@/modules/outbox/drain";
+import { retryEmailsAction } from "@/app/actions/work";
 import { RecordHeader, Status, ErrorSummary } from "@/components/ui";
 
 export const metadata = { title: "Team" };
 export default async function Team({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const ctx = await requireStaff("staff.manage");
   const members = await listTeam(ctx);
+  const q = await queueStatus(ctx.workspaceId);
   const roles = Object.entries(ROLE_INFO).map(([value, v]) => ({ value, ...v }));
   return (
     <>
@@ -41,6 +44,12 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ e
       </section>
       <section aria-labelledby="inv" className="mb-12"><h2 id="inv" className="mb-3">Add or re-invite someone</h2>
         <InviteStaffForm roles={roles} /></section>
+      <section aria-labelledby="em" className="mb-12"><h2 id="em" className="mb-2">Email</h2>
+        {!q.configured ? <p className="border-l-4 border-warn bg-wash px-3 py-2 text-sm"><strong>Not connected.</strong> Add RESEND_API_KEY in Vercel to start sending. {q.pending} email(s) are waiting and will go out automatically once it is connected.</p>
+          : <p className="text-sm">{q.pending} waiting · {q.failed} failed.</p>}
+        {q.recent.length > 0 && <ul className="mt-2 text-sm">{q.recent.map((r) => <li key={r.id} className="row py-2"><span className="font-semibold">{r.topic.replace("email.", "")}</span> · {r.status} · tried {r.attempts}×<br /><span className="text-muted break-words">{r.lastError}</span></li>)}</ul>}
+        {q.failed > 0 && <form action={retryEmailsAction} className="mt-2"><button className="btn btn-quiet">Retry failed emails</button></form>}
+      </section>
       <section aria-labelledby="lv"><h2 id="lv" className="mb-2">What each level can do</h2>
         <ul>{roles.map((r) => <li key={r.value} className="row py-3"><strong>{r.label}</strong><span className="block text-sm text-muted">{r.summary}</span></li>)}</ul></section>
     </>
