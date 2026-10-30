@@ -12,6 +12,7 @@ export type EmailData = {
   invitation: { to: string; businessName: string; inviter: string; link: string; expires: string };
   password_reset: { to: string; name: string; link: string; minutes: number };
   password_changed: { to: string; name: string; when: string };
+  backup_reminder: { to: string; lastBackup: string; link: string };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
 };
 export type TemplateName = keyof EmailData;
@@ -104,6 +105,18 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Your password was changed\n\nHello ${d.name},\n\nYour OneSimpleSite password was changed on ${d.when}.\n\nIf this was you, there is nothing to do. If it was not, reply to this email straight away and we will lock the account.\n\nOneSimpleSite`,
+  }),
+  backup_reminder: (d) => ({
+    subject: "Weekly backup due: OneSimpleSite Manage",
+    node: (
+      <Layout preview="Time to download this week's backup">
+        <H>Your weekly backup is due</H>
+        <P>The last backup was {d.lastBackup}. Please download a fresh copy and store it somewhere private.</P>
+        <Action href={d.link}>Go to Backup</Action>
+        <P>This reminder repeats weekly until a backup is taken.</P>
+      </Layout>
+    ),
+    text: `Your weekly backup is due\n\nThe last backup was ${d.lastBackup}. Please download a fresh copy and store it somewhere private.\n\nGo to Backup: ${d.link}\n\nThis reminder repeats weekly until a backup is taken.\n\nOneSimpleSite`,
   }),
   staff_invitation: (d) => ({
     subject: `${d.inviter} added you to OneSimpleSite Manage`,

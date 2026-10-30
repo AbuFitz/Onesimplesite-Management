@@ -6,7 +6,7 @@ export const CAPS = [
   "contract.send", "contract.record_completion", "contract.void",
   "project.read_all", "project.read_assigned", "project.write",
   "billing.read", "billing.write", "billing.refund",
-  "calendar.write", "notes.write", "audit.read", "staff.manage", "settings.write", "email.send_as_department",
+  "calendar.write", "notes.write", "audit.read", "staff.manage", "settings.write", "email.send_as_department", "data.export",
 ] as const;
 export type Cap = (typeof CAPS)[number];
 

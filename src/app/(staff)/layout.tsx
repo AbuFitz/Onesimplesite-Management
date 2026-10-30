@@ -16,6 +16,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     { href: "/projects", label: "Projects", icon: "projects" },
     { href: "/calendar", label: "Calendar", icon: "calendar" },
     { href: "/notes", label: "Notes", icon: "notes" },
+    ...(can(ctx.role, "data.export") ? [{ href: "/backup", label: "Backup", icon: "backup" }] : []),
     ...(can(ctx.role, "staff.manage") ? [{ href: "/team", label: "Team", icon: "team" }] : []),
   ];
   return (

@@ -8,6 +8,7 @@ const fx = {
   signing_notice: { to: "x", title: "Harbour Bakery website", ref: "K-0003", business: "Harbour Bakery", signerName: "Casey Morgan", signerEmail: "casey@harbour.example", signedAt: "30 October 2026 at 14:05", link: "https://manage.example/contracts/1", fileSha: "a".repeat(64) },
   password_reset: { to: "x", name: "Casey Morgan", link: "https://manage.example/reset-password?token=abc", minutes: 60 },
   password_changed: { to: "x", name: "Casey Morgan", when: "30 October 2026 at 14:05" },
+  backup_reminder: { to: "x", lastBackup: "23 October 2026", link: "https://manage.example/backup" },
   staff_invitation: { to: "x", name: "Matthew Redican", inviter: "Abukar Sharif", roleLabel: "Team member", link: "https://manage.example/invite/token", expires: "6 November 2026" },
   invitation: { to: "x", businessName: "Harbour Bakery", inviter: "Farhan Mahmood", link: "https://portal.example/invite/token", expires: "6 November 2026" },
 } as const;

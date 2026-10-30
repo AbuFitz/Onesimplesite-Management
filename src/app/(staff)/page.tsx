@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
+import { lastExport, isBackupDue } from "@/modules/export/service";
 import { RecordHeader, Empty, fmtDateTime, fmtDate } from "@/components/ui";
 
 export const metadata = { title: "Today" };
@@ -12,6 +13,7 @@ export default async function Today() {
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(startOfDay.getTime() + 864e5);
   const seeCustomers = can(ctx.role, "customer.read");
+  const backupDue = can(ctx.role, "data.export") && isBackupDue(await lastExport(w));
   const [tasks, awaitingSig, sentProposals, assets, events, signed] = await Promise.all([
     db.task.findMany({ where: { workspaceId: w, assigneeId: ctx.staffId, doneAt: null }, orderBy: { dueDate: "asc" }, take: 8 }),
     seeCustomers ? db.contract.count({ where: { workspaceId: w, status: "awaiting_signature" } }) : 0,
@@ -28,6 +30,7 @@ export default async function Today() {
   return (
     <>
       <RecordHeader title={`Today, ${ctx.name.split(" ")[0]}`} action={can(ctx.role, "customer.write") && <Link href="/customers/new" className="btn hidden lg:inline-flex">New enquiry</Link>} />
+      {backupDue && <p className="mb-6 border-l-4 border-warn bg-wash px-3 py-2 text-sm"><strong>Weekly backup due.</strong> <Link className="underline" href="/backup">Download a backup</Link></p>}
       <section aria-labelledby="needs" className="mb-8">
         <h2 id="needs" className="mb-2">Needs attention</h2>
         <ul>
