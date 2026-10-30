@@ -41,7 +41,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       {sp.details && <p role="status" className="mb-6 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Details saved.</p>}
       <Tabs current={tab} tabs={[
         { id: "overview", label: "Overview", href: href("overview") },
-        { id: "agreements", label: "Agreements", href: href("agreements"), count: c.proposals.length + c.contracts.length },
+        { id: "agreements", label: "Tickets", href: href("agreements"), count: c.proposals.length + c.contracts.length },
         { id: "projects", label: "Projects", href: href("projects"), count: c.projects.length },
         { id: "notes", label: "Notes", href: href("notes"), count: notes.length },
         { id: "activity", label: "Activity", href: href("activity") },
@@ -50,7 +50,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       {tab === "overview" && (
         <>
           <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4">
-            <Stat label="Quotes" value={c.proposals.length} href={href("agreements")} />
+            <Stat label="Tickets" value={c.proposals.length} href={href("agreements")} />
             <Stat label="Signed agreements" value={c.contracts.filter((k) => k.status === "completed").length} href={href("agreements")} />
             <Stat label="Signed value (one-off)" value={money(signedValue)} />
             <Stat label="Projects" value={c.projects.length} href={href("projects")} />
@@ -79,8 +79,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       )}
 
       {tab === "agreements" && (
-        <Section title="Quotes and agreements">
-          {c.proposals.length + c.contracts.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`?new=ticket&customer=${c.id}`}>Create the first quote</Link></Empty> : (
+        <Section title="Tickets and signed agreements">
+          {c.proposals.length + c.contracts.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`?new=ticket&customer=${c.id}`}>Create the first ticket</Link></Empty> : (
             <ul>
               {c.proposals.map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Proposal {p.reference}</span></span><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
               {c.contracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}

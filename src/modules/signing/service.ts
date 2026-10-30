@@ -243,9 +243,9 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
       ...companyMissing(company).map((m) => `our ${m} (Settings)`),
       ...customerDetailsMissing(p.customer).map((m) => `the customer's ${m}`),
     ];
-    const published = await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, status: "published" } });
+    const published = await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind: "terms", status: "published" } });
     const useDraft = !published && process.env.ALLOW_DRAFT_TERMS === "true";
-    const terms = published ?? (useDraft ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId }, orderBy: { number: "desc" } }) : null);
+    const terms = published ?? (useDraft ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind: "terms" }, orderBy: { number: "desc" } }) : null);
     if (!terms) blockers.push("published Terms & Conditions (Settings)");
     if (blockers.length) throw new DomainError("validation", `Before sending, add: ${blockers.join("; ")}.`);
     const v = await tx.proposalVersion.findFirstOrThrow({ where: { proposalId, number: p.currentVersion }, include: { lines: { orderBy: { position: "asc" } } } });

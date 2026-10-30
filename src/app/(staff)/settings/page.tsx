@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
 import { getCompany, companyMissing } from "@/modules/settings/service";
 import { updateCompanyAction } from "@/app/actions/work";
+import { SettingsNav } from "@/components/settings-nav";
 import { RecordHeader, ErrorSummary } from "@/components/ui";
 
 export const metadata = { title: "Settings" };
@@ -12,10 +13,10 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const missing = companyMissing(c);
   return (
     <>
-      <RecordHeader title="Settings" meta="Company details and Terms & Conditions" />
+      <RecordHeader title="Settings" meta="Company details, legal documents and emails" />
       <ErrorSummary message={sp.error} />
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
-      <nav aria-label="Settings sections" className="mb-8 flex gap-2"><Link className="btn" href="/settings">Company details</Link><Link className="btn btn-quiet" href="/settings/terms">Terms &amp; Conditions</Link><Link className="btn btn-quiet" href="/settings/emails">Emails</Link></nav>
+      <SettingsNav current="company" />
       <section aria-labelledby="co" className="max-w-xl">
         <h2 id="co" className="mb-1">Our company details</h2>
         <p className="hint mb-4">These appear as the “Provider” on every agreement. Nothing is filled in for you. Agreements can't be sent until the legal name and registered address are set.</p>

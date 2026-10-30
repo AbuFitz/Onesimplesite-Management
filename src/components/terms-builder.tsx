@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 type Section = { heading: string; clauses: string[] };
@@ -21,16 +21,19 @@ const serialise = (s: Section[]) =>
     .map((x, i) => [`## ${x.heading.trim() || "Untitled section"}`, ...x.clauses.filter((c) => c.trim()).map((c, j) => `${i + 1}.${j + 1} ${c.replace(/\s*\n\s*/g, " ").trim()}`)].join("\n")).join("\n\n");
 
 /** Edit terms section by section. Numbers are looked after automatically; no markup to learn. */
-export function TermsBuilder({ initial, name = "body" }: { initial: string; name?: string }) {
+/** True when the whole document is plain sections and numbered clauses, so it can be edited without any markup. */
+export const canBuild = (body: string) => body.replace(/\r\n?/g, "\n").split("\n").every((l) => !l.trim() || /^#{2,3}\s/.test(l.trim()) || /^\d+(\.\d+)+\s/.test(l.trim()));
+
+export function TermsBuilder({ initial, onChange }: { initial: string; onChange: (body: string) => void }) {
   const [secs, setSecs] = useState<Section[]>(() => parse(initial));
   const body = useMemo(() => serialise(secs), [secs]);
+  useEffect(() => { onChange(body); }, [body, onChange]);
   const todo = secs.reduce((n, s) => n + s.clauses.filter((c) => /\[TBC:/i.test(c)).length, 0);
   const set = (i: number, f: (s: Section) => Section) => setSecs(secs.map((s, k) => (k === i ? f(s) : s)));
   const move = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= secs.length) return; const n = [...secs]; [n[i], n[j]] = [n[j], n[i]]; setSecs(n); };
 
   return (
     <div className="space-y-4">
-      <input type="hidden" name={name} value={body} />
       {todo > 0 && <p className="rounded-lg bg-[#fff6e5] px-3 py-2 text-sm text-warn">{todo} clause{todo > 1 ? "s" : ""} still say [TBC: …]. Replace them with the real wording before publishing.</p>}
       {secs.map((s, i) => (
         <section key={i} className="rounded-2xl border border-line p-4" aria-label={`Section ${i + 1}`}>

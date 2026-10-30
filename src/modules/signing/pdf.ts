@@ -99,6 +99,9 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
       const ls = wrap(safe(b.text), reg, 9, W - 20); const h = ls.length * 12.5 + 14;
       y -= 8; ensure(h + 6); page.drawRectangle({ x: M, y: y - h, width: W, height: h, color: BONE });
       ls.forEach((l, n) => page.drawText(l, { x: M + 10, y: y - 16 - n * 12.5, size: 9, font: reg, color: INK })); y -= h + 8;
+    } else if (b.t === "kv") { line(`${b.label}: ${b.value}`, reg, 9.5);
+    } else if (b.t === "table") { line(b.head.join("  |  "), bold, 9); for (const r of b.rows) line(r.join("  |  "), reg, 9); y -= 4;
+    } else if (b.t === "sign") { y -= 6; line(`${b.label}`, bold, 9.5); line("Signature: ______________________   Name: ______________________", reg, 9); line("Position: ______________________   Date: ______________________", reg, 9);
     } else if (b.t === "p") line(b.text, reg, 9.5);
     else y -= 5;
   }

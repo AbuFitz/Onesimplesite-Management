@@ -18,7 +18,7 @@ export default async function Today() {
   const [tasks, awaitingSig, sentProposals, activeProjects, assets, activeCustomers, events, signed] = await Promise.all([
     db.task.findMany({ where: { workspaceId: w, assigneeId: ctx.staffId, doneAt: null }, orderBy: { dueDate: "asc" }, take: 6 }),
     seeCustomers ? db.contract.count({ where: { workspaceId: w, status: "awaiting_signature" } }) : 0,
-    seeCustomers ? db.proposal.count({ where: { workspaceId: w, status: "sent" } }) : 0,
+    seeCustomers ? db.opportunity.count({ where: { workspaceId: w, stage: { in: ["new", "qualified", "proposal_sent"] } } }) : 0,
     db.project.count({ where: { workspaceId: w, stage: { notIn: ["completed", "cancelled", "launched"] }, ...mineOnly } }),
     db.project.count({ where: { workspaceId: w, stage: "awaiting_assets", ...mineOnly } }),
     seeCustomers ? db.customer.count({ where: { workspaceId: w, lifecycle: "active", archivedAt: null } }) : 0,
@@ -32,8 +32,8 @@ export default async function Today() {
       <RecordHeader title={`${greeting}, ${ctx.name.split(" ")[0]}`} meta={new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeZone: "Europe/London" }).format(new Date())} />
       {backupDue && <p className="mb-8 rounded-lg bg-[#fff3da] px-4 py-3 text-sm text-[#5c3b00]"><strong className="font-semibold">Weekly backup due.</strong> <Link className="underline" href="/backup">Download a backup</Link></p>}
       <div className="mb-12 grid grid-cols-2 gap-x-8 gap-y-4 border-b border-line pb-8 sm:grid-cols-4">
-        {seeCustomers && <Stat label="Awaiting signature" value={awaitingSig} href="/contracts?status=awaiting_signature" />}
-        {seeCustomers && <Stat label="Quotes out" value={sentProposals} href="/proposals?status=sent" />}
+        {seeCustomers && <Stat label="Waiting to sign" value={awaitingSig} href="/pipeline?stage=contract_pending" />}
+        {seeCustomers && <Stat label="Open tickets" value={sentProposals} href="/pipeline?stage=open" />}
         <Stat label="Projects in progress" value={activeProjects} href="/projects" hint={assets ? `${assets} waiting on client assets` : undefined} />
         {seeCustomers && <Stat label="Active customers" value={activeCustomers} href="/customers" />}
       </div>

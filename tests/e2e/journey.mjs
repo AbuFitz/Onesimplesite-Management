@@ -54,7 +54,7 @@ ok(true, "company details saved in Settings");
 
 // 2. Terms: starter has placeholders -> publish blocked -> write real terms -> publish
 await staff.goto(`${M}/settings/terms`);
-await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/terms\/[0-9a-f-]{36}/);
+await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
 if (await staff.locator("button:has-text('Publish version')").count()) {
   ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "publish is blocked while [TBC] placeholders remain");
   const clauses = staff.locator("textarea[aria-label^='Clause']");
@@ -63,12 +63,17 @@ if (await staff.locator("button:has-text('Publish version')").count()) {
   await staff.click("button:has-text('Publish version')"); await staff.waitForURL(/published=1/);
 }
 await staff.goto(`${M}/settings/terms`);
-ok(await staff.locator("text=Current terms").count() > 0, "terms published");
+ok(await staff.locator("text=Live: ").count() > 0, "terms published");
 
 // 3. Enquiry -> customer details -> proposal with requirements
+await staff.goto(`${M}/settings/legal`);
+ok((await staff.locator("main li h2").allInnerTexts()).join("|") === ["Terms and Conditions", "Privacy Notice", "Cookie Notice", "Website Terms", "Data Processing Agreement", "Change Request"].join("|"), "all six legal documents are listed");
+await staff.goto(`${M}/settings/legal/privacy`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/legal\/privacy\/[0-9a-f-]{36}/);
+ok((await staff.locator("article").first().innerText()).includes("Privacy Notice"), "privacy notice preview renders in the document layout");
+ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "privacy notice can't be published while decisions are open");
 await staff.goto(`${M}/settings/emails?e=signing_confirmation&w=phone`);
 ok(await staff.locator("iframe").count() === 1 && (await staff.locator("main").innerText()).includes("Signed copy"), "email preview page renders the customer emails");
-await staff.goto(`${M}/settings/terms`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/terms\/[0-9a-f-]{36}/);
+await staff.goto(`${M}/settings/terms`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
 const termsUrl = staff.url().split("?")[0];
 await staff.goto(`${termsUrl}/preview`);
 ok((await staff.locator("article").first().innerText()).includes("Order summary".toUpperCase()) || (await staff.locator("article").first().innerText()).toLowerCase().includes("order summary"), "full document preview shows the whole agreement");
@@ -91,9 +96,9 @@ await staff.click("button:has-text('Save details')"); await staff.waitForURL(/de
 ok(true, "customer details entered by the team");
 await staff.goto(earlyProposal);
 const proposalUrl = staff.url();
-ok(await staff.locator("button:has-text('Send agreement')").isEnabled(), "send is enabled once company, customer and terms are ready");
+ok(await staff.locator("button:has-text('Send for signature')").isEnabled(), "send is enabled once company, customer and terms are ready");
 await staff.fill("#sn", "Casey Morgan");
-await staff.click("button:has-text('Send agreement')"); await staff.waitForURL(/sent=1/);
+await staff.click("button:has-text('Send for signature')"); await staff.waitForURL(/sent=1/);
 drain();
 
 // 4. Exactly one customer email
@@ -133,7 +138,7 @@ ok(conf?.attachments?.length === 1, "customer gets confirmation with the signed 
 ok(notice?.to === "hello@onesimplesite.co.uk" && notice.attachments?.length === 1, "hello@ gets the internal notice with the signed PDF");
 await staff.goto(proposalUrl);
 ok(await staff.locator("text=accepted").count() > 0, "proposal is now accepted (signing = acceptance)");
-await staff.click("a:has-text('Open agreement')"); await staff.waitForURL(/\/contracts\//);
+await staff.click("a:has-text('Open signed copy and status')"); await staff.waitForURL(/\/contracts\//);
 const contractPath = new URL(staff.url()).pathname;
 ok(await staff.locator("text=Completed").count() > 0, "agreement completed");
 const pdf = await get(staff, contractPath + "/pdf");

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
 import { renderEmail, type TemplateName } from "@/emails/templates";
+import { SettingsNav } from "@/components/settings-nav";
 import { RecordHeader } from "@/components/ui";
 
 export const metadata = { title: "Emails" };
@@ -8,7 +9,7 @@ export const metadata = { title: "Emails" };
 const SAMPLE_LINK = "https://portal.onesimplesite.co.uk/s/example";
 /** Every email the system sends, in the order a customer meets them, with what triggers it. */
 const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "Team"; when: string }[] = [
-  { id: "contract_request", label: "Agreement to sign", audience: "Customer", when: "When you press Send agreement on a quote. One email, one link." },
+  { id: "contract_request", label: "Agreement to sign", audience: "Customer", when: "When you press Send for signature on a ticket. One email, one link." },
   { id: "signing_confirmation", label: "Signed copy", audience: "Customer", when: "Straight after they sign. The signed PDF is attached." },
   { id: "invitation", label: "Portal invitation", audience: "Customer", when: "When you invite a customer to their client portal." },
   { id: "password_reset", label: "Password reset", audience: "Customer", when: "When anyone asks to reset a password." },
@@ -42,8 +43,8 @@ export default async function Emails({ searchParams }: { searchParams: Promise<{
   const href = (e: string, w = phone ? "phone" : "desktop") => `/settings/emails?e=${e}&w=${w}`;
   return (
     <>
-      <RecordHeader title="Settings" meta="Company details, Terms & Conditions and emails" />
-      <nav aria-label="Settings sections" className="mb-8 flex gap-2"><Link className="btn btn-quiet" href="/settings">Company details</Link><Link className="btn btn-quiet" href="/settings/terms">Terms &amp; Conditions</Link><Link className="btn" href="/settings/emails">Emails</Link></nav>
+      <RecordHeader title="Settings" meta="Company details, legal documents and emails" />
+      <SettingsNav current="emails" />
       <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
         <nav aria-label="Emails" className="space-y-5">
           {(["Customer", "Team"] as const).map((aud) => (

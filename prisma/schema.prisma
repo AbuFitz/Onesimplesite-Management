@@ -709,6 +709,7 @@ model ContractDocument {
 model TermsVersion {
   id          String    @id @default(uuid()) @db.Uuid
   workspaceId String    @db.Uuid
+  kind        String    @default("terms") // terms | privacy | cookies | website_terms | dpa | change_request
   number      Int
   title       String    @default("Terms and Conditions")
   body        String // same simple markup as agreements: "## Heading" sections and "1.1 clause" lines
@@ -718,8 +719,8 @@ model TermsVersion {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  @@unique([workspaceId, number])
-  @@index([workspaceId, status])
+  @@unique([workspaceId, kind, number])
+  @@index([workspaceId, kind, status])
 }
 
 /// Shared team password vault. The secret is AES-256-GCM encrypted by the app before it is stored; never plain text.

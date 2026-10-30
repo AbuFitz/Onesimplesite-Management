@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Exact-host routing. Hosts come from configuration, never from trusting Host for links.
- * portal host: serves /portal/* (rewritten), /p/* (public proposal) and /api/auth/portal only.
+ * portal host: serves /portal/* (rewritten), /p/* (public proposal), /s/* (signing), /legal/* (public legal pages) and /api/auth/portal only.
  * manage host: serves everything except /portal.
  * Unknown hosts are refused. This is defence in depth; every handler still checks permissions.
  */
@@ -14,7 +14,7 @@ export function proxy(req: NextRequest) {
   const h = req.headers.get("host");
   const { pathname } = req.nextUrl;
   if (h === portal) {
-    if (pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || pathname === "/login" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next();
+    if (pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || pathname === "/login" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next();
     if (pathname.startsWith("/portal")) return NextResponse.next();
     const url = req.nextUrl.clone();
     url.pathname = `/portal${pathname === "/" ? "/overview" : pathname}`;

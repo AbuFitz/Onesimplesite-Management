@@ -1,5 +1,7 @@
 # Implementation status (30 Oct 2026)
 
+> **Out of date.** See `WHATS-BUILT.md` for the current state. This table describes the first build.
+
 Legend: **IT** implemented + tested locally · **IU** implemented, unconnected to a live provider · **P** partial · **D** deferred · **B** blocked on owner input.
 "Tested" means local automated tests (19 domain/DB tests, one Chromium journey that includes the full propose → sign → email → portal path). No live provider evidence exists. Not tested on WebKit, physical iOS/Android, Gmail/Outlook, or with real credentials.
 

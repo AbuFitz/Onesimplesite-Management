@@ -113,22 +113,25 @@ export async function retryEmailsAction() {
 }
 
 import { updateCompany, saveTermsDraft, publishTerms } from "@/modules/settings/service";
+import { isLegalKind } from "@/modules/settings/legal-docs";
 
 export async function updateCompanyAction(fd: FormData) {
   const ctx = await requireStaff("settings.write");
   try { await updateCompany(ctx, { legalName: fd.get("legalName") || undefined, companyNumber: fd.get("companyNumber") || undefined, registeredAddress: fd.get("registeredAddress") || undefined, vatNumber: fd.get("vatNumber") || undefined }); } catch (e) { return back("/settings", e); }
   redirect("/settings?saved=1");
 }
-export async function saveTermsAction(fd: FormData) {
+export async function saveLegalAction(_: unknown, fd: FormData): Promise<{ error?: string }> {
   const ctx = await requireStaff("settings.write");
+  const kind = String(fd.get("kind") ?? "");
+  if (!isLegalKind(kind)) return { error: "Unknown document." };
   const id = String(fd.get("id") || "") || null;
   let nid: string;
-  try { nid = (await saveTermsDraft(ctx, id, { title: fd.get("title"), body: fd.get("body") })).id; } catch (e) { return back(id ? `/settings/terms/${id}` : "/settings/terms", e); }
-  redirect(`/settings/terms/${nid}?saved=1`);
+  try { nid = (await saveTermsDraft(ctx, id, { title: fd.get("title"), body: fd.get("body") }, kind)).id; } catch (e) { return { error: msg(e) }; }
+  redirect(`/settings/legal/${kind}/${nid}?saved=1`);
 }
-export async function publishTermsAction(fd: FormData) {
+export async function publishLegalAction(fd: FormData) {
   const ctx = await requireStaff("settings.write");
-  const id = String(fd.get("id"));
-  try { await publishTerms(ctx, id); } catch (e) { return back(`/settings/terms/${id}`, e); }
-  redirect("/settings/terms?published=1");
+  const id = String(fd.get("id")), kind = String(fd.get("kind") ?? "terms");
+  try { await publishTerms(ctx, id); } catch (e) { return back(`/settings/legal/${kind}/${id}`, e); }
+  redirect(`/settings/legal/${kind}?published=1`);
 }

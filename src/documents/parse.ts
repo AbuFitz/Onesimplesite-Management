@@ -5,6 +5,9 @@
  *   1.1 Clause text               (clause number kept as written)
  *   - bullet
  *   note: highlighted note
+ *   kv: Label | Value             (a row in a details list)
+ *   | a | b | c |                 (a table; the first row is the header)
+ *   sign: Who signs               (a signature box: signature, name, position, date)
  *   Sub-heading:                  (a line ending in ":" and short, or a known label)
  * Everything else is a paragraph. Blank lines are spacing.
  */
@@ -16,6 +19,9 @@ export type Block =
   | { t: "clause"; n: string; text: string }
   | { t: "bullet"; text: string }
   | { t: "note"; text: string }
+  | { t: "kv"; label: string; value: string }
+  | { t: "table"; head: string[]; rows: string[][] }
+  | { t: "sign"; label: string }
   | { t: "p"; text: string }
   | { t: "gap" };
 
@@ -32,6 +38,14 @@ export function parseDoc(text: string): Block[] {
     else if ((m = l.match(/^###\s+(.*)$/))) out.push({ t: "tsec", no: String(++tsec), text: m[1].trim() });
     else if ((m = l.match(/^##\s+(.*)$/))) out.push({ t: "h", no: String(++section).padStart(2, "0"), text: m[1].trim() });
     else if ((m = l.match(/^note:\s*(.*)$/i))) out.push({ t: "note", text: m[1].trim() });
+    else if ((m = l.match(/^kv:\s*([^|]*)\|(.*)$/i))) out.push({ t: "kv", label: m[1].trim(), value: m[2].trim() });
+    else if ((m = l.match(/^sign:\s*(.*)$/i))) out.push({ t: "sign", label: m[1].trim() });
+    else if (l.trim().startsWith("|")) {
+      const cells = l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue; // separator row
+      const last = out[out.length - 1];
+      if (last?.t === "table") last.rows.push(cells); else out.push({ t: "table", head: cells, rows: [] });
+    }
     else if ((m = l.match(/^(\d+(?:\.\d+)+)\s+(.*)$/))) out.push({ t: "clause", n: m[1], text: m[2] });
     else if ((m = l.match(/^[-•]\s+(.*)$/))) out.push({ t: "bullet", text: m[1] });
     else if (SUBS.has(l.trim()) || (/^[A-Z][^.!?]{0,60}:$/.test(l.trim()))) out.push({ t: "sub", text: l.trim().replace(/:$/, "") });

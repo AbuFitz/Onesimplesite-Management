@@ -6,7 +6,7 @@ import { RecordHeader } from "@/components/ui";
 export const metadata = { title: "More" };
 export default async function More() {
   await requireStaff();
-  const items = [["/pipeline", "Tickets"], ["/proposals", "Quotes"], ["/contracts", "Agreements"], ["/notes", "Notes"], ["/projects", "Projects"], ["/account", "My account"]];
+  const items = [["/pipeline", "Tickets"], ["/notes", "Notes"], ["/projects", "Projects"], ["/account", "My account"]];
   return (
     <>
       <RecordHeader title="More" />
