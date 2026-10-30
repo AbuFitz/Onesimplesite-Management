@@ -1,0 +1,34 @@
+{
+  "prepared_date": "2026-10-30",
+  "retrieved_at_utc": "2026-10-30T11:28:36.483511+00:00",
+  "status": "Existing website branding exported; no redesign or legal clearance performed.",
+  "wordmark_reconstruction": {
+    "text": "onesimplesite",
+    "font": "Inter",
+    "weight": 700,
+    "tracking_em": -0.06,
+    "outlined": true
+  },
+  "sources": [
+    {
+      "url": "https://onesimplesite.co.uk/",
+      "bytes": 6557,
+      "sha256": "bbc064b95c27d1e6ea6366fcd1dde14fbca08b4906c4956ec1c00a5da7e31055"
+    },
+    {
+      "url": "https://onesimplesite.co.uk/assets/index-CY1qC0AK.js",
+      "bytes": 412174,
+      "sha256": "d4b3c673affbba6136302564f667eea94b224a77c473af25fcbe385d692ed198"
+    },
+    {
+      "url": "https://onesimplesite.co.uk/assets/index-CRQzIYvb.css",
+      "bytes": 201018,
+      "sha256": "d097b903bff6744f4cbb5dd3510e47fde4382a37e7ccf746b0304f290ea6c4e0"
+    },
+    {
+      "url": "https://onesimplesite.co.uk/assets/inter-latin-wght-normal-Dx4kXJAl.woff2",
+      "bytes": 48256,
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
+    }
+  ]
+}
