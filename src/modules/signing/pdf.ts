@@ -48,7 +48,7 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
   write(i.title, bold, 20, ink, 1.3); y -= 4;
   write(`Reference ${i.reference}`, reg, 10, grey); y -= 14;
   writeBody(i.contentText);
-  y -= 12; ensure(236); // keep the whole signature block together on one page
+  y -= 12; ensure(212); // keep the whole signature block together on one page
   page.drawLine({ start: { x: M, y }, end: { x: M + W, y }, thickness: 0.6, color: grey }); y -= 14;
   write("Signed electronically", bold, 12); y -= 2;
   write(`${i.signerName} (${i.signerEmail})`, reg, 11);
