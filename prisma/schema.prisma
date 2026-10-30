@@ -79,6 +79,9 @@ model TwoFactor {
   secret      String
   backupCodes String
   userId      String
+  verified    Boolean   @default(true)
+  failedVerificationCount Int @default(0)
+  lockedUntil DateTime?
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -220,7 +223,7 @@ model Contact {
   marketingOptIn Boolean @default(false)
   createdAt   DateTime @default(now())
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
 
   @@index([workspaceId, customerId])
   @@index([workspaceId, email])
@@ -249,7 +252,7 @@ model Opportunity {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   proposals Proposal[]
 
   @@index([workspaceId, stage])
@@ -281,7 +284,7 @@ model Proposal {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  customer    Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   opportunity Opportunity?      @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
   versions    ProposalVersion[]
 
@@ -395,7 +398,7 @@ model Contract {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   proposalVersion ProposalVersion? @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
   project         Project?
   billingIntents  BillingIntent[]
@@ -436,7 +439,7 @@ model Project {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   contract Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
   tasks    Task[]
   updates  ProjectUpdate[]

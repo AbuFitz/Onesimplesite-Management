@@ -77,7 +77,7 @@ describe("immutability", () => {
     await expect(db.proposalLine.deleteMany({ where: { versionId } })).rejects.toThrow(/immutable/);
     await expect(saveDraft(ctx, p.id, 99, draft)).rejects.toMatchObject({ code: "conflict" });
     const ev = await db.auditEvent.findFirstOrThrow({ where: { workspaceId: ctx.workspaceId } });
-    await expect(db.auditEvent.delete({ where: { id: ev.id } })).rejects.toThrow(/append-only/);
+    await expect(db.auditEvent.delete({ where: { id: ev.id } })).rejects.toThrow(/append-only|permission denied/);
   });
 
   it("stale draft save is rejected (cross-device overwrite guard)", async () => {

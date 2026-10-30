@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #faf8f4;
+  --color-ink: #0e1311;
+  --color-muted: #5b625f;
+  --color-line: #e4e0d8;
+  --color-wash: #f1eee7;
+  --color-moss: #0c6a49;
+  --color-warn: #8a5a00;
+  --color-danger: #a12a1f;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-control: 8px;
+  --radius-sheet: 12px;
+}
+
+html { background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; }
+body { min-height: 100dvh; }
+:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: 0 1rem; border-radius: var(--radius-control); border: 1px solid var(--color-ink); background: var(--color-ink); color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-quiet { background: transparent; color: var(--color-ink); border-color: var(--color-line); }
+.btn-quiet:hover { background: var(--color-wash); }
+.field { display: block; width: 100%; min-height: 44px; padding: .5rem .75rem; border-radius: var(--radius-control); border: 1px solid #c9c4b9; background: #fff; font-size: 16px; }
+textarea.field { min-height: 7rem; }
+.label { display: block; font-size: 13px; font-weight: 600; margin-bottom: .25rem; }
+.hint { font-size: 12px; color: var(--color-muted); }
+.row { border-top: 1px solid var(--color-line); }
+.th { font-size: 12px; font-weight: 600; color: var(--color-muted); text-align: left; padding: .5rem .75rem; }
+.td { padding: .75rem; vertical-align: top; }
+.page { padding: 1rem 1rem 6rem; max-width: 72rem; }
+@media (min-width: 1024px) { .page { padding: 1.75rem 2rem 3rem; } }
+h1 { font-size: 28px; line-height: 1.2; font-weight: 700; letter-spacing: -.01em; }
+h2 { font-size: 20px; font-weight: 650; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }

@@ -2,8 +2,8 @@ import { z } from "zod";
 
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
-  MANAGE_ORIGIN: z.url().default("http://localhost:3000"),
-  PORTAL_ORIGIN: z.url().default("http://localhost:3001"),
+  MANAGE_ORIGIN: z.url().default("http://manage.localhost:3000"),
+  PORTAL_ORIGIN: z.url().default("http://portal.localhost:3000"),
   APP_ENV: z.enum(["development", "staging", "production", "test"]).default("development"),
   BETTER_AUTH_SECRET: z.string().min(32),
   RESEND_API_KEY: z.string().optional(),

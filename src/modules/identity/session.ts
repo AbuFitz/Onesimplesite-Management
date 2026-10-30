@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { staffAuth, portalAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { forbidden } from "@/lib/errors";
 import { can, type Cap } from "./permissions";
 
 export type StaffCtx = NonNullable<Awaited<ReturnType<typeof getStaff>>>;
@@ -18,7 +17,7 @@ export async function getStaff() {
 export async function requireStaff(cap?: Cap) {
   const c = await getStaff();
   if (!c) redirect("/login");
-  if (cap && !can(c.role, cap)) throw forbidden();
+  if (cap && !can(c.role, cap)) redirect("/denied");
   return c;
 }
 

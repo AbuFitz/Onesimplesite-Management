@@ -1,0 +1,70 @@
+"use server";
+import { redirect } from "next/navigation";
+import { ZodError } from "zod";
+import { requireStaff } from "@/modules/identity/session";
+import { transitionProject, postUpdate, requestAsset, addTask } from "@/modules/projects/service";
+import { createEvent, cancelEvent } from "@/modules/calendar/service";
+import { createNote, saveNote, archiveNote } from "@/modules/notes/service";
+import { DomainError } from "@/lib/errors";
+
+const msg = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join("; ") : "Something went wrong. Nothing was changed.");
+const back = (path: string, e: unknown): never => redirect(`${path}${path.includes("?") ? "&" : "?"}error=${encodeURIComponent(msg(e))}`);
+
+export async function transitionAction(fd: FormData) {
+  const ctx = await requireStaff("project.write");
+  const id = String(fd.get("id"));
+  try { await transitionProject(ctx, id, fd.get("stage") as never, Number(fd.get("version")), String(fd.get("override") ?? "")); } catch (e) { return back(`/projects/${id}`, e); }
+  redirect(`/projects/${id}`);
+}
+export async function updateAction(fd: FormData) {
+  const ctx = await requireStaff("project.write");
+  const id = String(fd.get("id"));
+  try { await postUpdate(ctx, id, { body: fd.get("body"), clientVisible: fd.get("clientVisible") === "on" }); } catch (e) { return back(`/projects/${id}`, e); }
+  redirect(`/projects/${id}`);
+}
+export async function assetAction(fd: FormData) {
+  const ctx = await requireStaff("project.write");
+  const id = String(fd.get("id"));
+  try { await requestAsset(ctx, id, { label: fd.get("label"), required: fd.get("required") === "on", dueDate: fd.get("dueDate") || undefined }); } catch (e) { return back(`/projects/${id}`, e); }
+  redirect(`/projects/${id}`);
+}
+export async function taskAction(fd: FormData) {
+  const ctx = await requireStaff("project.write");
+  const id = String(fd.get("id"));
+  try { await addTask(ctx, id, String(fd.get("title")), String(fd.get("dueDate") || "") || undefined); } catch (e) { return back(`/projects/${id}`, e); }
+  redirect(`/projects/${id}`);
+}
+
+export async function createEventAction(fd: FormData) {
+  const ctx = await requireStaff("calendar.write");
+  try {
+    await createEvent(ctx, {
+      title: fd.get("title"), type: fd.get("type"), startsAt: new Date(String(fd.get("startsAt"))), endsAt: new Date(String(fd.get("endsAt"))),
+      location: fd.get("location") || undefined, description: fd.get("description") || undefined, customerId: fd.get("customerId") || undefined, attendeeIds: fd.getAll("attendee").map(String),
+    });
+  } catch (e) { return back("/calendar/new", e); }
+  redirect("/calendar");
+}
+export async function cancelEventAction(fd: FormData) {
+  const ctx = await requireStaff("calendar.write");
+  try { await cancelEvent(ctx, String(fd.get("id")), Number(fd.get("version"))); } catch (e) { return back("/calendar", e); }
+  redirect("/calendar");
+}
+
+export async function createNoteAction(fd: FormData) {
+  const ctx = await requireStaff("notes.write");
+  let id: string;
+  try { id = (await createNote(ctx, { title: fd.get("title"), body: fd.get("body") ?? "", visibility: fd.get("visibility") ?? "team" }, { customerId: String(fd.get("customerId") || "") || undefined })).id; } catch (e) { return back("/notes", e); }
+  redirect(`/notes/${id}`);
+}
+export async function saveNoteAction(fd: FormData) {
+  const ctx = await requireStaff("notes.write");
+  const id = String(fd.get("id"));
+  try { await saveNote(ctx, id, Number(fd.get("version")), { title: fd.get("title"), body: fd.get("body"), visibility: fd.get("visibility") }); } catch (e) { return back(`/notes/${id}`, e); }
+  redirect(`/notes/${id}?saved=1`);
+}
+export async function archiveNoteAction(fd: FormData) {
+  const ctx = await requireStaff("notes.write");
+  try { await archiveNote(ctx, String(fd.get("id"))); } catch (e) { return back("/notes", e); }
+  redirect("/notes");
+}
