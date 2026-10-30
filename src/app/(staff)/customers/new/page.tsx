@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Old address. Adding a customer now happens in the New job popup. */
+/** Old address. Adding a customer now happens in the New ticket popup. */
 export default function NewLead() {
-  redirect("/?new=job");
+  redirect("/?new=ticket");
 }

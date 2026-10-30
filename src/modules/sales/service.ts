@@ -202,8 +202,9 @@ export async function acceptProposal(token: string, raw: unknown, evidence: { ip
       return { acceptanceId: acc.id, contractId: contract.id, duplicate: false };
     });
   } catch (e) {
-    // Concurrent/duplicate acceptance: the unique constraint rolled our tx back; the winner already committed.
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+    // Concurrent/duplicate acceptance: either the unique constraint rolled our tx back, or the winner had already
+    // committed and used the link. Either way the version is accepted, so replay the same result.
+    if ((e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") || (e instanceof DomainError && e.code === "expired_link")) {
       const t = await db.scopedLinkToken.findUnique({ where: { tokenHash: sha256(token) } });
       if (t) {
         const acc = await db.proposalAcceptance.findUnique({ where: { versionId: t.entityId } });

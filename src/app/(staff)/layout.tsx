@@ -1,3 +1,5 @@
+import { getMyProfile, profileMissing } from "@/modules/identity/profile";
+import { ArrowRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { NewJob } from "@/components/new-job";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -18,10 +20,10 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   // Only built modules appear. Unfinished modules are hidden, not faked.
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
-    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Deals", icon: "pipeline" }, { href: "/proposals", label: "Quotes", icon: "proposals" }, { href: "/contracts", label: "Agreements", icon: "contracts" }] }] : []),
+    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Tickets", icon: "pipeline" }, { href: "/proposals", label: "Quotes", icon: "proposals" }, { href: "/contracts", label: "Agreements", icon: "contracts" }] }] : []),
     { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/notes", label: "Notes", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
-    { label: "Admin", items: [
-      ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Settings", icon: "settings" }] : []),
+    { label: "Business", items: [
+      ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Business settings", icon: "settings" }] : []),
       ...(can(ctx.role, "data.export") ? [{ href: "/backup", label: "Backup", icon: "backup" }] : []),
       ...(can(ctx.role, "staff.manage") ? [{ href: "/team", label: "Team", icon: "team" }] : []),
     ] },
@@ -32,16 +34,22 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const jobTeam = can(ctx.role, "proposal.write")
     ? (await db.staffMembership.findMany({ where: { workspaceId: ctx.workspaceId, status: "active", id: { not: ctx.staffId } }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true } })).map((m) => ({ id: m.id, name: m.displayName }))
     : [];
+  const profileTodo = profileMissing(await getMyProfile(ctx));
   const create = [
-    ...(can(ctx.role, "proposal.write") ? [{ href: "?new=job", label: "New job" }] : []),
+    ...(can(ctx.role, "proposal.write") ? [{ href: "?new=ticket", label: "New ticket" }] : []),
     ...(can(ctx.role, "calendar.write") ? [{ href: "/calendar/new", label: "New event" }] : []),
     ...(can(ctx.role, "notes.write") ? [{ href: "/notes", label: "New note" }] : []),
   ];
   return (
-    <div className="min-h-dvh bg-white">
+    <div className="min-h-dvh bg-white lg:bg-app">
       <LiveRefresh />
+      {profileTodo.length > 0 && (
+        <Link href="/account" className="flex items-center justify-center gap-2 bg-[#eef7f2] px-4 py-2 text-center text-sm text-moss hover:bg-[#e3f2ea]">
+          <span>Finish setting up your profile: add your {profileTodo.join(" and ")}.</span><ArrowRight size={15} aria-hidden />
+        </Link>
+      )}
       {can(ctx.role, "proposal.write") && <NewJob customers={jobCustomers} team={jobTeam} />}
-      <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <header className="sticky top-0 z-30 border-b border-line bg-white shadow-[0_1px_0_rgba(14,19,17,.03)]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
           <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[11rem]">
             <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={126} height={26} priority />
@@ -61,8 +69,8 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         </div>
       </header>
       <div className="lg:grid lg:grid-cols-[14.5rem_1fr]">
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] overflow-y-auto border-r border-line p-3 lg:block"><SideNav groups={groups} /></aside>
-        <main id="main" className="page min-w-0">{children}</main>
+        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] overflow-y-auto p-3 lg:block"><SideNav groups={groups} /></aside>
+        <main id="main" className="page panel min-w-0">{children}</main>
       </div>
       <BottomNav />
     </div>

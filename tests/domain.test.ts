@@ -27,7 +27,8 @@ describe("proposal acceptance", () => {
     const ctx = await workspace("a");
     const { token, versionId } = await sentProposal(ctx);
     const results = await Promise.allSettled(Array.from({ length: 6 }, () => acceptProposal(token, { name: "Ann", consent: true }, {})));
-    expect(results.every((r) => r.status === "fulfilled")).toBe(true);
+    const rej = results.filter((r) => r.status === "rejected").map((r) => String((r as PromiseRejectedResult).reason?.message ?? (r as PromiseRejectedResult).reason).slice(0, 300));
+    expect(rej, "rejections").toEqual([]);
     const ids = new Set(results.map((r) => (r as PromiseFulfilledResult<{ contractId: string }>).value.contractId));
     expect(ids.size).toBe(1);
     expect(await db.proposalAcceptance.count({ where: { versionId } })).toBe(1);

@@ -1,4 +1,4 @@
-/** Plain-English choices for the New job popup. Pure data, safe to import in the browser. */
+/** Plain-English choices for the New ticket popup. Pure data, safe to import in the browser. */
 export const CATEGORIES = [
   "Trades and building", "Food and drink", "Health and beauty", "Shops and retail", "Professional services",
   "Property", "Education and kids", "Charity and community", "Events and leisure", "Something else",

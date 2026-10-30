@@ -6,6 +6,7 @@ import { transitionProject, postUpdate, requestAsset, addTask } from "@/modules/
 import { createEvent, cancelEvent } from "@/modules/calendar/service";
 import { createNote, saveNote, archiveNote } from "@/modules/notes/service";
 import { DomainError } from "@/lib/errors";
+import { londonToUtc } from "@/lib/london";
 import { flushEmails } from "@/lib/flush-email";
 
 const msg = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join("; ") : "Something went wrong. Nothing was changed.");
@@ -45,6 +46,18 @@ export async function createEventAction(fd: FormData) {
     });
   } catch (e) { return back("/calendar/new", e); }
   redirect("/calendar");
+}
+export async function quickEventAction(fd: FormData) {
+  const ctx = await requireStaff("calendar.write");
+  const date = String(fd.get("date") ?? ""), time = String(fd.get("time") ?? "09:00"), mins = Math.min(1440, Math.max(5, Number(fd.get("minutes")) || 60));
+  const month = String(fd.get("month") ?? date.slice(0, 7));
+  const to = (q = "") => `/calendar?month=${month}&day=${date}${q}`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return redirect(to(`&error=${encodeURIComponent("Pick a date and time.")}`));
+  try {
+    const start = londonToUtc(date, time);
+    await createEvent(ctx, { title: fd.get("title"), type: "internal_meeting", startsAt: start, endsAt: new Date(start.getTime() + mins * 60_000), location: fd.get("location") || undefined, attendeeIds: [] });
+  } catch (e) { return redirect(to(`&error=${encodeURIComponent(msg(e))}`)); }
+  redirect(to());
 }
 export async function cancelEventAction(fd: FormData) {
   const ctx = await requireStaff("calendar.write");

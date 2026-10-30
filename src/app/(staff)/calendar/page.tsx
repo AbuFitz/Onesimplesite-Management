@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { can } from "@/modules/identity/permissions";
 import { requireStaff } from "@/modules/identity/session";
 import { listEvents } from "@/modules/calendar/service";
-import { cancelEventAction } from "@/app/actions/work";
+import { cancelEventAction, quickEventAction } from "@/app/actions/work";
 import { RecordHeader, Status, Empty, ErrorSummary } from "@/components/ui";
 
 export const metadata = { title: "Calendar" };
@@ -78,7 +79,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
       </div>
 
       <section className="mt-6" aria-labelledby="day-h">
-        <div className="mb-2 flex items-center justify-between"><h2 id="day-h" className="text-base">{selLabel}</h2><Link className="text-sm underline" href="/calendar/new">Add event</Link></div>
+        <div className="mb-2 flex items-center justify-between"><h2 id="day-h" className="text-base">{selLabel}</h2></div>
         {dayEvents.length === 0 ? <Empty title="Nothing on this day"><Link className="underline" href="/calendar/new">Add an event</Link></Empty> : (
           <ul>{dayEvents.map((e) => (
             <li key={e.id} className="row flex flex-wrap items-start justify-between gap-3 py-3">
@@ -86,6 +87,18 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
               <div className="flex gap-2"><a className="btn btn-quiet" href={`/calendar/${e.id}/ics`}>Add to calendar</a>
                 {e.status === "scheduled" && <form action={cancelEventAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="version" value={e.version} /><button className="btn btn-quiet">Cancel event</button></form>}</div>
             </li>))}</ul>
+        )}
+        {can(ctx.role, "calendar.write") && (
+          <form action={quickEventAction} className="mt-4 grid gap-3 rounded-2xl border border-line p-4 sm:grid-cols-[1fr_7.5rem_8rem] sm:items-end">
+            <input type="hidden" name="date" value={selected} /><input type="hidden" name="month" value={m} />
+            <div className="sm:col-span-3"><p className="text-sm font-semibold">Add to {selLabel}</p></div>
+            <div><label className="label" htmlFor="qe-t">What is it?</label><input id="qe-t" name="title" className="field" placeholder="e.g. Call with Alex" required autoComplete="off" /></div>
+            <div><label className="label" htmlFor="qe-s">Starts</label><input id="qe-s" name="time" type="time" className="field" defaultValue="09:00" required step={900} /></div>
+            <div><label className="label" htmlFor="qe-d">Length</label>
+              <select id="qe-d" name="minutes" className="field" defaultValue="60">{[[15, "15 min"], [30, "30 min"], [60, "1 hour"], [90, "1.5 hours"], [120, "2 hours"], [240, "Half a day"], [480, "All day"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+            <div className="sm:col-span-2"><label className="label" htmlFor="qe-l">Where? <span className="font-normal text-muted">(optional)</span></label><input id="qe-l" name="location" className="field" autoComplete="off" /></div>
+            <button className="btn">Add event</button>
+          </form>
         )}
         <p className="hint mt-3">Shows events created here, not external calendars.</p>
       </section>

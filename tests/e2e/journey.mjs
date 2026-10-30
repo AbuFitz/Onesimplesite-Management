@@ -24,6 +24,28 @@ async function login(ctx, origin, email) {
 const stamp = Date.now(), name = `E2E Bakery ${stamp}`, title = `Website with bookings for E2E Bakery ${stamp}`, email = `casey.${stamp}@e2e.test`;
 const staff = await login(await browser.newContext({ viewport: { width: 1280, height: 900 } }), M, "demo.owner@example.test");
 
+// 0. My account: first-time profile banner, job title, signature with live preview
+execSync(`npx tsx --env-file=.env -e "import('./src/lib/db.ts').then(({db})=>db.staffMembership.updateMany({where:{email:'demo.owner@example.test'},data:{jobTitle:null,signature:null}})).then(()=>process.exit(0))"`, { stdio: "ignore" });
+await staff.goto(`${M}/`);
+ok((await staff.locator("a[href='/account']").first().innerText()).includes("Finish setting up your profile"), "new members see the finish-your-profile banner");
+await staff.click("a:has-text('Finish setting up your profile')"); await staff.waitForURL(/\/account/);
+await staff.fill("#pf-title", "Director"); await staff.click("button:has-text('Write one for me')");
+ok((await staff.locator("main").innerText()).includes("Director"), "signature preview updates live");
+await staff.click("button:has-text('Save profile')"); await staff.waitForSelector("text=Saved.");
+await staff.goto(`${M}/`);
+ok(await staff.locator("text=Finish setting up your profile").count() === 0, "banner disappears once the profile is complete");
+
+// 0b. Notes autosave and calendar quick-add
+await staff.goto(`${M}/notes`); await staff.click("button:has-text('New page')"); await staff.waitForURL(/\/notes\/[0-9a-f-]{36}/);
+await staff.fill("#np-title", "Kick-off notes"); await staff.fill("#np-body", "# Plan\n- [ ] Call the customer");
+await staff.waitForSelector("[role=status]:has-text('Saved')", { timeout: 8000 });
+await staff.reload();
+ok((await staff.locator("main").innerText()).includes("Call the customer"), "note saved itself without pressing save");
+await staff.click("input[type=checkbox]"); await staff.waitForSelector("[role=status]:has-text('Saved')", { timeout: 8000 }); await staff.reload();
+ok(await staff.locator("input[type=checkbox]").isChecked(), "ticking a to-do is saved");
+await staff.goto(`${M}/calendar`); await staff.fill("#qe-t", "Team sync"); await staff.click("form button:has-text('Add event')"); await staff.waitForURL(/day=/);
+ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar quick-add shows the event on the day");
+
 // 1. Settings: company details
 await staff.goto(`${M}/settings`);
 await staff.fill("#legalName", "OneSimpleSite Ltd"); await staff.fill("#companyNumber", "01234567"); await staff.fill("#registeredAddress", "1 High Street, London");
@@ -51,18 +73,15 @@ const termsUrl = staff.url().split("?")[0];
 await staff.goto(`${termsUrl}/preview`);
 ok((await staff.locator("article").first().innerText()).includes("Order summary".toUpperCase()) || (await staff.locator("article").first().innerText()).toLowerCase().includes("order summary"), "full document preview shows the whole agreement");
 ok((await get(staff, `${termsUrl}/sample.pdf`)).head === "%PDF-", "sample PDF downloads");
-await staff.goto(`${M}/?new=job`);
+await staff.goto(`${M}/?new=ticket`); await staff.waitForSelector("dialog[open]"); await staff.waitForLoadState("networkidle");
 await staff.fill("#j-biz", name); await staff.fill("#j-contact", "Casey Morgan"); await staff.fill("#j-email", email);
 await staff.click("dialog button:has-text('Continue')");
-await staff.click("dialog label:has-text('Food and drink')"); await staff.fill("#j-town", "Bristol");
-await staff.click("dialog button:has-text('Continue')");
-await staff.click("dialog label:has-text('A website with bookings')"); await staff.click("dialog label:has-text('Contact form')");
-await staff.click("dialog button:has-text('Continue')");
-await staff.click("dialog label:has-text('Up to 5 pages')"); await staff.click("dialog label:has-text('As soon as possible')");
+await staff.selectOption("#j-work", "booking"); await staff.selectOption("#j-size", "Up to 5 pages"); await staff.selectOption("#j-cat", "Food and drink");
+await staff.fill("#j-town", "Bristol"); await staff.click("dialog label:has-text('Contact form')"); await staff.selectOption("#j-timing", "As soon as possible");
 await staff.click("dialog button:has-text('Continue')");
 await staff.fill("input[name=l0d]", "Website build"); await staff.fill("input[name=l0p]", "1500"); await staff.fill("input[name=l1d]", "Hosting"); await staff.fill("input[name=l1p]", "25"); await staff.check("input[name=l1r]");
-await staff.click("dialog button:has-text('Create job')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
-ok(true, "one popup created the customer and a draft quote");
+await staff.click("dialog button:has-text('Create ticket')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
+ok(true, "one popup created the customer and a draft quote ticket");
 const earlyProposal = staff.url();
 await staff.goto(`${M}/customers`); await staff.click(`a:has-text('${name}')`); await staff.waitForURL(/\/customers\/[0-9a-f-]{36}$/);
 const customerUrl = staff.url();

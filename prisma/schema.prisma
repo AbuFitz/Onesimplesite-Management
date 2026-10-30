@@ -128,6 +128,9 @@ model StaffMembership {
   email       String
   displayName String
   username    String?
+  jobTitle    String?
+  phone       String?
+  signature   String?
   role        StaffRole
   status      MembershipStatus @default(pending)
   createdAt   DateTime         @default(now())

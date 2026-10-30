@@ -14,14 +14,14 @@ export function SideNav({ groups }: { groups: NavGroup[] }) {
     <nav aria-label="Main" className="flex flex-col gap-6">
       {groups.map((g, gi) => (
         <div key={gi}>
-          {g.label && <p className="mb-1 px-3 text-xs font-medium text-muted">{g.label}</p>}
+          {g.label && <p className="mb-1 px-3 text-xs font-semibold text-muted">{g.label}</p>}
           <ul className="flex flex-col gap-0.5">
             {g.items.map((i) => {
               const Icon = icons[i.icon as keyof typeof icons];
               const on = active(p, i.href);
               return (
                 <li key={i.href}>
-                  <Link href={i.href} aria-current={on ? "page" : undefined} className={`flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm ${on ? "bg-soft font-semibold text-ink" : "text-[#3d4540] hover:bg-soft"}`}>
+                  <Link href={i.href} aria-current={on ? "page" : undefined} className={`relative flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm ${on ? "bg-white font-semibold text-ink shadow-[0_1px_2px_rgba(14,19,17,.1)] ring-1 ring-line before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-moss" : "text-[#2f3833] hover:bg-white/70"}`}>
                     <Icon size={17} strokeWidth={on ? 2.2 : 1.8} aria-hidden /> {i.label}
                   </Link>
                 </li>

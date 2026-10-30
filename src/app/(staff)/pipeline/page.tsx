@@ -4,7 +4,7 @@ import { requireStaff } from "@/modules/identity/session";
 import { stageAction } from "@/app/actions/crm";
 import { RecordHeader, Status, Empty, ErrorSummary, fmtDate } from "@/components/ui";
 
-export const metadata = { title: "Deals" };
+export const metadata = { title: "Tickets" };
 const LABEL: Record<string, string> = { new: "Just added", qualified: "Talking", proposal_sent: "Quote sent", contract_pending: "Waiting to sign", won: "Signed", lost: "Lost" };
 const STAGES = ["new", "qualified", "proposal_sent", "contract_pending", "won", "lost"] as const;
 
@@ -15,14 +15,14 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
   const rows = await db.opportunity.findMany({ where: { workspaceId: ctx.workspaceId, ...(stage ? { stage } : {}) }, include: { customer: true }, orderBy: { updatedAt: "desc" }, take: 100 });
   return (
     <>
-      <RecordHeader title="Deals" meta="Every customer you are working with and where they are up to" />
-      <p className="mb-5 max-w-2xl text-sm text-muted">Deals move on their own: sending a quote or agreement moves it forward, and it becomes Signed when the customer signs. You only need to change one by hand to mark it Lost.</p>
+      <RecordHeader title="Tickets" meta="Every customer you are working with and where they are up to" />
+      <p className="mb-5 max-w-2xl text-sm text-muted">Tickets move on their own: sending a quote or agreement moves it forward, and it becomes Signed when the customer signs. You only need to change one by hand to mark it Lost.</p>
       <ErrorSummary message={sp.error} />
       <nav aria-label="Stage filter" className="mb-4 flex flex-wrap gap-2">
         <Link className={`btn ${stage ? "btn-quiet" : ""}`} href="/pipeline">All</Link>
         {STAGES.map((s) => <Link key={s} className={`btn ${stage === s ? "" : "btn-quiet"}`} href={`/pipeline?stage=${s}`}>{LABEL[s]}</Link>)}
       </nav>
-      {rows.length === 0 ? <Empty title="No deals in this view" /> : (
+      {rows.length === 0 ? <Empty title="No tickets in this view" /> : (
         <ul>
           {rows.map((o) => (
             <li key={o.id} className="row py-3 grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
