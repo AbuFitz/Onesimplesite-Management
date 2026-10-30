@@ -1,0 +1,7 @@
+node_modules
+.next
+.env
+.mail-sink
+src/generated
+*.tsbuildinfo
+test-results

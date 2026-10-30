@@ -1,0 +1,628 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────── Better Auth tables (shared user directory) ─────────
+model User {
+  id               String   @id
+  name             String
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  twoFactorEnabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  sessions          Session[]
+  accounts          Account[]
+  twoFactors        TwoFactor[]
+  staffMemberships  StaffMembership[]
+  clientMemberships ClientMembership[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id          String @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("two_factor")
+}
+
+// ───────── Workspace, access ─────────
+model Workspace {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  timezone  String   @default("Europe/London")
+  createdAt DateTime @default(now())
+
+  staff     StaffMembership[]
+  customers Customer[]
+}
+
+enum StaffRole {
+  owner
+  client_director
+  delivery
+  sales
+  support
+  finance
+}
+
+enum MembershipStatus {
+  pending
+  active
+  deactivated
+}
+
+model StaffMembership {
+  id          String           @id @default(uuid()) @db.Uuid
+  workspaceId String           @db.Uuid
+  userId      String?
+  email       String
+  displayName String
+  role        StaffRole
+  status      MembershipStatus @default(pending)
+  createdAt   DateTime         @default(now())
+  deactivatedAt DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, email])
+  @@index([userId])
+}
+
+// Single-use invitations; only the SHA-256 of the token is stored.
+model Invitation {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  kind        String // staff | client
+  email       String
+  tokenHash   String    @unique
+  staffRole   StaffRole?
+  customerId  String?   @db.Uuid
+  clientRole  ClientRole?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, email])
+}
+
+enum ClientRole {
+  admin
+  member
+}
+
+model ClientMembership {
+  id         String     @id @default(uuid()) @db.Uuid
+  userId     String
+  customerId String     @db.Uuid
+  role       ClientRole @default(member)
+  billing    Boolean    @default(false)
+  revokedAt  DateTime?
+  createdAt  DateTime   @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, customerId])
+  @@index([customerId])
+}
+
+// ───────── CRM ─────────
+enum Lifecycle {
+  prospect
+  active
+  paused
+  former
+}
+
+model Customer {
+  id            String    @id @default(uuid()) @db.Uuid
+  workspaceId   String    @db.Uuid
+  reference     String
+  displayName   String
+  legalName     String?
+  kind          String    @default("business") // business | individual
+  lifecycle     Lifecycle @default(prospect)
+  atRisk        Boolean   @default(false)
+  ownerId       String?   @db.Uuid // StaffMembership
+  source        String?
+  website       String?
+  phone         String?
+  billingAddress String?
+  tags          String[]
+  archivedAt    DateTime?
+  version       Int       @default(1)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  workspace     Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  contacts      Contact[]
+  opportunities Opportunity[]
+  proposals     Proposal[]
+  contracts     Contract[]
+  projects      Project[]
+  memberships   ClientMembership[]
+
+  @@unique([workspaceId, reference])
+  @@unique([id, workspaceId])
+  @@index([workspaceId, lifecycle])
+}
+
+model Contact {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  customerId  String   @db.Uuid
+  name        String
+  email       String?
+  phone       String?
+  isPrimary   Boolean  @default(false)
+  marketingOptIn Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, customerId])
+  @@index([workspaceId, email])
+}
+
+enum OpportunityStage {
+  new
+  qualified
+  proposal_sent
+  contract_pending
+  won
+  lost
+}
+
+model Opportunity {
+  id          String           @id @default(uuid()) @db.Uuid
+  workspaceId String           @db.Uuid
+  customerId  String           @db.Uuid
+  title       String
+  stage       OpportunityStage @default(new)
+  valueMinor  Int              @default(0)
+  currency    String           @default("GBP")
+  ownerId     String?          @db.Uuid
+  lossReason  String?
+  version     Int              @default(1)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  proposals Proposal[]
+
+  @@index([workspaceId, stage])
+  @@index([workspaceId, customerId])
+}
+
+// ───────── Sales: proposals (sent versions immutable) ─────────
+enum ProposalStatus {
+  draft
+  sent
+  accepted
+  declined
+  expired
+  withdrawn
+}
+
+model Proposal {
+  id             String         @id @default(uuid()) @db.Uuid
+  workspaceId    String         @db.Uuid
+  customerId     String         @db.Uuid
+  opportunityId  String?        @db.Uuid
+  reference      String
+  title          String
+  status         ProposalStatus @default(draft)
+  currentVersion Int            @default(1)
+  acceptedVersionId String?     @db.Uuid
+  version        Int            @default(1) // optimistic concurrency
+  createdById    String?        @db.Uuid
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  customer    Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  opportunity Opportunity?      @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  versions    ProposalVersion[]
+
+  @@unique([workspaceId, reference])
+  @@index([workspaceId, customerId])
+  @@index([workspaceId, status])
+}
+
+model ProposalVersion {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  proposalId  String    @db.Uuid
+  number      Int
+  scope       String // structured text: scope, deliverables, exclusions
+  terms       String
+  currency    String    @default("GBP")
+  oneOffMinor Int       @default(0)
+  recurringMinor Int    @default(0)
+  recurringPeriod String? // month | year
+  validUntil  DateTime?
+  sentAt      DateTime? // non-null => immutable (enforced by trigger)
+  sentToEmail String?
+  supersededAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  proposal    Proposal           @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  lines       ProposalLine[]
+  acceptances ProposalAcceptance[]
+  contract    Contract?
+
+  @@unique([proposalId, number])
+  @@index([workspaceId])
+}
+
+model ProposalLine {
+  id          String   @id @default(uuid()) @db.Uuid
+  versionId   String   @db.Uuid
+  position    Int
+  description String
+  quantity    Int
+  unitMinor   Int
+  recurring   Boolean  @default(false)
+
+  version ProposalVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+
+  @@unique([versionId, position])
+}
+
+// Acceptance binds exactly one version; one acceptance per version.
+model ProposalAcceptance {
+  id            String   @id @default(uuid()) @db.Uuid
+  workspaceId   String   @db.Uuid
+  versionId     String   @unique @db.Uuid
+  acceptedName  String
+  acceptedEmail String
+  termsText     String // exact acceptance wording shown
+  termsVersion  String
+  ipAddress     String? // from trusted proxy header only
+  userAgent     String?
+  acceptedAt    DateTime @default(now()) // server time
+
+  version ProposalVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+}
+
+// High-entropy link tokens, stored hashed, scoped to one purpose + entity.
+model ScopedLinkToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  purpose     String // proposal_accept | contract_sign
+  entityId    String    @db.Uuid
+  tokenHash   String    @unique
+  recipientEmail String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, purpose, entityId])
+}
+
+// ───────── Contracts (signing evidence lives with the signing module) ─────────
+enum ContractStatus {
+  draft
+  awaiting_signature
+  completed
+  declined
+  expired
+  voided
+}
+
+model Contract {
+  id              String         @id @default(uuid()) @db.Uuid
+  workspaceId     String         @db.Uuid
+  customerId      String         @db.Uuid
+  reference       String
+  title           String
+  status          ContractStatus @default(draft)
+  proposalVersionId String?      @unique @db.Uuid // unique conversion key
+  scopeSnapshot   String
+  oneOffMinor     Int            @default(0)
+  recurringMinor  Int            @default(0)
+  currency        String         @default("GBP")
+  signingMode     String         @default("manual_record") // manual_record | original_capture | external
+  startDate       DateTime?      @db.Date
+  endDate         DateTime?      @db.Date
+  noticeDate      DateTime?      @db.Date
+  completedAt     DateTime?
+  completionRecordedBy String?
+  completionEvidence   String?
+  version         Int            @default(1)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  proposalVersion ProposalVersion? @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
+  project         Project?
+  billingIntents  BillingIntent[]
+
+  @@unique([workspaceId, reference])
+  @@index([workspaceId, customerId])
+  @@index([workspaceId, status])
+}
+
+// ───────── Delivery ─────────
+enum ProjectStage {
+  planned
+  awaiting_assets
+  design
+  development
+  qa
+  client_review
+  ready_to_launch
+  launched
+  completed
+  held
+  cancelled
+}
+
+model Project {
+  id          String       @id @default(uuid()) @db.Uuid
+  workspaceId String       @db.Uuid
+  customerId  String       @db.Uuid
+  contractId  String?      @unique @db.Uuid // one project per contract
+  reference   String
+  name        String
+  stage       ProjectStage @default(planned)
+  awaitingContract Boolean @default(false)
+  ownerId     String?      @db.Uuid
+  dueDate     DateTime?    @db.Date
+  scopeSnapshot String
+  version     Int          @default(1)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  contract Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  tasks    Task[]
+  updates  ProjectUpdate[]
+  assetRequests AssetRequest[]
+
+  @@unique([workspaceId, reference])
+  @@index([workspaceId, customerId])
+  @@index([workspaceId, stage])
+}
+
+model Task {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  projectId   String?   @db.Uuid
+  customerId  String?   @db.Uuid
+  title       String
+  assigneeId  String?   @db.Uuid
+  dueDate     DateTime? @db.Date
+  doneAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, assigneeId, doneAt])
+}
+
+model ProjectUpdate {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  projectId   String   @db.Uuid
+  body        String
+  clientVisible Boolean @default(false)
+  authorId    String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@index([projectId, createdAt])
+}
+
+model AssetRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  projectId   String    @db.Uuid
+  label       String // e.g. Logo, Copy, Photos
+  required    Boolean   @default(true)
+  dueDate     DateTime? @db.Date
+  receivedAt  DateTime?
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, projectId])
+}
+
+// A billing intention is NOT an invoice. Stripe invoices come later.
+model BillingIntent {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  customerId  String   @db.Uuid
+  contractId  String   @db.Uuid
+  kind        String // deposit | balance | recurring_setup | one_off
+  amountMinor Int
+  currency    String   @default("GBP")
+  status      String   @default("pending") // pending | invoiced | cancelled
+  createdAt   DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
+
+  @@unique([contractId, kind])
+}
+
+// ───────── Calendar & Notes ─────────
+model CalendarEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  organiserId String    @db.Uuid
+  title       String
+  type        String    @default("internal_meeting")
+  startsAt    DateTime
+  endsAt      DateTime
+  allDay      Boolean   @default(false)
+  startDate   DateTime? @db.Date
+  endDateExclusive DateTime? @db.Date
+  timezone    String    @default("Europe/London")
+  location    String?
+  description String?
+  status      String    @default("scheduled") // scheduled | cancelled
+  customerId  String?   @db.Uuid
+  projectId   String?   @db.Uuid
+  icsUid      String    @unique
+  icsSequence Int       @default(0)
+  version     Int       @default(1)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  attendees EventAttendee[]
+
+  @@index([workspaceId, startsAt])
+}
+
+model EventAttendee {
+  id        String @id @default(uuid()) @db.Uuid
+  eventId   String @db.Uuid
+  staffId   String @db.Uuid
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, staffId])
+}
+
+model Note {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  title       String
+  body        String    @default("")
+  parentId    String?   @db.Uuid
+  ownerId     String    @db.Uuid
+  visibility  String    @default("team") // team | private
+  customerId  String?   @db.Uuid
+  projectId   String?   @db.Uuid
+  eventId     String?   @db.Uuid
+  pinned      Boolean   @default(false)
+  version     Int       @default(1)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  revisions NoteRevision[]
+
+  @@index([workspaceId, archivedAt])
+}
+
+model NoteRevision {
+  id       String   @id @default(uuid()) @db.Uuid
+  noteId   String   @db.Uuid
+  version  Int
+  title    String
+  body     String
+  actorId  String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, version])
+}
+
+// ───────── System ─────────
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  actorId     String? // user id; kept after user removal
+  actorLabel  String?
+  action      String
+  targetType  String
+  targetId    String
+  customerId  String?  @db.Uuid
+  visibility  String   @default("internal")
+  detail      Json?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, customerId, createdAt])
+}
+
+model Outbox {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  topic       String
+  dedupeKey   String
+  payload     Json
+  status      String    @default("pending") // pending | done | failed
+  attempts    Int       @default(0)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([workspaceId, dedupeKey])
+  @@index([status, createdAt])
+}
+
+model SequenceCounter {
+  workspaceId String @db.Uuid
+  name        String
+  value       Int    @default(0)
+
+  @@id([workspaceId, name])
+}
