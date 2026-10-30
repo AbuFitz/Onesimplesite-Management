@@ -25,7 +25,7 @@ export function ProposalFields({ initial, defaults }: { initial?: Initial; defau
               <textarea id={`req_${k}`} name={`req_${k}`} rows={2} className="field" defaultValue={initial?.requirements?.[k]} />
             </div>
           ))}
-          <div className="sm:col-span-2"><label className="hint" htmlFor="terms">Extra terms for this customer only</label><textarea id="terms" name="terms" rows={2} className="field" defaultValue={initial?.terms} /><p className="hint mt-1">Our standard Terms and Conditions are always included.</p></div>
+          <div className="sm:col-span-2"><label className="hint" htmlFor="terms">Extra terms for this customer only</label><textarea id="terms" name="terms" rows={2} className="field" defaultValue={initial?.terms} /><p className="hint mt-1">Our standard Services Agreement is always included.</p></div>
           <div><label className="hint" htmlFor="validUntil">Offer open until</label><input id="validUntil" name="validUntil" type="date" className="field" defaultValue={initial?.validUntil?.toISOString().slice(0, 10)} /><p className="hint">Leave blank for 30 days after sending.</p></div>
         </div>
       </details>

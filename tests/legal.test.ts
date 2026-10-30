@@ -16,35 +16,36 @@ describe("legal documents", () => {
     const c = await owner();
     const overview = await legalOverview(c);
     expect(overview.map((o) => o.kind)).toEqual([...LEGAL_KINDS]);
-    const privacy = (await listTerms(c, "privacy"))[0];
-    expect(privacy.body).toContain("Test Ltd");
-    expect(privacy.body).toContain("12345678");
-    expect(privacy.body).toContain("1 Test Road, Watford");
-    expect(privacy.body).toMatch(/\[TBC:/);
-    expect(privacy.status).toBe("draft");
+    const dpa = (await listTerms(c, "dpa"))[0];
+    expect(dpa.body).toContain("Test Ltd");
+    expect(dpa.body).toContain("12345678");
+    expect(dpa.body).toContain("1 Test Road, Watford");
+    expect(dpa.body).toMatch(/\[TBC:/);
+    expect(dpa.status).toBe("draft");
   });
   it("cannot publish while TBC markers remain, and publishing one document never retires another", async () => {
     const c = await owner();
-    await ensureStarter(c, "terms"); await ensureStarter(c, "cookies");
-    const terms = (await listTerms(c, "terms"))[0], cookies = (await listTerms(c, "cookies"))[0];
-    await expect(publishTerms(c, cookies.id)).rejects.toMatchObject({ code: "validation" });
+    await ensureStarter(c, "terms"); await ensureStarter(c, "dpa"); await ensureStarter(c, "change_request");
+    const terms = (await listTerms(c, "terms"))[0], dpa = (await listTerms(c, "dpa"))[0], change_request = (await listTerms(c, "change_request"))[0];
+    await expect(publishTerms(c, dpa.id)).rejects.toMatchObject({ code: "validation" });
+    expect(change_request.body).not.toMatch(/\[TBC:/); // filled in per customer, so nothing to decide here
     await saveTermsDraft(c, terms.id, { title: "Terms", body: "## Services\n1.1 We build websites." }, "terms");
     await publishTerms(c, terms.id);
-    await saveTermsDraft(c, cookies.id, { title: "Cookie Notice", body: "## What\n1.1 We use cookies." }, "cookies");
-    await publishTerms(c, cookies.id);
+    await saveTermsDraft(c, change_request.id, { title: "Change Request", body: "## What\n1.1 We agree changes in writing." }, "change_request");
+    await publishTerms(c, change_request.id);
     expect((await listTerms(c, "terms"))[0].status).toBe("published");
-    expect((await listTerms(c, "cookies"))[0].status).toBe("published");
+    expect((await listTerms(c, "change_request"))[0].status).toBe("published");
   });
   it("editing a published document starts the next version of that document only", async () => {
     const c = await owner();
-    await ensureStarter(c, "privacy");
-    const v1 = (await listTerms(c, "privacy"))[0];
-    await saveTermsDraft(c, v1.id, { title: "Privacy Notice", body: "## Who\n1.1 We are a company." }, "privacy");
-    await publishTerms(c, v1.id);
-    const v2 = await saveTermsDraft(c, v1.id, { title: "Privacy Notice", body: "## Who\n1.1 We are a company in Watford." }, "privacy");
-    expect(v2.number).toBe(2); expect(v2.kind).toBe("privacy"); expect(v2.status).toBe("draft");
     await ensureStarter(c, "dpa");
-    expect((await listTerms(c, "dpa"))[0].number).toBe(1);
+    const v1 = (await listTerms(c, "dpa"))[0];
+    await saveTermsDraft(c, v1.id, { title: "Data Processing Agreement", body: "## Who\n1.1 We are a company." }, "dpa");
+    await publishTerms(c, v1.id);
+    const v2 = await saveTermsDraft(c, v1.id, { title: "Data Processing Agreement", body: "## Who\n1.1 We are a company in Watford." }, "dpa");
+    expect(v2.number).toBe(2); expect(v2.kind).toBe("dpa"); expect(v2.status).toBe("draft");
+    await ensureStarter(c, "change_request");
+    expect((await listTerms(c, "change_request"))[0].number).toBe(1);
   });
 });
 

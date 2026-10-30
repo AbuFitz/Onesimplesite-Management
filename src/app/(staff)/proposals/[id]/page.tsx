@@ -25,7 +25,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const checks: [string, boolean, string][] = [
     ["Our company details", companyMissing(company).length === 0, "/settings"],
     [`${p.customer.displayName}'s details`, customerDetailsMissing(p.customer).length === 0, `/customers/${p.customerId}/details`],
-    ["Published Terms & Conditions", !!published || process.env.ALLOW_DRAFT_TERMS === "true", "/settings/legal/terms"],
+    ["Published Services Agreement", !!published || process.env.ALLOW_DRAFT_TERMS === "true", "/settings/legal/terms"],
   ];
   const ready = checks.every(([, ok]) => ok);
   return (
@@ -55,7 +55,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
               <ul className="text-sm">{checks.map(([label, ok, href]) => <li key={label} className="py-0.5"><Status label={ok ? "ready" : "needed"} kind={ok ? "good" : "warn"} /> {label}{!ok && <> · <Link className="underline" href={href}>fix</Link></>}</li>)}</ul>
               <label className="label" htmlFor="sn">Signer name</label><input id="sn" name="name" className="field" defaultValue={primary?.name} required />
               <label className="label" htmlFor="to">Signer email (check carefully)</label><input id="to" name="email" type="email" className="field" defaultValue={primary?.email ?? ""} required />
-              <p className="hint">The customer gets one email and one page showing the order, your website requirements, the price and our Terms &amp; Conditions. Signing it is their acceptance. Version {cur.number} is frozen when you send; changes need a new version.</p>
+              <p className="hint">The customer gets one email and one page showing the order, your website requirements, the price and our Services Agreement. Signing it is their acceptance. Version {cur.number} is frozen when you send; changes need a new version.</p>
               <button className="btn" disabled={!ready}>Send for signature</button></form>
           )}
           {p.status === "sent" && can(ctx.role, "proposal.write") && (

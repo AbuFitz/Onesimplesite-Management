@@ -97,7 +97,7 @@ export async function legalOverview(ctx: StaffCtx) {
 
 export const currentTerms = (workspaceId: string, kind: LegalKind = "terms") => db.termsVersion.findFirst({ where: { workspaceId, kind, status: "published" } });
 
-const termsInput = z.object({ title: z.string().trim().min(1).max(200).default("Terms and Conditions"), body: z.string().trim().min(1, "The document can't be empty.").max(200_000) });
+const termsInput = z.object({ title: z.string().trim().min(1).max(200).default("Services Agreement"), body: z.string().trim().min(1, "The document can't be empty.").max(200_000) });
 
 /** Saves a draft. Editing a published version never changes it: a new draft (next number) is created instead. */
 export async function saveTermsDraft(ctx: StaffCtx, id: string | null, raw: unknown, kind: LegalKind = "terms") {

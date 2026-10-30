@@ -20,7 +20,7 @@ export default async function VersionList({ params, searchParams }: { params: Pr
     <>
       <RecordHeader back={{ href: "/settings/legal", label: "Legal documents" }} title={m.label} meta={`${m.ref} · versioned. A published version never changes; edits create a new version.`} />
       <ErrorSummary message={sp.error} />
-      {sp.published && <p role="status" className="mb-4 text-sm text-moss">Published.{kind === "terms" ? " New agreements will use this version." : m.slug ? " It is now live on the website." : ""}</p>}
+      {sp.published && <p role="status" className="mb-4 text-sm text-moss">Published.{kind === "terms" ? " New agreements will use this version." : ""}</p>}
       <p className="mb-4">{current ? <>Live: <strong>version {current.number}</strong>, published {current.publishedAt && fmtDateTime(current.publishedAt)} by {current.publishedBy}.</> : <strong>Nothing is published yet.{kind === "terms" ? " Agreements can't be sent until the Terms and Conditions are published." : ""}</strong>}</p>
       <ul>
         {versions.map((v) => (

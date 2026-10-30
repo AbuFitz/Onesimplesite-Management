@@ -34,7 +34,7 @@ export default async function LegalEditorPage({ params, searchParams }: { params
       {draft && (
         <form action={publishLegalAction} className="mt-8 max-w-2xl border-t border-line pt-5"><input type="hidden" name="id" value={t.id} /><input type="hidden" name="kind" value={kind} />
           <h2 className="mb-1">Publish</h2>
-          <p className="hint mb-3">{todo > 0 ? `${todo} item(s) still marked [TBC: …]. Publishing is blocked until they are replaced. Save your draft first.` : kind === "terms" ? "Publishing makes this the version used for every new agreement. It can't be edited afterwards." : m.slug ? "Publishing puts this live on the website. It can't be edited afterwards; changes make a new version." : "Publishing makes this the version the team uses. It can't be edited afterwards."}</p>
+          <p className="hint mb-3">{todo > 0 ? `${todo} item(s) still marked [TBC: …]. Publishing is blocked until they are replaced. Save your draft first.` : kind === "terms" ? "Publishing makes this the version used for every new agreement. It can't be edited afterwards." : "Publishing makes this the version the team uses. It can't be edited afterwards; changes make a new version."}</p>
           <button className="btn" disabled={todo > 0}>Publish version {t.number}</button></form>
       )}
     </>

@@ -222,7 +222,7 @@ export function composeAgreement(c: ComposeIn) {
     "", `One-off total: ${money_(c.oneOffMinor)}`, ...(c.recurringMinor > 0 ? [`Recurring total: ${money_(c.recurringMinor)}${c.recurringPeriod ? ` per ${c.recurringPeriod}` : ""}`] : []),
     ...(c.requirements.payment?.trim() ? ["", "Payment schedule:", ...c.requirements.payment.trim().split("\n").map((l) => (l.trim() ? `- ${l.trim().replace(/^[-•]\s*/, "")}` : ""))] : []),
     "note: Amounts exclude VAT unless stated. Invoices are issued separately for the amounts and dates above.",
-    "", "## Terms and Conditions", `note: These Terms and Conditions (version ${c.terms.number}) form part of this agreement.`, "",
+    "", "## Services Agreement", `note: Our Services Agreement (version ${c.terms.number}) forms part of this order.`, "",
     renumberTerms(c.terms.body.trim()),
   ].join("\n");
 }
@@ -246,7 +246,7 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
     const published = await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind: "terms", status: "published" } });
     const useDraft = !published && process.env.ALLOW_DRAFT_TERMS === "true";
     const terms = published ?? (useDraft ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind: "terms" }, orderBy: { number: "desc" } }) : null);
-    if (!terms) blockers.push("published Terms & Conditions (Settings)");
+    if (!terms) blockers.push("published Services Agreement (Business settings)");
     if (blockers.length) throw new DomainError("validation", `Before sending, add: ${blockers.join("; ")}.`);
     const v = await tx.proposalVersion.findFirstOrThrow({ where: { proposalId, number: p.currentVersion }, include: { lines: { orderBy: { position: "asc" } } } });
     const expiresAt = new Date(Date.now() + EXPIRY_DAYS * 864e5);

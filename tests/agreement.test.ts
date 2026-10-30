@@ -34,7 +34,7 @@ describe("single-step agreement", () => {
     const ctx = await ws();
     const lead = await createLead(ctx, { displayName: "Bare Ltd", contactName: "B" });
     const p = await createProposal(ctx, lead.customerId, lead.opportunityId, draft);
-    await expect(sendAgreement(ctx, p.id, { name: "B", email: "b@x.test" })).rejects.toThrow(/legal company name.*registered address.*legal company name.*address.*published Terms/s);
+    await expect(sendAgreement(ctx, p.id, { name: "B", email: "b@x.test" })).rejects.toThrow(/legal company name.*registered address.*legal company name.*address.*published Services Agreement/s);
   });
 
   it("terms can't be published while [TBC: ...] placeholders remain; published terms are immutable", async () => {
