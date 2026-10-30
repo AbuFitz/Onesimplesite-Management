@@ -1,6 +1,7 @@
 import { Html, Head, Body, Container, Img, Preview, Section, Text, Button, Hr, Link } from "@react-email/components";
 import type { ReactNode } from "react";
 import { portalLink } from "@/lib/env";
+import { SITE_URL, SOCIAL_LINKS } from "@/lib/brand-links";
 
 const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
 const ink = "#0E1311";
@@ -12,12 +13,17 @@ export function Layout({ preview, children }: { preview: string; children: React
       <Preview>{preview}</Preview>
       <Body style={{ margin: 0, padding: 0, backgroundColor: "#ffffff", fontFamily: font, color: ink }}>
         <Container style={{ maxWidth: 560, margin: "0 auto", padding: "28px 22px 32px" }}>
-          <Img src={portalLink("/brand/wordmark-black.png")} width={150} height={30} alt="OneSimpleSite" style={{ display: "block", marginBottom: 28 }} />
+          <Link href={SITE_URL} style={{ textDecoration: "none" }}>
+            <Img src={portalLink("/brand/wordmark-black.png")} width={150} height={30} alt="onesimplesite" style={{ display: "block", marginBottom: 28, fontSize: 20, fontWeight: 700, color: ink }} />
+          </Link>
           {children}
           <Hr style={{ borderColor: "#e4e0d8", margin: "32px 0 16px" }} />
-          <Text style={{ fontSize: 12, lineHeight: "18px", color: "#5b625f", margin: 0 }}>
-            OneSimpleSite · <Link href="mailto:hello@onesimplesite.co.uk" style={{ color: "#5b625f" }}>hello@onesimplesite.co.uk</Link><br />
-            You are receiving this because of work with OneSimpleSite. This is a service message, not marketing.
+          <Text style={{ fontSize: 13, lineHeight: "20px", color: ink, margin: "0 0 6px", fontWeight: 600 }}>OneSimpleSite</Text>
+          <Text style={{ fontSize: 12, lineHeight: "20px", color: "#5b625f", margin: 0 }}>
+            <Link href={SITE_URL} style={{ color: "#0C6A49" }}>onesimplesite.co.uk</Link>
+            {" · "}<Link href="mailto:hello@onesimplesite.co.uk" style={{ color: "#5b625f" }}>hello@onesimplesite.co.uk</Link>
+            {SOCIAL_LINKS.map((l) => (<span key={l.href}>{" · "}<Link href={l.href} style={{ color: "#5b625f" }}>{l.label}</Link></span>))}
+            <br />You are receiving this because of work with OneSimpleSite. This is a service message, not marketing.
           </Text>
         </Container>
       </Body>
