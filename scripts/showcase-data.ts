@@ -46,6 +46,6 @@ const s3 = await sendForSigning(ctx, acc3.contractId, { name: "Casey Morgan", em
 await submitSignature(s3.token, { name: "Casey Morgan", method: "typed", consent: true }, {});
 writeFileSync("docs/showcase/signed-agreement-typed.pdf", Buffer.from((await db.contractDocument.findFirstOrThrow({ where: { contractId: acc3.contractId } })).bytes));
 
-writeFileSync("/tmp/claude-0/showcase.json", JSON.stringify({ proposal: portalLink(`/p/${sent3.token === "" ? "" : ""}`), proposalOpen: portalLink(`/p/${(await (async()=>{ const q = await createProposal(ctx, lead.customerId, null, { ...draft, title: "Website build and care plan" }); return (await sendProposal(ctx, q.id, "casey@harbour.example")).token; })())}`), sign: portalLink(`/s/${s1.token}`) }));
+writeFileSync(process.env.SHOWCASE_JSON ?? "/tmp/showcase.json", JSON.stringify({ proposal: portalLink(`/p/${sent3.token === "" ? "" : ""}`), proposalOpen: portalLink(`/p/${(await (async()=>{ const q = await createProposal(ctx, lead.customerId, null, { ...draft, title: "Website build and care plan" }); return (await sendProposal(ctx, q.id, "casey@harbour.example")).token; })())}`), sign: portalLink(`/s/${s1.token}`) }));
 console.log("ok");
 process.exit(0);

@@ -2,7 +2,7 @@
 
 ## Needed before anything goes live
 - [ ] **Approve the agreement/consent wording** (`CONSENT_TEXT` in `src/modules/signing/service.ts`; the contract text is built from the accepted proposal). Single-signer capture is the chosen mode. It is not a certificate signature and does not verify identity.
-- [ ] Supabase database: follow `docs/SUPABASE.md` step by step.
+- [ ] Supabase database: follow `docs/setup/SUPABASE.md` step by step.
 - [ ] Legal entity, address, VAT status, approved contract wording; deposit/balance policy.
 - [ ] Managed PostgreSQL; create `oss_migrate` (owner) and `oss_app` (runtime) roles, run `docs/db/roles.sql`.
 - [ ] Private S3-compatible bucket (not yet used by code).
