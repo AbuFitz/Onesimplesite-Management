@@ -10,6 +10,7 @@ export type EmailData = {
   signing_confirmation: { to: string; signerName: string; title: string; ref: string; signedAt: string; fileSha: string; hasAttachment: boolean };
   signing_notice: { to: string; title: string; ref: string; business: string; signerName: string; signerEmail: string; signedAt: string; link: string; fileSha: string };
   invitation: { to: string; businessName: string; inviter: string; link: string; expires: string };
+  password_reset: { to: string; name: string; link: string; minutes: number };
 };
 export type TemplateName = keyof EmailData;
 
@@ -78,6 +79,18 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Set up your portal access\n\n${d.inviter} has invited you to the OneSimpleSite Client Portal for ${d.businessName}.\n\nSet up access: ${d.link}\n\nThis invitation can be used once and expires on ${d.expires}.\n\nOneSimpleSite`,
+  }),
+  password_reset: (d) => ({
+    subject: "Reset your OneSimpleSite password",
+    node: (
+      <Layout preview="Use this link to choose a new password">
+        <H>Reset your password</H>
+        <P>Hello {d.name}, we received a request to reset your password. Choose a new one with the button below.</P>
+        <Action href={d.link}>Choose a new password</Action>
+        <P>This link works once and expires in {d.minutes} minutes. If you did not ask for this, ignore this email and your password stays the same.</P>
+      </Layout>
+    ),
+    text: `Reset your password\n\nHello ${d.name},\n\nChoose a new password: ${d.link}\n\nThis link works once and expires in ${d.minutes} minutes. If you did not ask for this, ignore this email and your password stays the same.\n\nOneSimpleSite`,
   }),
 };
 

@@ -7,7 +7,7 @@ import { manageLink } from "@/lib/env";
 import { can } from "./permissions";
 import type { StaffCtx } from "./session";
 
-const ROLES = ["owner", "client_director", "delivery", "sales", "support", "finance"] as const;
+const ROLES = ["owner", "member", "client_director", "delivery", "sales", "support", "finance"] as const;
 const inviteInput = z.object({
   name: z.string().trim().min(1, "Enter a name.").max(120),
   email: z.email("Enter a valid email address.").transform((s) => s.toLowerCase()),

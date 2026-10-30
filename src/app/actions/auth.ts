@@ -69,3 +69,44 @@ export async function acceptInvitation(_: unknown, fd: FormData) {
   }
   redirect("/login");
 }
+
+const hostAuth = async () => ((await isPortalHost()) ? portalAuth() : staffAuth());
+
+/** Logged-in self-service: change own password; other sessions are signed out. */
+export async function changePassword(_: unknown, fd: FormData): Promise<{ error?: string; done?: boolean }> {
+  const currentPassword = String(fd.get("current") ?? "");
+  const newPassword = String(fd.get("next") ?? "");
+  if (newPassword.length < 12) return { error: "Use at least 12 characters." };
+  if (newPassword !== String(fd.get("confirm") ?? "")) return { error: "The two new passwords don't match." };
+  try {
+    await (await hostAuth()).api.changePassword({ body: { currentPassword, newPassword, revokeOtherSessions: true }, headers: await headers() });
+  } catch {
+    return { error: "Your current password is incorrect." };
+  }
+  return { done: true };
+}
+
+/** Same response whether or not the address exists, so this can't be used to find accounts. */
+export async function requestReset(_: unknown, fd: FormData): Promise<{ error?: string; sent?: boolean }> {
+  if (process.env.APP_ENV === "production" && !process.env.RESEND_API_KEY) {
+    return { error: "Email sending isn't connected yet, so we can't send reset links. Ask an owner to set you up with a new login." };
+  }
+  const email = String(fd.get("email") ?? "").trim().toLowerCase();
+  const origin = (await isPortalHost()) ? origins().portal : origins().manage;
+  try {
+    await (await hostAuth()).api.requestPasswordReset({ body: { email, redirectTo: `${origin}/reset-password` } });
+  } catch { /* deliberately silent */ }
+  return { sent: true };
+}
+
+export async function resetPassword(_: unknown, fd: FormData): Promise<{ error?: string; done?: boolean }> {
+  const newPassword = String(fd.get("next") ?? "");
+  if (newPassword.length < 12) return { error: "Use at least 12 characters." };
+  if (newPassword !== String(fd.get("confirm") ?? "")) return { error: "The two passwords don't match." };
+  try {
+    await (await hostAuth()).api.resetPassword({ body: { newPassword, token: String(fd.get("token") ?? "") } });
+  } catch {
+    return { error: "This reset link has expired or was already used. Request a new one." };
+  }
+  return { done: true };
+}

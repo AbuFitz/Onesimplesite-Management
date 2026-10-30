@@ -29,6 +29,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         <div className="mt-auto text-sm">
           <p className="font-semibold truncate">{ctx.name}</p>
           <p className="text-muted text-xs mb-2">{ctx.role.replace("_", " ")}</p>
+          <a className="btn btn-quiet w-full mb-2" href="/account">My account</a>
           <form action={signOutStaff}><button className="btn btn-quiet w-full">Sign out</button></form>
         </div>
       </aside>

@@ -21,7 +21,19 @@ function make(ns: "staff" | "portal", allowSignUp: boolean) {
     secret: e.BETTER_AUTH_SECRET,
     trustedOrigins: [ns === "staff" ? e.MANAGE_ORIGIN : e.PORTAL_ORIGIN],
     database: prismaAdapter(db, { provider: "postgresql" }),
-    emailAndPassword: { enabled: true, disableSignUp: !allowSignUp, minPasswordLength: 12, autoSignIn: false },
+    emailAndPassword: {
+      enabled: true, disableSignUp: !allowSignUp, minPasswordLength: 12, autoSignIn: false,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      // Needs RESEND_API_KEY in production; the forgot-password screen says so when it is missing.
+      sendResetPassword: async ({ user, url }) => {
+        const { renderEmail } = await import("@/emails/templates");
+        const { sendMail } = await import("./mail");
+        const { fmtFrom } = await import("./sender-identities");
+        const r = await renderEmail("password_reset", { to: user.email, name: user.name, link: url, minutes: 60 });
+        await sendMail({ from: fmtFrom("general"), to: user.email, subject: r.subject, html: r.html, text: r.text });
+      },
+    },
     advanced: { cookiePrefix: `oss-${ns}`, useSecureCookies: e.APP_ENV === "production" },
     session: { expiresIn: 60 * 60 * 12, updateAge: 60 * 30 },
     plugins: [...(ns === "staff" ? [twoFactor({ issuer: "OneSimpleSite Manage" })] : []), nextCookies()],

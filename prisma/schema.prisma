@@ -101,6 +101,7 @@ model Workspace {
 
 enum StaffRole {
   owner
+  member
   client_director
   delivery
   sales
