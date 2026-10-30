@@ -23,3 +23,13 @@ export const ROLE_CAPS: Record<StaffRole, ReadonlySet<Cap>> = {
 };
 
 export const can = (role: StaffRole, cap: Cap) => ROLE_CAPS[role].has(cap);
+
+/** Plain-language summary shown on the Team page. The capability table above is the source of truth. */
+export const ROLE_INFO: Record<StaffRole, { label: string; summary: string }> = {
+  owner: { label: "Owner", summary: "Everything, including team members, roles and settings." },
+  client_director: { label: "Client director", summary: "All customers, proposals, contracts and projects. Cannot manage the team or settings." },
+  delivery: { label: "Delivery", summary: "Projects they own, plus calendar and notes. Cannot see customers' proposals or contracts." },
+  sales: { label: "Sales", summary: "Customers, pipeline, proposals (create and send). Cannot record contract completion or see billing." },
+  support: { label: "Support", summary: "Read customers and all projects. Cannot edit proposals, contracts or billing." },
+  finance: { label: "Finance", summary: "Read customers, plus billing. Cannot edit proposals, contracts or projects." },
+};

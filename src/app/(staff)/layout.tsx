@@ -16,6 +16,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     { href: "/projects", label: "Projects", icon: "projects" },
     { href: "/calendar", label: "Calendar", icon: "calendar" },
     { href: "/notes", label: "Notes", icon: "notes" },
+    ...(can(ctx.role, "staff.manage") ? [{ href: "/team", label: "Team", icon: "team" }] : []),
   ];
   return (
     <div className="lg:grid lg:grid-cols-[15rem_1fr] min-h-dvh">

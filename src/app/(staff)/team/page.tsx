@@ -1,0 +1,48 @@
+import { requireStaff } from "@/modules/identity/session";
+import { listTeam } from "@/modules/identity/team";
+import { ROLE_INFO } from "@/modules/identity/permissions";
+import { changeRoleAction, setActiveAction } from "@/app/actions/work";
+import { InviteStaffForm } from "@/components/invite-staff-form";
+import { RecordHeader, Status, ErrorSummary } from "@/components/ui";
+
+export const metadata = { title: "Team" };
+export default async function Team({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const ctx = await requireStaff("staff.manage");
+  const members = await listTeam(ctx);
+  const roles = Object.entries(ROLE_INFO).map(([value, v]) => ({ value, ...v }));
+  return (
+    <>
+      <RecordHeader title="Team" meta="Logins and access levels" />
+      <ErrorSummary message={(await searchParams).error} />
+      <section aria-labelledby="mem" className="mb-12">
+        <h2 id="mem" className="mb-2">Members</h2>
+        <ul>
+          {members.map((m) => {
+            const self = m.id === ctx.staffId;
+            return (
+              <li key={m.id} className="row py-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+                <div className="min-w-0"><p className="font-semibold break-words">{m.displayName}{self ? " (you)" : ""}</p><p className="text-sm text-muted break-all">{m.email}</p>
+                  <Status label={m.status} kind={m.status === "active" ? "good" : m.status === "pending" ? "warn" : "bad"} /></div>
+                {!self && (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <form action={changeRoleAction} className="flex items-end gap-2"><input type="hidden" name="id" value={m.id} />
+                      <div><label className="sr-only" htmlFor={`r-${m.id}`}>Level for {m.displayName}</label>
+                        <select id={`r-${m.id}`} name="role" defaultValue={m.role} className="field w-auto">{roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
+                      <button className="btn btn-quiet">Change level</button></form>
+                    <form action={setActiveAction}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="active" value={m.status === "deactivated" ? "1" : "0"} />
+                      <button className="btn btn-quiet">{m.status === "deactivated" ? "Reactivate" : "Deactivate"}</button></form>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="hint mt-2">Deactivating signs the person out everywhere straight away. Their past activity stays on record. Pending people can be given a fresh link below using the same email.</p>
+      </section>
+      <section aria-labelledby="inv" className="mb-12"><h2 id="inv" className="mb-3">Add or re-invite someone</h2>
+        <InviteStaffForm roles={roles} /></section>
+      <section aria-labelledby="lv"><h2 id="lv" className="mb-2">What each level can do</h2>
+        <ul>{roles.map((r) => <li key={r.value} className="row py-3"><strong>{r.label}</strong><span className="block text-sm text-muted">{r.summary}</span></li>)}</ul></section>
+    </>
+  );
+}

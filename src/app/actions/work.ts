@@ -68,3 +68,23 @@ export async function archiveNoteAction(fd: FormData) {
   try { await archiveNote(ctx, String(fd.get("id"))); } catch (e) { return back("/notes", e); }
   redirect("/notes");
 }
+
+import { inviteStaff, changeRole, setActive } from "@/modules/identity/team";
+
+export async function inviteStaffAction(_: unknown, fd: FormData): Promise<{ error?: string; link?: string; email?: string }> {
+  const ctx = await requireStaff("staff.manage");
+  try {
+    const r = await inviteStaff(ctx, { name: fd.get("name"), email: fd.get("email"), role: fd.get("role") });
+    return { link: r.link, email: r.email };
+  } catch (e) { return { error: msg(e) }; }
+}
+export async function changeRoleAction(fd: FormData) {
+  const ctx = await requireStaff("staff.manage");
+  try { await changeRole(ctx, String(fd.get("id")), String(fd.get("role"))); } catch (e) { return back("/team", e); }
+  redirect("/team");
+}
+export async function setActiveAction(fd: FormData) {
+  const ctx = await requireStaff("staff.manage");
+  try { await setActive(ctx, String(fd.get("id")), fd.get("active") === "1"); } catch (e) { return back("/team", e); }
+  redirect("/team");
+}
