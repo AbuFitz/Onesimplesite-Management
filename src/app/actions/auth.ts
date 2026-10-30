@@ -12,11 +12,11 @@ async function isPortalHost() {
 }
 
 export async function signOutStaff() {
-  await staffAuth.api.signOut({ headers: await headers() });
+  await staffAuth().api.signOut({ headers: await headers() });
   redirect("/login");
 }
 export async function signOutPortal() {
-  await portalAuth.api.signOut({ headers: await headers() });
+  await portalAuth().api.signOut({ headers: await headers() });
   redirect("/login");
 }
 
@@ -24,7 +24,7 @@ export async function login(_: unknown, fd: FormData) {
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
   const password = String(fd.get("password") ?? "");
   const portal = await isPortalHost();
-  const auth = portal ? portalAuth : staffAuth;
+  const auth = portal ? portalAuth() : staffAuth();
   try {
     const r = (await auth.api.signInEmail({ body: { email, password }, headers: await headers() })) as { twoFactorRedirect?: boolean };
     if (r?.twoFactorRedirect) return { mfa: true as const, error: undefined };
@@ -36,7 +36,7 @@ export async function login(_: unknown, fd: FormData) {
 
 export async function verifyMfa(_: unknown, fd: FormData) {
   try {
-    await staffAuth.api.verifyTOTP({ body: { code: String(fd.get("code") ?? "") }, headers: await headers() });
+    await staffAuth().api.verifyTOTP({ body: { code: String(fd.get("code") ?? "") }, headers: await headers() });
   } catch {
     return { error: "That code did not work." };
   }
@@ -54,7 +54,7 @@ export async function acceptInvitation(_: unknown, fd: FormData) {
   const claimed = await db.invitation.updateMany({ where: { id: inv.id, acceptedAt: null }, data: { acceptedAt: new Date() } });
   if (claimed.count === 0) return { error: "This invitation was already used." };
   try {
-    const res = await provisioningAuth.api.signUpEmail({ body: { email: inv.email, password, name } });
+    const res = await provisioningAuth().api.signUpEmail({ body: { email: inv.email, password, name } });
     if (inv.kind === "staff") {
       await db.staffMembership.updateMany({ where: { workspaceId: inv.workspaceId, email: inv.email }, data: { userId: res.user.id, status: "active" } });
     } else if (inv.customerId) {

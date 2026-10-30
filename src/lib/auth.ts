@@ -28,7 +28,9 @@ function make(ns: "staff" | "portal", allowSignUp: boolean) {
   });
 }
 
-export const staffAuth = make("staff", false);
-export const portalAuth = make("portal", false);
+// Lazy: nothing reads env at import time, so `next build` works without secrets.
+const cache: Partial<Record<string, ReturnType<typeof make>>> = {};
+export const staffAuth = () => (cache.staff ??= make("staff", false));
+export const portalAuth = () => (cache.portal ??= make("portal", false));
 /** Server-only; used exclusively after an invitation token has been validated. */
-export const provisioningAuth = make("staff", true);
+export const provisioningAuth = () => (cache.prov ??= make("staff", true));

@@ -7,7 +7,7 @@ import { can, type Cap } from "./permissions";
 export type StaffCtx = NonNullable<Awaited<ReturnType<typeof getStaff>>>;
 
 export async function getStaff() {
-  const s = await staffAuth.api.getSession({ headers: await headers() });
+  const s = await staffAuth().api.getSession({ headers: await headers() });
   if (!s) return null;
   const m = await db.staffMembership.findFirst({ where: { userId: s.user.id, status: "active" } });
   if (!m) return null; // deactivated or never a member: no staff access
@@ -22,7 +22,7 @@ export async function requireStaff(cap?: Cap) {
 }
 
 export async function getClient() {
-  const s = await portalAuth.api.getSession({ headers: await headers() });
+  const s = await portalAuth().api.getSession({ headers: await headers() });
   if (!s) return null;
   const ms = await db.clientMembership.findMany({ where: { userId: s.user.id, revokedAt: null }, include: { customer: true } });
   if (!ms.length) return null;
