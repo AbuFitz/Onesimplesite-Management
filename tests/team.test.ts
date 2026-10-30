@@ -19,7 +19,7 @@ async function team() {
 describe("team member level", () => {
   it("has every business capability except managing logins and settings", () => {
     const missing = CAPS.filter((c) => !can("member", c));
-    expect(missing.sort()).toEqual(["settings.write", "staff.manage"]);
+    expect(missing.sort()).toEqual(["staff.manage"]);
   });
   it("a member can't see or manage the team; an owner can", async () => {
     const { owner, member } = await team();

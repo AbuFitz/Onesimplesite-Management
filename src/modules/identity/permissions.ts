@@ -16,7 +16,7 @@ const without = (...c: Cap[]) => new Set(CAPS.filter((x) => !c.includes(x)));
 export const ROLE_CAPS: Record<StaffRole, ReadonlySet<Cap>> = {
   owner: ALL,
   // Everyone on the team gets every business capability, but cannot manage logins or settings.
-  member: without("staff.manage", "settings.write"),
+  member: without("staff.manage"),
   client_director: without("staff.manage", "settings.write", "billing.refund", "audit.read"),
   delivery: new Set<Cap>(["customer.read", "project.read_assigned", "project.write", "calendar.write", "notes.write"]),
   sales: new Set<Cap>(["customer.read", "customer.write", "opportunity.write", "proposal.write", "proposal.send", "calendar.write", "notes.write"]),
@@ -29,7 +29,7 @@ export const can = (role: StaffRole, cap: Cap) => ROLE_CAPS[role].has(cap);
 /** Plain-language summary shown on the Team page. The capability table above is the source of truth. */
 export const ROLE_INFO: Record<StaffRole, { label: string; summary: string }> = {
   owner: { label: "Owner", summary: "Everything, including team members, roles and settings." },
-  member: { label: "Team member (recommended)", summary: "Full access to customers, proposals, contracts, projects, billing, calendar and notes. Cannot see or manage other people's logins, and cannot change settings." },
+  member: { label: "Team member (recommended)", summary: "Full access to customers, proposals, contracts, projects, billing, calendar and notes. Can edit Settings and Terms. Cannot see or manage other people's logins." },
   client_director: { label: "Client director", summary: "All customers, proposals, contracts and projects. Cannot manage the team or settings." },
   delivery: { label: "Delivery", summary: "Projects they own, plus calendar and notes. Cannot see customers' proposals or contracts." },
   sales: { label: "Sales", summary: "Customers, pipeline, proposals (create and send). Cannot record contract completion or see billing." },

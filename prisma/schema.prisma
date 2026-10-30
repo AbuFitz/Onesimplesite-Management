@@ -93,6 +93,11 @@ model Workspace {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
   timezone  String   @default("Europe/London")
+  // Our own company details, shown on every agreement. Never invented: empty until the team fills them in.
+  legalName         String?
+  companyNumber     String?
+  registeredAddress String?
+  vatNumber         String?
   createdAt DateTime @default(now())
 
   staff     StaffMembership[]
@@ -194,6 +199,8 @@ model Customer {
   website       String?
   phone         String?
   billingAddress String?
+  companyNumber String?
+  vatNumber     String?
   tags          String[]
   archivedAt    DateTime?
   version       Int       @default(1)
@@ -305,6 +312,7 @@ model ProposalVersion {
   oneOffMinor Int       @default(0)
   recurringMinor Int    @default(0)
   recurringPeriod String? // month | year
+  requirements Json? // website requirements + payment schedule, filled in by the team for each deal
   validUntil  DateTime?
   sentAt      DateTime? // non-null => immutable (enforced by trigger)
   sentToEmail String?
@@ -648,6 +656,7 @@ model SigningRequest {
   expiresAt     DateTime
   sentById      String?   @db.Uuid
   declineReason String?
+  termsVersionId String?  @db.Uuid
   createdAt     DateTime  @default(now())
 
   contract  Contract         @relation(fields: [contractId], references: [id], onDelete: Restrict)
@@ -686,4 +695,21 @@ model ContractDocument {
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
 
   @@unique([contractId, kind])
+}
+
+// Our standard Terms & Conditions. Published versions are immutable; changes create a new version.
+model TermsVersion {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  number      Int
+  title       String    @default("Terms and Conditions")
+  body        String // same simple markup as agreements: "## Heading" sections and "1.1 clause" lines
+  status      String    @default("draft") // draft | published | retired
+  publishedAt DateTime?
+  publishedBy String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, number])
+  @@index([workspaceId, status])
 }
