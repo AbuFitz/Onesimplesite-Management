@@ -24,6 +24,9 @@ export function proxy(req: NextRequest) {
     if (pathname.startsWith("/portal") || pathname.startsWith("/api/auth/portal")) return new NextResponse("Not found", { status: 404 });
     return NextResponse.next();
   }
-  return new NextResponse("Unknown host", { status: 421 });
+  // Non-production (e.g. a *.vercel.app preview): serve the staff app so a fresh deploy is never a blank 404.
+  // Production stays strict: an unconfigured host is refused with an explanation.
+  if (process.env.APP_ENV !== "production") return NextResponse.next();
+  return new NextResponse(`Host "${h}" is not configured. Set MANAGE_ORIGIN and PORTAL_ORIGIN to the exact URLs this deployment is served on, and add both domains to the hosting project.`, { status: 421 });
 }
 export const config = { matcher: ["/((?!favicon.ico).*)"] };

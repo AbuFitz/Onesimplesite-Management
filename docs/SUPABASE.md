@@ -42,3 +42,10 @@ With `APP_ENV=production` run `npm run db:seed`. It creates Abukar/Farhan/Matthe
 - `P1001/P1002` can't reach DB: you used the pooler for migrations. Use the direct string.
 - `prepared statement ... already exists`: you used the transaction pooler with a driver that names statements; tell me and I'll switch the runtime to the session pooler.
 - `permission denied`: roles.sql was run before the migrations, or on the wrong database. Re-run it.
+
+## Deploying the web app (Vercel) – checklist for "page not found"
+1. Framework preset **Next.js**, root directory = repo root, build command `npm run build` (already the default from package.json).
+2. Add **both** domains to the Vercel project: `manage.<yourdomain>` and `portal.<yourdomain>`. One deployment serves both; routing is by exact hostname.
+3. Set `MANAGE_ORIGIN=https://manage.<yourdomain>` and `PORTAL_ORIGIN=https://portal.<yourdomain>` (no trailing slash) in the project's environment variables, plus the others in step 5 above, then **redeploy** (env changes need a new deployment).
+4. While `APP_ENV` is not `production`, any other hostname (like `xyz.vercel.app`) serves the staff app so you can look around. With `APP_ENV=production` unknown hosts get a 421 explaining which variable is wrong.
+5. Visiting `https://manage.<yourdomain>/` should redirect to `/login`. `https://portal.<yourdomain>/` should redirect to the portal login.

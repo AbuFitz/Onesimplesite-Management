@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { viewSigning, CONSENT_TEXT } from "@/modules/signing/service";
 import { SignForm, DeclineForm } from "@/components/sign-form";
+import { AgreementText } from "@/components/agreement";
 import { fmtDate } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
       <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={160} height={32} priority />
       <p className="mt-8 text-sm text-muted">{r.business} · {r.reference} · sign by {fmtDate(r.expiresAt)}</p>
       <h1 className="mb-6">{r.title}</h1>
-      <article aria-label="Agreement text" className="whitespace-pre-wrap leading-relaxed">{r.contentText}</article>
+      <AgreementText text={r.contentText} />
       <SignForm token={token} defaultName={r.signerName} consent={CONSENT_TEXT} />
       <DeclineForm token={token} />
     </main>
