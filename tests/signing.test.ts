@@ -125,7 +125,7 @@ describe("single-signer capture", () => {
     expect(notice.to).toBe("hello@onesimplesite.co.uk");
     expect(notice.attachments?.[0].filename).toMatch(/signed\.pdf$/);
     const conf = mine.find((m) => m.subject.startsWith("Signed"))!;
-    expect(conf.from).toContain("contracts@onesimplesite.co.uk");
+    expect(conf.from).toContain("legal@onesimplesite.co.uk");
     expect(conf.attachments?.length).toBe(1);
     expect(conf.html).toContain("<img");
   });
