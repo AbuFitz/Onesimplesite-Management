@@ -21,7 +21,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
     ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Tickets", icon: "pipeline" }] }] : []),
-    { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/notes", label: "Notes", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
+    { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/board", label: "Board", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
     { label: "Business", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Business settings", icon: "settings" }] : []),
       ...(can(ctx.role, "data.export") ? [{ href: "/backup", label: "Backup", icon: "backup" }] : []),
@@ -38,7 +38,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const create = [
     ...(can(ctx.role, "proposal.write") ? [{ href: "?new=ticket", label: "New ticket" }] : []),
     ...(can(ctx.role, "calendar.write") ? [{ href: "/calendar/new", label: "New event" }] : []),
-    ...(can(ctx.role, "notes.write") ? [{ href: "/notes", label: "New note" }] : []),
+    ...(can(ctx.role, "notes.write") ? [{ href: "/board", label: "Post to the board" }] : []),
   ];
   return (
     <div className="min-h-dvh bg-white lg:bg-app">

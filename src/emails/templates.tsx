@@ -36,36 +36,36 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
   contract_request: (d) => ({
     subject: `Please review and sign: ${d.title}`,
     node: (
-      <Layout preview={`${d.business} · agreement ready to review and sign`}>
-        <H>Your agreement is ready to sign</H>
-        <P>Hello {d.signerName}, the agreement named below is ready for you to read and sign online. It takes a couple of minutes and works on a phone.</P>
-        <Facts rows={[["Agreement", d.title], ["Reference", d.ref], ["For", d.business], ["Sign by", d.expires]]} />
+      <Layout preview={`${d.business} · your order is ready to review and sign`}>
+        <H>Your order is ready to sign</H>
+        <P>Hi {d.signerName}, your order form is ready. Read it through and sign online. It takes about two minutes and works on a phone.</P>
+        <Facts rows={[["Order", d.title], ["Reference", d.ref], ["For", d.business], ["Sign by", d.expires]]} />
         <Action href={d.link}>Review and sign</Action>
-        <P>Anyone with this link can sign, so please do not forward it. If you were not expecting this, reply and tell us.</P>
+        <P>Please do not forward this link, as anyone who has it can sign. Not expecting this? Just reply and tell us.</P>
       </Layout>
     ),
-    text: `Your agreement is ready to sign\n\nHello ${d.signerName},\n\nThe agreement "${d.title}" (${d.ref}) for ${d.business} is ready for you to read and sign online.\nSign by: ${d.expires}\n\nReview and sign: ${d.link}\n\nAnyone with this link can sign, so please do not forward it. If you were not expecting this, reply and tell us.\n\nOneSimpleSite Contracts`,
+    text: `Your order is ready to sign\n\nHi ${d.signerName},\n\nYour order form "${d.title}" (${d.ref}) for ${d.business} is ready for you to read and sign online.\nSign by: ${d.expires}\n\nReview and sign: ${d.link}\n\nAnyone with this link can sign, so please do not forward it. If you were not expecting this, reply and tell us.\n\nOneSimpleSite Contracts`,
   }),
   signing_confirmation: (d) => ({
     subject: `Signed: ${d.title}`,
     node: (
       <Layout preview={`Thank you. ${d.title} is signed and recorded`}>
-        <H>Thank you, it is signed</H>
-        <P>Hello {d.signerName}, we have recorded your signature on “{d.title}”. {d.hasAttachment ? "A copy of the signed agreement is attached." : "A copy is available from us on request."}</P>
-        <Facts rows={[["Agreement", d.title], ["Reference", d.ref], ["Signed", d.signedAt], ["File fingerprint (SHA-256)", d.fileSha.slice(0, 16) + "…"]]} />
-        <P>Next, your project owner will be in touch about getting started. Please keep this email for your records.</P>
+        <H>Thank you, you are all signed</H>
+        <P>Hello {d.signerName}, we have recorded your signature on “{d.title}”. {d.hasAttachment ? "A copy of the signed order is attached." : "A copy is available from us on request."}</P>
+        <Facts rows={[["Order", d.title], ["Reference", d.ref], ["Signed", d.signedAt], ["File fingerprint (SHA-256)", d.fileSha.slice(0, 16) + "…"]]} />
+        <P>Next, we will be in touch about getting started. Please keep this email for your records.</P>
       </Layout>
     ),
-    text: `Thank you, it is signed\n\nHello ${d.signerName},\n\nWe have recorded your signature on "${d.title}" (${d.ref}) at ${d.signedAt}. ${d.hasAttachment ? "A copy of the signed agreement is attached." : ""}\nFile fingerprint (SHA-256): ${d.fileSha}\n\nNext, your project owner will be in touch about getting started. Please keep this email for your records.\n\nOneSimpleSite Contracts`,
+    text: `Thank you, it is signed\n\nHello ${d.signerName},\n\nWe have recorded your signature on "${d.title}" (${d.ref}) at ${d.signedAt}. ${d.hasAttachment ? "A copy of the signed order is attached." : ""}\nFile fingerprint (SHA-256): ${d.fileSha}\n\nNext, we will be in touch about getting started. Please keep this email for your records.\n\nOneSimpleSite Contracts`,
   }),
   signing_notice: (d) => ({
-    subject: `Contract signed: ${d.business} · ${d.ref}`,
+    subject: `Signed: ${d.business} · ${d.ref}`,
     node: (
       <Layout preview={`${d.signerName} signed ${d.title}`}>
-        <H>Contract signed</H>
-        <P>{d.signerName} has signed “{d.title}” for {d.business}. The project and billing intentions have been created.</P>
+        <H>Signed: {d.business}</H>
+        <P>{d.signerName} has signed “{d.title}” for {d.business}. The project has been created.</P>
         <Facts rows={[["Reference", d.ref], ["Signer", `${d.signerName} (${d.signerEmail})`], ["Signed", d.signedAt], ["SHA-256", d.fileSha]]} />
-        <Action href={d.link}>Open contract</Action>
+        <Action href={d.link}>Open in Manage</Action>
         <P>Signature capture confirms the emailed link was used. It does not verify identity.</P>
       </Layout>
     ),

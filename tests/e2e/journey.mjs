@@ -35,14 +35,20 @@ await staff.click("button:has-text('Save profile')"); await staff.waitForSelecto
 await staff.goto(`${M}/`);
 ok(await staff.locator("text=Finish setting up your profile").count() === 0, "banner disappears once the profile is complete");
 
-// 0b. Notes autosave and calendar quick-add
-await staff.goto(`${M}/notes`); await staff.click("button:has-text('New page')"); await staff.waitForURL(/\/notes\/[0-9a-f-]{36}/);
-await staff.fill("#np-title", "Kick-off notes"); await staff.fill("#np-body", "# Plan\n- [ ] Call the customer");
-await staff.waitForSelector("[role=status]:has-text('Saved')", { timeout: 8000 });
-await staff.reload();
-ok((await staff.locator("main").innerText()).includes("Call the customer"), "note saved itself without pressing save");
+// 0b. Team Board: post, edit with autosave, comment, delete. Calendar quick-add.
+await staff.goto(`${M}/board`); await staff.waitForLoadState("networkidle");
+await staff.click("button:has-text('Post something to the team')");
+await staff.fill("#bp-title", "Website launch checklist"); await staff.fill("#bp-body", "# Before launch\n- [ ] Call the customer");
+await staff.click("button:has-text('Post')"); await staff.waitForSelector("a:has-text('Website launch checklist')");
+ok(true, "a post appears in the board feed");
+await staff.click("a:has-text('Website launch checklist')"); await staff.waitForURL(/\/board\/[0-9a-f-]{36}/);
 await staff.click("input[type=checkbox]"); await staff.waitForSelector("[role=status]:has-text('Saved')", { timeout: 8000 }); await staff.reload();
-ok(await staff.locator("input[type=checkbox]").isChecked(), "ticking a to-do is saved");
+ok(await staff.locator("input[type=checkbox]").isChecked(), "ticking a to-do in a post is saved");
+await staff.fill("#cm-body", "Added the domain step too"); await staff.click("button:has-text('Comment')"); await staff.waitForSelector("text=Added the domain step too");
+ok(true, "comments appear under the post");
+staff.once("dialog", (d) => d.accept());
+await staff.click("button[aria-label='Delete this post']"); await staff.waitForURL(/\/board$/);
+ok(await staff.locator("a:has-text('Website launch checklist')").count() === 0, "a deleted post is gone from the feed");
 await staff.goto(`${M}/calendar`); await staff.fill("#qe-t", "Team sync"); await staff.click("form button:has-text('Add event')"); await staff.waitForURL(/day=/);
 ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar quick-add shows the event on the day");
 

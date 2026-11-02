@@ -3,8 +3,31 @@ import type { ReactNode } from "react";
 
 const kinds = { good: "pill-good", warn: "pill-warn", bad: "pill-bad", neutral: "pill-neutral" } as const;
 /** Status is always a labelled pill with a dot, never colour alone. */
-export function Status({ label, kind = "neutral" }: { label: string; kind?: keyof typeof kinds }) {
-  return <span className={`pill ${kinds[kind]}`}>{label.replaceAll("_", " ")}</span>;
+/**
+ * One vocabulary for every status in the system, in plain words. Raw values from the database
+ * (awaiting_signature, ready_to_launch...) are translated here, so no page shows machine words.
+ */
+export const STATUS_WORDS: Record<string, { label: string; kind: keyof typeof kinds }> = {
+  // quotes and agreements
+  draft: { label: "Draft", kind: "warn" }, sent: { label: "Sent", kind: "neutral" }, accepted: { label: "Signed", kind: "good" },
+  awaiting_signature: { label: "Waiting to sign", kind: "warn" }, completed: { label: "Signed", kind: "good" }, declined: { label: "Declined", kind: "bad" },
+  expired: { label: "Expired", kind: "bad" }, voided: { label: "Withdrawn", kind: "neutral" }, withdrawn: { label: "Withdrawn", kind: "neutral" },
+  // projects
+  planned: { label: "Planned", kind: "neutral" }, awaiting_assets: { label: "Waiting on the client", kind: "warn" }, design: { label: "Design", kind: "neutral" },
+  development: { label: "Building", kind: "neutral" }, qa: { label: "Testing", kind: "neutral" }, client_review: { label: "With the client to review", kind: "warn" },
+  ready_to_launch: { label: "Ready to launch", kind: "good" }, launched: { label: "Live", kind: "good" }, held: { label: "On hold", kind: "warn" }, cancelled: { label: "Cancelled", kind: "bad" },
+  // support tickets
+  open: { label: "Open", kind: "warn" }, in_progress: { label: "In progress", kind: "neutral" }, waiting_customer: { label: "Waiting on the customer", kind: "warn" },
+  resolved: { label: "Resolved", kind: "good" }, closed: { label: "Closed", kind: "neutral" },
+  // generic
+  published: { label: "Live", kind: "good" }, retired: { label: "Replaced", kind: "neutral" }, pending: { label: "Invited", kind: "warn" }, active: { label: "Active", kind: "good" }, deactivated: { label: "Deactivated", kind: "bad" },
+};
+
+export function Status({ label, kind }: { label: string; kind?: keyof typeof kinds }) {
+  const known = STATUS_WORDS[label];
+  const text = known ? known.label : label.replaceAll("_", " ");
+  const k = kind ?? known?.kind ?? "neutral";
+  return <span className={`pill ${kinds[k]}`}>{text}</span>;
 }
 
 export function Avatar({ name, size = 36 }: { name: string; size?: number }) {

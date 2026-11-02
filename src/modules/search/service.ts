@@ -26,7 +26,7 @@ export async function searchAll(ctx: StaffCtx, raw: string) {
     { title: "Proposals", items: proposals.map((p) => ({ href: `/proposals/${p.id}`, title: p.title, sub: `${p.reference} · ${p.customer.displayName} · ${p.status}` })) },
     { title: "Agreements", items: contracts.map((k) => ({ href: `/contracts/${k.id}`, title: k.title, sub: `${k.reference} · ${k.customer.displayName} · ${k.status.replace("_", " ")}` })) },
     { title: "Projects", items: projects.map((p) => ({ href: `/projects/${p.id}`, title: p.name, sub: `${p.reference} · ${p.customer.displayName}` })) },
-    { title: "Notes", items: notes.map((n) => ({ href: `/notes/${n.id}`, title: n.title, sub: n.visibility === "private" ? "Private" : "Team" })) },
+    { title: "Team Board", items: notes.map((n) => ({ href: `/board/${n.id}`, title: n.title, sub: n.visibility === "private" ? "Private" : "Team" })) },
   ].filter((g) => g.items.length);
   return { q, groups };
 }
