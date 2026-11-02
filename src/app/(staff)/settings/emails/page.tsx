@@ -1,45 +1,18 @@
 import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
-import { renderEmail, type TemplateName } from "@/emails/templates";
+import { EMAILS, sampleEmail } from "@/modules/settings/email-samples";
+import { EmailTestButton } from "@/components/email-test-button";
 import { SettingsNav } from "@/components/settings-nav";
 import { RecordHeader } from "@/components/ui";
 
 export const metadata = { title: "Emails" };
-
-const SAMPLE_LINK = "https://portal.onesimplesite.co.uk/s/example";
-/** Every email the system sends, in the order a customer meets them, with what triggers it. */
-const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "Team"; when: string }[] = [
-  { id: "contract_request", label: "Agreement to sign", audience: "Customer", when: "When you press Send for signature on a ticket. One email, one link." },
-  { id: "signing_confirmation", label: "Signed copy", audience: "Customer", when: "Straight after they sign. The signed PDF is attached." },
-  { id: "invitation", label: "Portal invitation", audience: "Customer", when: "When you invite a customer to their client portal." },
-  { id: "password_reset", label: "Password reset", audience: "Customer", when: "When anyone asks to reset a password." },
-  { id: "password_changed", label: "Password changed", audience: "Customer", when: "After a password is changed, as a safety notice." },
-  { id: "signing_notice", label: "Signed notice to us", audience: "Team", when: "Sent to hello@ when a customer signs." },
-  { id: "staff_invitation", label: "Team invitation", audience: "Team", when: "When you add someone to the team." },
-  { id: "backup_reminder", label: "Backup reminder", audience: "Team", when: "Weekly, if no backup has been taken." },
-];
-
-function sample(id: TemplateName) {
-  const to = "customer@example.com";
-  switch (id) {
-    case "contract_request": return renderEmail(id, { to, signerName: "Alex", title: "Website for Sample Café", ref: "OSS-OF-2026-047", link: SAMPLE_LINK, expires: "30 November 2026", business: "Sample Café Ltd" });
-    case "signing_confirmation": return renderEmail(id, { to, signerName: "Alex", title: "Website for Sample Café", ref: "OSS-OF-2026-047", signedAt: "30 October 2026, 14:05", fileSha: "9f2c1ab07d3e44f1", hasAttachment: true });
-    case "invitation": return renderEmail(id, { to, businessName: "Sample Café Ltd", inviter: "Jamie at OneSimpleSite", link: SAMPLE_LINK, expires: "6 November 2026" });
-    case "password_reset": return renderEmail(id, { to, name: "Alex", link: SAMPLE_LINK, minutes: 60 });
-    case "password_changed": return renderEmail(id, { to, name: "Alex", when: "30 October 2026, 14:05" });
-    case "signing_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", title: "Website for Sample Café", ref: "OSS-OF-2026-047", business: "Sample Café Ltd", signerName: "Alex", signerEmail: to, signedAt: "30 October 2026, 14:05", link: "https://manage.onesimplesite.co.uk/contracts/example", fileSha: "9f2c1ab07d3e44f1" });
-    case "staff_invitation": return renderEmail(id, { to: "new.person@onesimplesite.co.uk", name: "New Person", inviter: "Jamie", roleLabel: "Team member", link: "https://manage.onesimplesite.co.uk/invite/example", expires: "6 November 2026" });
-    case "backup_reminder": return renderEmail(id, { to: "hello@onesimplesite.co.uk", lastBackup: "23 October 2026", link: "https://manage.onesimplesite.co.uk/backup" });
-    default: return renderEmail("password_changed", { to, name: "Alex", when: "" });
-  }
-}
 
 export default async function Emails({ searchParams }: { searchParams: Promise<{ e?: string; w?: string }> }) {
   await requireStaff("settings.write");
   const sp = await searchParams;
   const cur = EMAILS.find((x) => x.id === sp.e) ?? EMAILS[0];
   const phone = sp.w === "phone";
-  const r = await sample(cur.id);
+  const r = await sampleEmail(cur.id);
   const href = (e: string, w = phone ? "phone" : "desktop") => `/settings/emails?e=${e}&w=${w}`;
   return (
     <>
@@ -61,11 +34,12 @@ export default async function Emails({ searchParams }: { searchParams: Promise<{
             <div className="min-w-0"><h2 id="em">{cur.label}</h2><p className="text-sm text-muted">{cur.when}</p></div>
             <div className="flex gap-2"><Link className={`btn ${phone ? "btn-quiet" : ""}`} href={href(cur.id, "desktop")}>Desktop</Link><Link className={`btn ${phone ? "" : "btn-quiet"}`} href={href(cur.id, "phone")}>Phone</Link></div>
           </div>
+          <div className="mb-4 flex flex-wrap items-start gap-3"><EmailTestButton only={cur.id} label="Send this one to hello@" /><EmailTestButton label="Send all test emails to hello@" /></div>
           <div className="mb-3 rounded-xl border border-line px-4 py-3 text-sm"><span className="text-muted">Subject</span><p className="font-semibold break-words">{r.subject}</p></div>
           <div className="rounded-2xl bg-[#eef0ee] p-3 sm:p-6">
             <iframe title={`${cur.label} preview`} srcDoc={r.html} sandbox="" className="mx-auto block h-[44rem] max-w-full rounded-lg bg-white" style={{ width: phone ? 390 : 680 }} />
           </div>
-          <p className="hint mt-3">Made-up names and links. Wording and layout are exactly what gets sent.</p>
+          <p className="hint mt-3">Made-up names and links. Wording and layout are exactly what gets sent. The test buttons send to hello@ only, with [TEST] in the subject.</p>
         </section>
       </div>
     </>

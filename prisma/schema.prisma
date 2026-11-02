@@ -215,6 +215,7 @@ model Customer {
 
   workspace     Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   contacts      Contact[]
+  tickets       Ticket[]
   opportunities Opportunity[]
   proposals     Proposal[]
   contracts     Contract[]
@@ -235,9 +236,11 @@ model Contact {
   phone       String?
   isPrimary   Boolean  @default(false)
   marketingOptIn Boolean @default(false)
+  position    String? // where they sit in the business: Owner, Director, Manager...
   createdAt   DateTime @default(now())
 
   customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+  tickets  Ticket[]
 
   @@index([workspaceId, customerId])
   @@index([workspaceId, email])
@@ -756,4 +759,48 @@ model NoteComment {
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
   @@index([noteId, createdAt])
+}
+
+/// A support ticket (an issue, a request or a question) from a person at a customer.
+model Ticket {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  customerId  String    @db.Uuid
+  contactId   String?   @db.Uuid
+  reference   String
+  kind        String    @default("issue") // issue | request | question
+  title       String
+  body        String
+  status      String    @default("open") // open | in_progress | waiting_customer | resolved | closed
+  priority    String    @default("normal") // low | normal | high | urgent
+  source      String    @default("staff") // portal | staff
+  assigneeId  String?   @db.Uuid // StaffMembership
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  customer Customer        @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+  contact  Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  comments TicketComment[]
+
+  @@unique([workspaceId, reference])
+  @@index([workspaceId, status])
+  @@index([workspaceId, customerId])
+}
+
+model TicketComment {
+  id            String   @id @default(uuid()) @db.Uuid
+  workspaceId   String   @db.Uuid
+  ticketId      String   @db.Uuid
+  authorKind    String // staff | client
+  authorName    String
+  authorStaffId String?  @db.Uuid
+  authorUserId  String?
+  body          String
+  internal      Boolean  @default(false) // internal notes are never shown to the customer
+  createdAt     DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
 }
