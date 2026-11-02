@@ -59,7 +59,7 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
     text: `Thank you, it is signed\n\nHello ${d.signerName},\n\nWe have recorded your signature on "${d.title}" (${d.ref}) at ${d.signedAt}. ${d.hasAttachment ? "A copy of the signed order is attached." : ""}\nFile fingerprint (SHA-256): ${d.fileSha}\n\nNext, we will be in touch about getting started. Please keep this email for your records.\n\nOneSimpleSite Contracts`,
   }),
   signing_notice: (d) => ({
-    subject: `Signed: ${d.business} · ${d.ref}`,
+    subject: `New signature: ${d.business} · ${d.ref}`,
     node: (
       <Layout preview={`${d.signerName} signed ${d.title}`}>
         <H>Signed: {d.business}</H>

@@ -119,9 +119,9 @@ describe("single-signer capture", () => {
     await submitSignature(token, ok, {});
     await drainOutbox(200); await drainOutbox(200);
     const mails = readdirSync(".mail-sink").filter((f) => f.endsWith(".json")).map((f) => JSON.parse(readFileSync(`.mail-sink/${f}`, "utf8")));
-    const mine = mails.filter((m) => m.to === "ann-mail@acme.test" || (m.subject.startsWith("Contract signed") && m.text.includes("ann-mail@acme.test")));
-    expect(mine.map((m) => m.subject.split(":")[0]).sort()).toEqual(["Contract signed", "Please review and sign", "Signed"]);
-    const notice = mine.find((m) => m.subject.startsWith("Contract signed"))!;
+    const mine = mails.filter((m) => m.to === "ann-mail@acme.test" || (m.subject.startsWith("New signature") && m.text.includes("ann-mail@acme.test")));
+    expect(mine.map((m) => m.subject.split(":")[0]).sort()).toEqual(["New signature", "Please review and sign", "Signed"]);
+    const notice = mine.find((m) => m.subject.startsWith("New signature"))!;
     expect(notice.to).toBe("hello@onesimplesite.co.uk");
     expect(notice.attachments?.[0].filename).toMatch(/signed\.pdf$/);
     const conf = mine.find((m) => m.subject.startsWith("Signed"))!;
