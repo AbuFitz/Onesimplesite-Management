@@ -9,9 +9,11 @@ export type VarDef = { key: string; label: string; hint?: string; group: "contac
 
 export const VARIABLES: VarDef[] = [
   { key: "general_email", label: "General email", group: "contact", default: ADDRESSES.general },
+  { key: "phone_number", label: "Phone number", group: "contact", default: "", hint: "Shown in the contact details of the Services Agreement." },
+  { key: "legal_email", label: "Legal and formal notices email", group: "contact", default: ADDRESSES.legal, hint: "Used for formal notices such as cancellations." },
   { key: "support_email", label: "Support email", group: "contact", default: ADDRESSES.support, hint: "Where customers report issues." },
   { key: "complaints_email", label: "Complaints email", group: "contact", default: ADDRESSES.complaints },
-  { key: "cancellations_email", label: "Cancellations email", group: "contact", default: ADDRESSES.general, hint: "Where customers send written cancellation notice." },
+  { key: "cancellations_email", label: "Cancellations email", group: "contact", default: ADDRESSES.legal, hint: "Where customers send written cancellation notice." },
   { key: "emergency_contact", label: "Emergency (P1) contact", group: "contact", default: ADDRESSES.urgent, hint: "An email, or a phone number as well, e.g. 'urgent@onesimplesite.co.uk or 07…'." },
   { key: "support_hours", label: "Support hours", group: "service", default: "Monday to Friday, 9:00 am to 5:00 pm UK time, excluding public holidays", multiline: true },
   { key: "availability_target", label: "Hosting availability target", group: "service", default: "99.9%" },

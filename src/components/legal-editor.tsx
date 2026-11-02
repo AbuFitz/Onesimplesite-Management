@@ -1,11 +1,11 @@
 "use client";
-import { useActionState, useCallback, useMemo, useState } from "react";
+import { useActionState, useCallback, useMemo, useRef, useState } from "react";
 import { AgreementText } from "./agreement";
 import { LegalSheet, type SheetMeta } from "./legal-sheet";
 import { TermsBuilder, canBuild } from "./terms-builder";
 import { ErrorSummary } from "./ui";
 import { renumberTerms } from "@/documents/parse";
-import { fillVars } from "@/modules/settings/variables";
+import { fillVars, VARIABLES } from "@/modules/settings/variables";
 import { splitIntro } from "@/modules/settings/legal-starters";
 import { LEGAL, type LegalKind } from "@/modules/settings/legal-docs";
 
@@ -20,6 +20,7 @@ export function LegalEditor({ id, kind, initialTitle, initialBody, meta, saveAct
   const [title, setTitle] = useState(initialTitle);
   const [body, setBody] = useState(initialBody);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const area = useRef<HTMLTextAreaElement>(null);
   const [plain, setPlain] = useState(() => !canBuild(initialBody));
   const onBuild = useCallback((b: string) => setBody(b), []);
   const preview = useMemo(() => {
@@ -46,7 +47,10 @@ export function LegalEditor({ id, kind, initialTitle, initialBody, meta, saveAct
           {plain || !canBuild(body) ? (
             <div>
               <label className="sr-only" htmlFor="lg-body">Wording as text</label>
-              <textarea id="lg-body" className="field min-h-[50dvh] font-mono text-sm" value={body} onChange={(e) => setBody(e.target.value)} spellCheck />
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-sm"><label htmlFor="lg-ins" className="text-muted">Insert a value that can change</label>
+                <select id="lg-ins" className="field !min-h-9 w-auto !py-1 !text-sm" value="" onChange={(e) => { const k = e.target.value; if (!k) return; const a = area.current; const at = a ? a.selectionStart : body.length; setBody(body.slice(0, at) + `{{${k}}}` + body.slice(at)); }}>
+                  <option value="">Choose…</option>{[...VARIABLES.map((v) => [v.key, v.label] as const), ["legal_name", "Legal company name"], ["registered_office", "Registered address"], ["care_standard", "Standard Care Plan price"], ["care_ecommerce", "E-commerce Care Plan price"]].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
+              <textarea id="lg-body" ref={area} className="field min-h-[50dvh] font-mono text-sm" value={body} onChange={(e) => setBody(e.target.value)} spellCheck />
               <details className="mt-2 text-sm"><summary className="cursor-pointer text-muted">How to lay it out</summary>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">{CHEAT.map(([a, b]) => <div key={a} className="contents"><dt className="font-mono text-xs">{a}</dt><dd className="text-muted">{b}</dd></div>)}</dl></details>
             </div>

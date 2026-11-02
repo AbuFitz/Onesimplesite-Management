@@ -22,7 +22,7 @@ async function setup(ctx: StaffCtx, o: { publishPlanDocs: boolean; fillValues: b
     const d = (await listTerms(ctx, kind))[0];
     await publishTerms(ctx, d.id);
   }
-  if (o.fillValues) await saveSettings(ctx, { payment_methods: "Bank transfer", liability_cap: "the fees paid in the previous 12 months", handover_service: "Export of your site files and a handover call" });
+  if (o.fillValues) await saveSettings(ctx, { phone_number: "01923 000000", payment_methods: "Bank transfer", liability_cap: "the fees paid in the previous 12 months", handover_service: "Export of your site files and a handover call" });
   await savePlan(ctx, null, { name: "Standard Care Plan", kind: "standard", price: 29, revisionsPerMonth: 3, backupFrequency: "Daily", backupRetention: "14 days" });
   await savePlan(ctx, null, { name: "E-commerce Care Plan", kind: "ecommerce", price: 39, revisionsPerMonth: 3, backupFrequency: "Daily", backupRetention: "30 days" });
   const plan = (await listPlans(ctx.workspaceId)).find((p) => p.kind === "standard")!;

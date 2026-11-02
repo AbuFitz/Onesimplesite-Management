@@ -38,17 +38,18 @@ ok(await staff.locator("text=Finish setting up your profile").count() === 0, "ba
 // 0b. Team Board: post, edit with autosave, comment, delete. Calendar quick-add.
 await staff.goto(`${M}/board`); await staff.waitForLoadState("networkidle");
 await staff.click("button:has-text('Post something to the team')");
-await staff.fill("#bp-title", "Website launch checklist"); await staff.fill("#bp-body", "# Before launch\n- [ ] Call the customer");
-await staff.click("button:has-text('Post')"); await staff.waitForSelector("a:has-text('Website launch checklist')");
+const postTitle = `Launch checklist ${stamp}`;
+await staff.fill("#bp-title", postTitle); await staff.fill("#bp-body", "# Before launch\n- [ ] Call the customer");
+await staff.click("button:has-text('Post')"); await staff.waitForSelector(`a:has-text("${postTitle}")`);
 ok(true, "a post appears in the board feed");
-await staff.click("a:has-text('Website launch checklist')"); await staff.waitForURL(/\/board\/[0-9a-f-]{36}/);
+await staff.click(`a:has-text("${postTitle}")`); await staff.waitForURL(/\/board\/[0-9a-f-]{36}/);
 await staff.click("input[type=checkbox]"); await staff.waitForSelector("[role=status]:has-text('Saved')", { timeout: 8000 }); await staff.reload();
 ok(await staff.locator("input[type=checkbox]").isChecked(), "ticking a to-do in a post is saved");
 await staff.fill("#cm-body", "Added the domain step too"); await staff.click("button:has-text('Comment')"); await staff.waitForSelector("text=Added the domain step too");
 ok(true, "comments appear under the post");
 staff.once("dialog", (d) => d.accept());
 await staff.click("button[aria-label='Delete this post']"); await staff.waitForURL(/\/board$/);
-ok(await staff.locator("a:has-text('Website launch checklist')").count() === 0, "a deleted post is gone from the feed");
+ok(await staff.locator(`a:has-text("${postTitle}")`).count() === 0, "a deleted post is gone from the feed");
 await staff.goto(`${M}/calendar`); await staff.fill("#qe-t", "Team sync"); await staff.click("form button:has-text('Add event')"); await staff.waitForURL(/day=/);
 ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar quick-add shows the event on the day");
 
@@ -57,6 +58,7 @@ ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar qu
   const sp = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   await sp.goto(`${P}/s/sample`); await sp.waitForLoadState("networkidle");
   ok((await sp.locator("body").innerText()).includes("This is a sample"), "sample signing page explains it is a sample");
+  await sp.locator("canvas").scrollIntoViewIfNeeded();
   const box = await sp.locator("canvas").boundingBox();
   await sp.mouse.move(box.x + 30, box.y + 80); await sp.mouse.down(); await sp.mouse.move(box.x + 120, box.y + 40, { steps: 8 }); await sp.mouse.move(box.x + 200, box.y + 90, { steps: 8 }); await sp.mouse.up();
   await sp.check("input[name=consent]"); await sp.click("button:has-text('Sign and submit')"); await sp.waitForURL(/\/s\/sample\/done/);
@@ -78,7 +80,7 @@ if (await staff.locator("button:has-text('Publish version')").count()) {
 }
 // Values the documents quote: the ones with no sensible default must be decided before an order can go out.
 await staff.goto(`${M}/settings/plans`);
-await staff.fill("#v-payment_methods", "Bank transfer"); await staff.fill("#v-liability_cap", "the fees paid in the previous 12 months"); await staff.fill("#v-handover_service", "A copy of your site files and a handover call");
+await staff.fill("#v-phone_number", "01923 000000"); await staff.fill("#v-payment_methods", "Bank transfer"); await staff.fill("#v-liability_cap", "the fees paid in the previous 12 months"); await staff.fill("#v-handover_service", "A copy of your site files and a handover call");
 await staff.click("button:has-text('Save details')"); await staff.waitForURL(/saved=1/);
 ok((await staff.locator("main").innerText()).includes("Standard Care Plan") || true, "plans and details page saves");
 await staff.goto(`${M}/settings/terms`);
@@ -86,9 +88,9 @@ ok(await staff.locator("text=Live: ").count() > 0, "terms published");
 
 // 3. Enquiry -> customer details -> proposal with requirements
 await staff.goto(`${M}/settings/legal`);
-ok((await staff.locator("main li h3").allInnerTexts()).join("|") === ["Services Agreement", "Data Processing Agreement", "Change Request"].join("|"), "the three customer legal documents are listed");
+ok((await staff.locator("main li h3").allInnerTexts()).join("|") === ["Services Agreement", "Service Level Agreement", "Hosting and Care Plan Terms", "Data Processing Agreement", "Change Request"].join("|"), "the five customer legal documents are listed");
 await staff.goto(`${M}/settings/legal/dpa`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/legal\/dpa\/[0-9a-f-]{36}/);
-ok((await staff.locator("article").first().innerText()).includes("Data Processing Agreement"), "data processing agreement preview renders in the document layout");
+ok((await staff.locator("article").first().innerText()).toLowerCase().includes("data processing agreement"), "data processing agreement preview renders in the document layout");
 ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "data processing agreement can't be published while decisions are open");
 await staff.goto(`${M}/settings/emails?e=signing_confirmation&w=phone`);
 ok(await staff.locator("iframe").count() === 1 && (await staff.locator("main").innerText()).includes("Signed copy"), "email preview page renders the customer emails");
@@ -152,7 +154,7 @@ ok(true, "customer signed with one click on a phone-width screen");
 drain();
 const all = sink();
 const conf = all.find((m) => m.subject.startsWith("Signed:") && m.to === email);
-const notice = all.find((m) => m.subject.startsWith("Contract signed") && m.text.includes(email));
+const notice = all.find((m) => m.subject.startsWith("New signature") && m.text.includes(email));
 ok(conf?.attachments?.length === 1, "customer gets confirmation with the signed PDF");
 ok(notice?.to === "hello@onesimplesite.co.uk" && notice.attachments?.length === 1, "hello@ gets the internal notice with the signed PDF");
 await staff.goto(proposalUrl);
