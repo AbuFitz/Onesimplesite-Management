@@ -98,6 +98,16 @@ export async function setAliasAction(fd: FormData) {
   try { await setAlias(ctx, String(fd.get("id")), String(fd.get("alias") ?? "")); } catch (e) { return back("/team", e); }
   redirect("/team");
 }
+export async function saveSettingsAction(fd: FormData) {
+  const ctx = await requireStaff("settings.write");
+  try { await saveSettings(ctx, Object.fromEntries([...fd.entries()].filter(([k]) => !k.startsWith("$")))); } catch (e) { return back("/settings/plans", e); }
+  redirect("/settings/plans?saved=1");
+}
+export async function savePlanAction(fd: FormData) {
+  const ctx = await requireStaff("settings.write");
+  try { await savePlan(ctx, String(fd.get("id") || "") || null, { name: fd.get("name"), kind: fd.get("kind"), price: fd.get("price"), revisionsPerMonth: fd.get("revisionsPerMonth"), backupFrequency: fd.get("backupFrequency") ?? undefined, backupRetention: fd.get("backupRetention") ?? undefined, summary: fd.get("summary") ?? undefined, active: fd.get("active") === "on" }); } catch (e) { return back("/settings/plans", e); }
+  redirect("/settings/plans?saved=1");
+}
 export async function changeRoleAction(fd: FormData) {
   const ctx = await requireStaff("staff.manage");
   try { await changeRole(ctx, String(fd.get("id")), String(fd.get("role"))); } catch (e) { return back("/team", e); }
@@ -119,6 +129,7 @@ export async function retryEmailsAction() {
 
 import { updateCompany, saveTermsDraft, publishTerms } from "@/modules/settings/service";
 import { isLegalKind } from "@/modules/settings/legal-docs";
+import { saveSettings, savePlan } from "@/modules/settings/plans";
 
 export async function updateCompanyAction(fd: FormData) {
   const ctx = await requireStaff("settings.write");

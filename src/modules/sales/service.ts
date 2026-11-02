@@ -24,7 +24,8 @@ export const REQUIREMENT_FIELDS = [
   ["domainHosting", "Domain and hosting"], ["contentBy", "Who supplies content, images and logo"], ["timeline", "Timeline and launch date"],
   ["payment", "Payment schedule for this order (amounts and dates)"], ["notes", "Other requirements or exclusions"],
 ] as const;
-const requirementsInput = z.object(Object.fromEntries(REQUIREMENT_FIELDS.map(([k]) => [k, z.string().trim().max(5000).optional()]))).partial();
+// The plan is not wording: it is the id of the care plan being sold, stored with the requirements so it is frozen with the quote.
+const requirementsInput = z.object({ ...Object.fromEntries(REQUIREMENT_FIELDS.map(([k]) => [k, z.string().trim().max(5000).optional()])), plan: z.string().uuid().optional() }).partial();
 export type Requirements = z.infer<typeof requirementsInput>;
 
 export const draftInput = z.object({
@@ -43,10 +44,23 @@ function totals(lines: z.infer<typeof lineInput>[]) {
   return { oneOffMinor: oneOff, recurringMinor: recurring };
 }
 
+type Draft = z.infer<typeof draftInput>;
+
+/** Choosing a care plan adds its monthly price as a repeating line (unless that line is already there), so the price and the plan can't disagree. */
+async function applyPlan(tx: Tx, workspaceId: string, i: Draft): Promise<Draft> {
+  const planId = i.requirements?.plan;
+  if (!planId) return i;
+  const plan = await tx.servicePlan.findFirst({ where: { id: planId, workspaceId, active: true } });
+  if (!plan) throw new DomainError("validation", "That care plan isn't available any more. Pick another.");
+  const has = i.lines.some((l) => l.recurring && l.description.trim().toLowerCase() === plan.name.toLowerCase());
+  return has ? i : { ...i, recurringPeriod: i.recurringPeriod ?? "month", lines: [...i.lines, { description: plan.name, quantity: 1, unitMinor: plan.monthlyMinor, recurring: true }] };
+}
+
 export async function createProposal(ctx: StaffCtx, customerId: string, opportunityId: string | null, raw: unknown) {
   if (!can(ctx.role, "proposal.write")) throw forbidden();
-  const i = draftInput.parse(raw);
+  const parsed = draftInput.parse(raw);
   return db.$transaction(async (tx) => {
+    const i = await applyPlan(tx, ctx.workspaceId, parsed);
     const c = await tx.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId } });
     if (!c) throw notFound("Customer not found.");
     const reference = await nextRef(tx, ctx.workspaceId, "quotation");
@@ -73,8 +87,9 @@ async function writeVersion(tx: Tx, workspaceId: string, proposalId: string, num
 /** Edit the current draft; stale browser/device sessions are rejected, never last-write-wins. */
 export async function saveDraft(ctx: StaffCtx, proposalId: string, expectedVersion: number, raw: unknown) {
   if (!can(ctx.role, "proposal.write")) throw forbidden();
-  const i = draftInput.parse(raw);
+  const parsed = draftInput.parse(raw);
   return db.$transaction(async (tx) => {
+    const i = await applyPlan(tx, ctx.workspaceId, parsed);
     const p = await tx.proposal.findFirst({ where: { id: proposalId, workspaceId: ctx.workspaceId } });
     if (!p) throw notFound();
     if (p.status !== "draft") throw new DomainError("conflict", "Sent proposals are immutable. Create a new version instead.");

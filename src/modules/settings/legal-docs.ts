@@ -1,5 +1,5 @@
 /** The legal documents we send to customers during onboarding. Pure data: safe to import in the browser. */
-export const LEGAL_KINDS = ["terms", "dpa", "change_request"] as const;
+export const LEGAL_KINDS = ["terms", "sla", "hosting", "dpa", "change_request"] as const;
 export type LegalKind = (typeof LEGAL_KINDS)[number];
 
 export type LegalMeta = {
@@ -10,6 +10,8 @@ export type LegalMeta = {
 
 export const LEGAL: Record<LegalKind, LegalMeta> = {
   terms: { label: "Services Agreement", ref: "OSS-SA-001", audience: "Customer-facing", purpose: "Our master terms. Part of every order and accepted when the customer signs." },
+  sla: { label: "Service Level Agreement", ref: "OSS-SL-001", audience: "Customer-facing", purpose: "Hosting availability, support hours and response targets. Signed with every order that has a care plan." },
+  hosting: { label: "Hosting and Care Plan Terms", ref: "OSS-HC-001", audience: "Customer-facing", purpose: "Hosting, Care Plan, backups and security. Signed with every order that has a care plan." },
   dpa: { label: "Data Processing Agreement", ref: "OSS-DP-001", audience: "Private & confidential", purpose: "Per customer: used when we handle their visitors' data, such as form submissions." },
   change_request: { label: "Change Request", ref: "OSS-CR-001", audience: "Private & confidential", purpose: "Per customer: agrees a change to scope, price or timetable before the work starts." },
 };

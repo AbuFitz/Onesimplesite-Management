@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { createLead, updateCustomerDetails } from "@/modules/crm/service";
 import { createProposal, reviseProposal } from "@/modules/sales/service";
 import { sendAgreement, submitSignature, viewSigning } from "@/modules/signing/service";
-import { updateCompany, saveTermsDraft, publishTerms, STARTER_TERMS } from "@/modules/settings/service";
+import { updateCompany, saveTermsDraft, publishTerms } from "@/modules/settings/service";
 import type { StaffCtx } from "@/modules/identity/session";
 
 async function ws(role: StaffCtx["role"] = "member"): Promise<StaffCtx> {
@@ -39,7 +39,7 @@ describe("single-step agreement", () => {
 
   it("terms can't be published while [TBC: ...] placeholders remain; published terms are immutable", async () => {
     const ctx = await ws();
-    const t = await saveTermsDraft(ctx, null, { title: "Terms", body: STARTER_TERMS });
+    const t = await saveTermsDraft(ctx, null, { title: "Terms", body: "## Services\n1.1 [TBC: describe the services]" });
     await expect(publishTerms(ctx, t.id)).rejects.toThrow(/placeholder/);
     const ok = await saveTermsDraft(ctx, t.id, { title: "Terms", body: REAL_TERMS });
     const pub = await publishTerms(ctx, ok.id);

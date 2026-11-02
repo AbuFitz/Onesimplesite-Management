@@ -10,6 +10,8 @@ import { runCompletionWorkflow } from "@/modules/contracts/service";
 import type { StaffCtx } from "@/modules/identity/session";
 import { buildSignedPdf } from "./pdf";
 import { currentTerms, getCompany, companyMissing } from "@/modules/settings/service";
+import { fillVars, emptyVars, labelFor } from "@/modules/settings/variables";
+import { documentValues } from "@/modules/settings/plans";
 import { customerDetailsMissing } from "@/modules/crm/service";
 import { REQUIREMENT_FIELDS } from "@/modules/sales/service";
 import { renumberTerms, normalizeNewlines } from "@/documents/parse";
@@ -198,6 +200,7 @@ export async function declineSigning(token: string, reason: string) {
 
 
 // ───────── One agreement: order summary + website requirements + price + our Terms & Conditions ─────────
+type Doc = { number: number; body: string };
 type ComposeIn = {
   reference: string; title: string; dateLabel: string; validUntilLabel: string; currency: string; oneOffMinor: number; recurringMinor: number; recurringPeriod: string | null;
   lines: { description: string; quantity: number; unitMinor: number; recurring: boolean }[];
@@ -206,21 +209,29 @@ type ComposeIn = {
   client: { legalName: string; kind: string; companyNumber: string | null; billingAddress: string; vatNumber: string | null };
   contact?: { name: string; email: string | null };
   issuedBy?: { name: string; position: string };
-  terms: { number: number; body: string };
+  /** The documents that make up the pack, as published. The SLA and hosting terms are included when the order has a care plan. */
+  docs: { terms: Doc; sla?: Doc; hosting?: Doc };
+  plan?: { name: string; monthlyMinor: number; revisionsPerMonth: number; backupFrequency: string | null; backupRetention: string | null };
+  /** Terms for this customer only. They win over the Services Agreement where they differ. */
+  special?: string;
+  /** Values for the {{placeholders}} inside the documents. */
+  vars: Record<string, string>;
 };
 const cell = (t: string) => t.replace(/\|/g, "/").replace(/\s*\n\s*/g, ", ").trim();
 const lines_ = (t: string | undefined) => (t ?? "").split("\n").map((l) => l.trim().replace(/^[-•]\s*/, "")).filter(Boolean);
+const joinNames = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
 /**
- * The order form the customer reads and signs, in the structure of the OneSimpleSite quotation:
- * prepared by and for, the project, what is included, price, payment, our Services Agreement, acceptance.
+ * The agreement pack the customer reads and signs, in the structure of the OneSimpleSite quotation:
+ * prepared by and for, the project, what is included, price, the service plan, then the full documents
+ * (Services Agreement, SLA, Hosting and Care Plan Terms), and acceptance. One signature covers all of it.
  */
 export function composeAgreement(c: ComposeIn) {
   const m = (n: number) => money(n, c.currency);
   const req = Object.fromEntries(Object.entries(c.requirements).map(([k, v]) => [k, v && normalizeNewlines(v)])) as Record<string, string | undefined>;
   const per = c.recurringPeriod ? `per ${c.recurringPeriod}` : "recurring";
   const included = [...lines_(req.features), ...lines_(req.integrations)];
-  const notes = lines_(req.notes), pay = lines_(req.payment);
+  const notes = lines_(req.notes), pay = lines_(req.payment), specials = lines_(c.special);
   const row = (k: string, v: string | undefined) => (v?.trim() ? [`kv: ${k} | ${cell(v)}`] : []);
   let section = 0;
   // Headings are numbered by the document parser; the count is kept here so clauses carry the right number.
@@ -228,9 +239,9 @@ export function composeAgreement(c: ComposeIn) {
   const clauses = (items: string[]) => items.map((x, i) => `${section}.${i + 1} ${x}`);
 
   const out: string[] = [
-    `This order form sets out what ${c.provider.legalName} will do for ${c.client.legalName}, the fixed price, and how we will work together. Signing it makes it a binding agreement on the terms of our Services Agreement below.`,
+    `This order form sets out what ${c.provider.legalName} will do for ${c.client.legalName}, the fixed price, and how we will work together. Signing it makes it a binding agreement on the terms of the documents that follow.`,
     "",
-    `party: Prepared by | ${c.provider.legalName} | ${[c.provider.companyNumber && `Registered in England and Wales, no. ${c.provider.companyNumber}`, `Registered office: ${cell(c.provider.registeredAddress)}`, "Email: hello@onesimplesite.co.uk", c.provider.vatNumber && `VAT no. ${c.provider.vatNumber}`].filter(Boolean).join(" ; ")}`,
+    `party: Prepared by | ${c.provider.legalName} | ${[c.provider.companyNumber && `Registered in England and Wales, no. ${c.provider.companyNumber}`, `Registered office: ${cell(c.provider.registeredAddress)}`, `Email: ${c.vars.general_email || "hello@onesimplesite.co.uk"}`, c.provider.vatNumber && `VAT no. ${c.provider.vatNumber}`].filter(Boolean).join(" ; ")}`,
     `party: Prepared for | ${c.client.legalName} | ${[c.contact?.name, c.contact?.email && `Email: ${c.contact.email}`, c.client.companyNumber && `Company no. ${c.client.companyNumber}`, cell(c.client.billingAddress), c.client.vatNumber && `VAT no. ${c.client.vatNumber}`].filter(Boolean).join(" ; ")}`,
     "",
     `kv: Order number | ${c.reference}`, `kv: Date | ${c.dateLabel}`, `kv: Valid until | ${c.validUntilLabel}`,
@@ -248,15 +259,28 @@ export function composeAgreement(c: ComposeIn) {
     "",
     c.provider.vatNumber ? "note: Amounts exclude VAT, which is added at the current rate. Invoices are issued separately for the amounts and dates below." : `note: VAT is not charged because ${c.provider.legalName} is not VAT-registered. Invoices are issued separately for the amounts and dates below.`,
     ...clauses(pay),
-    "", h("Services Agreement"), `note: Our Services Agreement (version ${c.terms.number}) forms part of this order.`, "",
-    renumberTerms(c.terms.body.trim()),
+  );
+  if (c.plan) {
+    out.push("", h("Your service plan"),
+      `kv: Plan | ${cell(c.plan.name)}`, `kv: Monthly price | ${m(c.plan.monthlyMinor)} per month`, `kv: Website revisions | Up to ${c.plan.revisionsPerMonth} each calendar month`,
+      ...row("Backups", c.plan.backupFrequency ? `${c.plan.backupFrequency}${c.plan.backupRetention ? `, kept for ${c.plan.backupRetention}` : ""}` : undefined),
+      ...row("Hosting availability target", c.vars.availability_target), ...row("Support hours", c.vars.support_hours));
+  }
+  if (specials.length) out.push("", h("Special terms for this order"), "note: Where a special term below differs from our Services Agreement, the special term applies to this order.", ...clauses(specials));
+  const names = ["our Services Agreement", ...(c.docs.sla ? ["our Service Level Agreement"] : []), ...(c.docs.hosting ? ["our Hosting and Care Plan Terms"] : [])];
+  out.push("", h("The agreement documents"), `note: This order is made up of the order form above${c.plan ? ", your service plan" : ""}, ${joinNames(names)}. Together they form the agreement between us. They follow in full.`);
+  const embed = (title: string, d: Doc) => out.push("", h(title), `note: ${title}, version ${d.number}.`, "", renumberTerms(d.body.trim()));
+  embed("Services Agreement", c.docs.terms);
+  if (c.docs.sla) embed("Service Level Agreement", c.docs.sla);
+  if (c.docs.hosting) embed("Hosting and Care Plan Terms", c.docs.hosting);
+  out.push(
     "", h("Accepting this order"),
-    ...clauses(["To accept, sign below. Signing is your acceptance of this order and of our Services Agreement."]),
+    ...clauses(["To accept, sign below. Signing is your acceptance of this order and of every document in it."]),
     "",
     `sign: For ${c.provider.legalName.toUpperCase()}${c.issuedBy ? ` | ${c.issuedBy.name} | ${c.issuedBy.name} | ${c.issuedBy.position} | ${c.dateLabel}` : ""}`,
     `sign: Accepted by ${c.client.legalName.toUpperCase()}`,
   );
-  return out.join("\n");
+  return fillVars(out.join("\n"), c.vars);
 }
 
 /**
@@ -275,12 +299,22 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
       ...companyMissing(company).map((m) => `our ${m} (Settings)`),
       ...customerDetailsMissing(p.customer).map((m) => `the customer's ${m}`),
     ];
-    const published = await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind: "terms", status: "published" } });
-    const useDraft = !published && process.env.ALLOW_DRAFT_TERMS === "true";
-    const terms = published ?? (useDraft ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind: "terms" }, orderBy: { number: "desc" } }) : null);
-    if (!terms) blockers.push("published Services Agreement (Business settings)");
-    if (blockers.length) throw new DomainError("validation", `Before sending, add: ${blockers.join("; ")}.`);
     const v = await tx.proposalVersion.findFirstOrThrow({ where: { proposalId, number: p.currentVersion }, include: { lines: { orderBy: { position: "asc" } } } });
+    const reqs = (v.requirements ?? {}) as Record<string, string | undefined>;
+    const plan = reqs.plan ? await tx.servicePlan.findFirst({ where: { id: reqs.plan, workspaceId: ctx.workspaceId } }) : null;
+    // The pack: our Services Agreement always; the SLA and hosting terms when the order has a care plan. Published versions only.
+    const draftOk = process.env.ALLOW_DRAFT_TERMS === "true";
+    const pick = async (kind: "terms" | "sla" | "hosting") =>
+      (await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind, status: "published" } })) ?? (draftOk ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind }, orderBy: { number: "desc" } }) : null);
+    const [terms, sla, hosting] = await Promise.all([pick("terms"), plan ? pick("sla") : null, plan ? pick("hosting") : null]);
+    const useDraft = [terms, sla, hosting].some((d) => d && d.status !== "published");
+    if (!terms) blockers.push("a published Services Agreement (Business settings, Legal documents)");
+    if (plan && !sla) blockers.push("a published Service Level Agreement (Business settings, Legal documents)");
+    if (plan && !hosting) blockers.push("published Hosting and Care Plan Terms (Business settings, Legal documents)");
+    const vars = await documentValues(ctx.workspaceId, plan?.id);
+    const unfilled = emptyVars([terms?.body, sla?.body, hosting?.body].filter(Boolean).join("\n"), vars).map(labelFor);
+    if (unfilled.length) blockers.push(`these details (Business settings, Plans and details): ${[...new Set(unfilled)].join(", ")}`);
+    if (blockers.length) throw new DomainError("validation", `Before sending, add: ${blockers.join("; ")}.`);
     const expiresAt = new Date(Date.now() + EXPIRY_DAYS * 864e5);
     await tx.proposalVersion.update({ where: { id: v.id }, data: { sentAt: new Date(), sentToEmail: i.email, validUntil: v.validUntil ?? expiresAt } });
     await tx.proposal.update({ where: { id: p.id }, data: { status: "sent", version: { increment: 1 } } });
@@ -295,7 +329,9 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
       client: { legalName: p.customer.legalName!, kind: p.customer.kind, companyNumber: p.customer.companyNumber, billingAddress: p.customer.billingAddress!, vatNumber: p.customer.vatNumber },
       contact: { name: i.name, email: i.email },
       issuedBy: { name: ctx.name, position: (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { jobTitle: true } }))?.jobTitle || "OneSimpleSite" },
-      terms: { number: terms!.number, body: terms!.body },
+      docs: { terms: { number: terms!.number, body: terms!.body }, ...(sla ? { sla: { number: sla.number, body: sla.body } } : {}), ...(hosting ? { hosting: { number: hosting.number, body: hosting.body } } : {}) },
+      plan: plan ? { name: plan.name, monthlyMinor: plan.monthlyMinor, revisionsPerMonth: plan.revisionsPerMonth, backupFrequency: plan.backupFrequency, backupRetention: plan.backupRetention } : undefined,
+      special: v.terms || undefined, vars,
     });
     const contract = await tx.contract.create({
       data: { workspaceId: ctx.workspaceId, customerId: p.customerId, reference, title: p.title, status: "awaiting_signature", proposalVersionId: v.id, scopeSnapshot: `${v.scope}\n\n${v.terms}`.trim(), oneOffMinor: v.oneOffMinor, recurringMinor: v.recurringMinor, currency: v.currency, signingMode: "original_capture" },
@@ -303,7 +339,7 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
     const req = await tx.signingRequest.create({ data: { workspaceId: ctx.workspaceId, contractId: contract.id, signerName: i.name, signerEmail: i.email, contentText, contentSha256: sha256(contentText), expiresAt, sentById: ctx.staffId, termsVersionId: terms!.id } });
     const { token, hash } = newToken();
     await tx.scopedLinkToken.create({ data: { workspaceId: ctx.workspaceId, purpose: "contract_sign", entityId: req.id, tokenHash: hash, recipientEmail: i.email, expiresAt } });
-    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "agreement.sent", targetType: "contract", targetId: contract.id, customerId: p.customerId, detail: { to: i.email, termsVersion: terms!.number, draftWording: useDraft } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "agreement.sent", targetType: "contract", targetId: contract.id, customerId: p.customerId, detail: { to: i.email, termsVersion: terms!.number, documents: [{ kind: "terms", id: terms!.id, version: terms!.number }, ...(sla ? [{ kind: "sla", id: sla.id, version: sla.number }] : []), ...(hosting ? [{ kind: "hosting", id: hosting.id, version: hosting.number }] : [])], plan: plan?.key ?? null, draftWording: useDraft } });
     const alias = (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { aliasEmail: true } }))?.aliasEmail;
     await enqueue(tx, ctx.workspaceId, "email.contract_request", `contract.request:${req.id}`, { ...(alias ? { replyTo: alias } : {}), to: i.email, signerName: i.name, title: p.title, ref: reference, business: p.customer.legalName ?? p.customer.displayName, link: portalLink(`/s/${token}`), expires: day(expiresAt) });
     return { contractId: contract.id, requestId: req.id, token, draftWording: useDraft };

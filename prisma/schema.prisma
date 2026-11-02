@@ -99,8 +99,10 @@ model Workspace {
   companyNumber     String?
   registeredAddress String?
   vatNumber         String?
+  settings          Json     @default("{}") // values the legal documents quote: support hours, notice period, emails...
   createdAt DateTime @default(now())
 
+  plans     ServicePlan[]
   staff     StaffMembership[]
   customers Customer[]
 }
@@ -805,4 +807,26 @@ model TicketComment {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId, createdAt])
+}
+
+/// A care plan the team sells (for example Standard £29, E-commerce £39). Edited in Business settings.
+model ServicePlan {
+  id                String   @id @default(uuid()) @db.Uuid
+  workspaceId       String   @db.Uuid
+  key               String // standard | ecommerce | a slug
+  name              String
+  kind              String   @default("custom") // standard | ecommerce | custom
+  monthlyMinor      Int      @default(0)
+  revisionsPerMonth Int      @default(3)
+  backupFrequency   String?
+  backupRetention   String?
+  summary           String?
+  active            Boolean  @default(true)
+  position          Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@unique([workspaceId, key])
 }

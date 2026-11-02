@@ -1,4 +1,5 @@
 import type { LegalKind } from "./legal-docs";
+import { SERVICES_AGREEMENT, SERVICE_LEVEL_AGREEMENT, HOSTING_CARE_TERMS } from "./legal-text";
 
 export type CompanyFacts = { legalName: string | null; companyNumber: string | null; registeredAddress: string | null };
 
@@ -90,7 +91,10 @@ kv: Reason | [why the change is needed]
 sign: For the Supplier
 sign: For the Client`;
 
-    case "terms": default: return "";
+    case "terms": return SERVICES_AGREEMENT;
+    case "sla": return SERVICE_LEVEL_AGREEMENT;
+    case "hosting": return HOSTING_CARE_TERMS;
+    default: return "";
   }
 }
 

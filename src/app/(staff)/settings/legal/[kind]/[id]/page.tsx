@@ -6,6 +6,7 @@ import { isLegalKind, LEGAL } from "@/modules/settings/legal-docs";
 import { saveLegalAction, publishLegalAction } from "@/app/actions/work";
 import { placeholderCount } from "@/documents/parse";
 import { LegalEditor } from "@/components/legal-editor";
+import { documentValues } from "@/modules/settings/plans";
 import { RecordHeader, Status, ErrorSummary } from "@/components/ui";
 
 export const metadata = { title: "Legal document" };
@@ -27,6 +28,7 @@ export default async function LegalEditorPage({ params, searchParams }: { params
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
       {!draft && <p className="mb-4 text-sm text-muted">{t.status === "published" ? "This version is published and can't be changed." : "This version is retired."} Saving creates a new draft based on it.</p>}
       <LegalEditor
+        vars={await documentValues(ctx.workspaceId)}
         id={t.id} kind={kind} initialTitle={t.title} initialBody={t.body} saveAction={saveLegalAction}
         meta={{ ref: m.ref, audience: m.audience, version: `${t.number}.0`, status: t.status[0].toUpperCase() + t.status.slice(1), date: new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(t.publishedAt ?? t.updatedAt) }}
         saveLabel={draft ? "Save draft" : "Save as new draft"}

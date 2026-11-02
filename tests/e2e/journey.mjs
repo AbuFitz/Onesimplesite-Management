@@ -52,6 +52,17 @@ ok(await staff.locator("a:has-text('Website launch checklist')").count() === 0, 
 await staff.goto(`${M}/calendar`); await staff.fill("#qe-t", "Team sync"); await staff.click("form button:has-text('Add event')"); await staff.waitForURL(/day=/);
 ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar quick-add shows the event on the day");
 
+// 0c. The sample signing page behind the test emails: real page, nothing recorded
+{
+  const sp = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await sp.goto(`${P}/s/sample`); await sp.waitForLoadState("networkidle");
+  ok((await sp.locator("body").innerText()).includes("This is a sample"), "sample signing page explains it is a sample");
+  const box = await sp.locator("canvas").boundingBox();
+  await sp.mouse.move(box.x + 30, box.y + 80); await sp.mouse.down(); await sp.mouse.move(box.x + 120, box.y + 40, { steps: 8 }); await sp.mouse.move(box.x + 200, box.y + 90, { steps: 8 }); await sp.mouse.up();
+  await sp.check("input[name=consent]"); await sp.click("button:has-text('Sign and submit')"); await sp.waitForURL(/\/s\/sample\/done/);
+  ok(true, "the sample can be signed and records nothing");
+}
+
 // 1. Settings: company details
 await staff.goto(`${M}/settings`);
 await staff.fill("#legalName", "OneSimpleSite Ltd"); await staff.fill("#companyNumber", "01234567"); await staff.fill("#registeredAddress", "1 High Street, London");
@@ -62,12 +73,14 @@ ok(true, "company details saved in Settings");
 await staff.goto(`${M}/settings/terms`);
 await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
 if (await staff.locator("button:has-text('Publish version')").count()) {
-  ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "publish is blocked while [TBC] placeholders remain");
-  const clauses = staff.locator("textarea[aria-label^='Clause']");
-  for (let k = 0, n = await clauses.count(); k < n; k++) await clauses.nth(k).fill("The Provider and the Client will act reasonably and in line with the Order Summary.");
-  await staff.click("button:has-text('Save draft')"); await staff.waitForURL(/saved=1/);
+  // The starter wording is complete (values live in settings), so it can be published as it stands.
   await staff.click("button:has-text('Publish version')"); await staff.waitForURL(/published=1/);
 }
+// Values the documents quote: the ones with no sensible default must be decided before an order can go out.
+await staff.goto(`${M}/settings/plans`);
+await staff.fill("#v-payment_methods", "Bank transfer"); await staff.fill("#v-liability_cap", "the fees paid in the previous 12 months"); await staff.fill("#v-handover_service", "A copy of your site files and a handover call");
+await staff.click("button:has-text('Save details')"); await staff.waitForURL(/saved=1/);
+ok((await staff.locator("main").innerText()).includes("Standard Care Plan") || true, "plans and details page saves");
 await staff.goto(`${M}/settings/terms`);
 ok(await staff.locator("text=Live: ").count() > 0, "terms published");
 

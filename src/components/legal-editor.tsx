@@ -5,14 +5,15 @@ import { LegalSheet, type SheetMeta } from "./legal-sheet";
 import { TermsBuilder, canBuild } from "./terms-builder";
 import { ErrorSummary } from "./ui";
 import { renumberTerms } from "@/documents/parse";
+import { fillVars } from "@/modules/settings/variables";
 import { splitIntro } from "@/modules/settings/legal-starters";
 import { LEGAL, type LegalKind } from "@/modules/settings/legal-docs";
 
 const CHEAT = [["## Heading", "A numbered section"], ["1.1 Text", "A numbered clause"], ["- Text", "A bullet"], ["kv: Label | Value", "A details row"], ["| a | b | c |", "A table row (first row is the header)"], ["sign: For the Client", "A signature box"], ["note: Text", "A highlighted note"]];
 
 /** Edit on one side, see the finished document on the other. On a phone the two are tabs. */
-export function LegalEditor({ id, kind, initialTitle, initialBody, meta, saveAction, saveLabel }: {
-  id: string; kind: LegalKind; initialTitle: string; initialBody: string; meta: Omit<SheetMeta, "title">; saveLabel: string;
+export function LegalEditor({ id, kind, initialTitle, initialBody, meta, saveAction, saveLabel, vars }: {
+  vars: Record<string, string>; id: string; kind: LegalKind; initialTitle: string; initialBody: string; meta: Omit<SheetMeta, "title">; saveLabel: string;
   saveAction: (prev: unknown, fd: FormData) => Promise<{ error?: string }>;
 }) {
   const [s, act, pending] = useActionState(saveAction, undefined as { error?: string } | undefined);
@@ -22,10 +23,11 @@ export function LegalEditor({ id, kind, initialTitle, initialBody, meta, saveAct
   const [plain, setPlain] = useState(() => !canBuild(initialBody));
   const onBuild = useCallback((b: string) => setBody(b), []);
   const preview = useMemo(() => {
-    if (kind === "terms") return { intro: undefined, text: renumberTerms(body) };
-    const { intro, rest } = splitIntro(body);
+    const filled = fillVars(body, vars);
+    if (kind === "terms" || kind === "sla" || kind === "hosting") return { intro: undefined, text: renumberTerms(filled) };
+    const { intro, rest } = splitIntro(filled);
     return { intro, text: rest };
-  }, [body, kind]);
+  }, [body, kind, vars]);
   const m = LEGAL[kind];
   const pane = (t: "edit" | "preview") => (tab === t ? "block" : "hidden xl:block");
 

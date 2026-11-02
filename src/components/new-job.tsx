@@ -31,7 +31,8 @@ function Chip({ name, value, label }: { name: string; value: string; label: stri
 }
 
 type Person = { id: string; name: string };
-function Wizard({ customers, team, presetCustomer, close }: { customers: Person[]; team: Person[]; presetCustomer?: string; close: () => void }) {
+type Plan = { id: string; name: string; price: string };
+function Wizard({ customers, team, plans, presetCustomer, close }: { customers: Person[]; team: Person[]; plans: Plan[]; presetCustomer?: string; close: () => void }) {
   const [s, act, pending] = useActionState(createJobAction, undefined as { error?: string } | undefined);
   const [step, setStep] = useState(presetCustomer ? 1 : 0);
   const [who, setWho] = useState<"new" | "existing">(presetCustomer ? "existing" : "new");
@@ -113,6 +114,7 @@ function Wizard({ customers, team, presetCustomer, close }: { customers: Person[
               ))}
             </div>
           </fieldset>
+          <Sel id="j-plan0" name="planId" label="Care plan" options={plans.map((p) => ({ value: p.id, label: `${p.name}, ${p.price} a month` }))} empty="No care plan" className={full} />
           <Sel id="j-rp" name="recurringPeriod" label="Repeating items are charged" options={[{ value: "month", label: "Monthly" }, { value: "year", label: "Yearly" }]} empty="Not applicable" />
           <Sel id="j-plan" name="plan" label="How do they pay?" options={PAYMENT_PLANS.map((p) => ({ value: p.id, label: p.label }))} defaultValue="split" />
           <div className={full}><label className="label" htmlFor="j-notes">Anything else to note?</label><textarea id="j-notes" name="notes" rows={3} className="field" /></div>
@@ -127,7 +129,7 @@ function Wizard({ customers, team, presetCustomer, close }: { customers: Person[
   );
 }
 
-function Dialog({ customers, team }: { customers: Person[]; team: Person[] }) {
+function Dialog({ customers, team, plans }: { customers: Person[]; team: Person[]; plans: Plan[] }) {
   const sp = useSearchParams(), path = usePathname(), router = useRouter();
   const ref = useRef<HTMLDialogElement>(null);
   const wanted = sp.get("new") === "ticket";
@@ -143,11 +145,11 @@ function Dialog({ customers, team }: { customers: Person[]; team: Person[] }) {
   return (
     <dialog ref={ref} onCancel={(e) => { e.preventDefault(); close(); }} onClick={(e) => { if (e.target === ref.current) close(); }}
       className="m-0 h-dvh w-dvw max-h-none max-w-none bg-white p-0 backdrop:bg-[rgba(14,19,17,.45)] sm:m-auto sm:h-[min(46rem,92dvh)] sm:w-[min(52rem,94vw)] sm:rounded-2xl sm:shadow-[0_20px_60px_rgba(14,19,17,.2)]">
-      {wanted && <Wizard key={key} customers={customers} team={team} presetCustomer={sp.get("customer") ?? undefined} close={close} />}
+      {wanted && <Wizard key={key} customers={customers} team={team} plans={plans} presetCustomer={sp.get("customer") ?? undefined} close={close} />}
     </dialog>
   );
 }
 
-export function NewJob({ customers, team }: { customers: Person[]; team: Person[] }) {
-  return <Suspense fallback={null}><Dialog customers={customers} team={team} /></Suspense>;
+export function NewJob({ customers, team, plans }: { customers: Person[]; team: Person[]; plans: Plan[] }) {
+  return <Suspense fallback={null}><Dialog customers={customers} team={team} plans={plans} /></Suspense>;
 }

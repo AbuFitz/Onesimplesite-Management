@@ -34,6 +34,8 @@ export function composeJob(fd: FormData) {
   if (plan?.text) requirements.payment = plan.text;
   const noteLines = [...about, notes].filter(Boolean).join("\n");
   if (noteLines) requirements.notes = noteLines;
+  const planId = get("planId");
+  if (/^[0-9a-f-]{36}$/i.test(planId)) requirements.plan = planId;
 
   return {
     category, town, work, priority, source, due, assigneeId: get("assigneeId") || null,

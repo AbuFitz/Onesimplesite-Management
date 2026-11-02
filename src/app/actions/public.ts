@@ -9,6 +9,7 @@ import { submitSignature, declineSigning } from "@/modules/signing/service";
 
 export async function acceptProposalAction(fd: FormData) {
   const token = String(fd.get("token") ?? "");
+  if (token === "sample") redirect("/s/sample/done"); // the sample page records nothing
   const h = await headers();
   // Only trust a forwarded address when deployed behind our own proxy; otherwise record nothing.
   const ip = process.env.TRUST_PROXY === "1" ? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null : null;

@@ -1,5 +1,6 @@
 import { requireStaff } from "@/modules/identity/session";
 import { getTerms, getCompany } from "@/modules/settings/service";
+import { documentValues } from "@/modules/settings/plans";
 import { sampleAgreement, CONSENT_TEXT, CONSENT_VERSION } from "@/modules/settings/sample";
 import { buildSignedPdf } from "@/modules/signing/pdf";
 import { sha256 } from "@/lib/tokens";
@@ -10,7 +11,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ kind: stri
   const { kind, id } = await params;
   const t = await getTerms(ctx, id);
   if (kind !== "terms" || !t || t.kind !== "terms") return new Response("Not found", { status: 404 });
-  const text = sampleAgreement(await getCompany(ctx), { number: t.number, body: t.body });
+  const text = sampleAgreement(await getCompany(ctx), { number: t.number, body: t.body }, await documentValues(ctx.workspaceId));
   const when = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/London" }).format(new Date());
   const pdf = await buildSignedPdf({
     title: "Sample agreement", reference: "OSS-OF-2026-000", contentText: text, contentSha256: sha256(text), signerName: "Sample Signer", signerEmail: "sample@example.com", method: "typed",

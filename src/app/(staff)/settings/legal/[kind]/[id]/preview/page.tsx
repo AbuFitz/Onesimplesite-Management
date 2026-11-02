@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
 import { getTerms, getCompany } from "@/modules/settings/service";
 import { sampleAgreement } from "@/modules/settings/sample";
+import { documentValues } from "@/modules/settings/plans";
+import { fillVars } from "@/modules/settings/variables";
 import { isLegalKind, LEGAL } from "@/modules/settings/legal-docs";
 import { splitIntro } from "@/modules/settings/legal-starters";
 import { AgreementText } from "@/components/agreement";
@@ -17,8 +19,9 @@ export default async function Preview({ params }: { params: Promise<{ kind: stri
   if (!t || t.kind !== kind) notFound();
   const m = LEGAL[kind];
   const isTerms = kind === "terms";
+  const vars = await documentValues(ctx.workspaceId);
   const { intro, rest } = isTerms ? { intro: undefined, rest: "" } : splitIntro(t.body);
-  const text = isTerms ? sampleAgreement(await getCompany(ctx), { number: t.number, body: t.body }) : rest;
+  const text = isTerms ? sampleAgreement(await getCompany(ctx), { number: t.number, body: t.body }, vars) : fillVars(rest, vars);
   return (
     <>
       <RecordHeader back={{ href: `/settings/legal/${kind}/${t.id}`, label: "Back to editing" }} title="Document preview"

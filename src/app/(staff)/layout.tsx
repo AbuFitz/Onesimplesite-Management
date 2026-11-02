@@ -35,6 +35,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     ? (await db.staffMembership.findMany({ where: { workspaceId: ctx.workspaceId, status: "active", id: { not: ctx.staffId } }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true } })).map((m) => ({ id: m.id, name: m.displayName }))
     : [];
   const profileTodo = profileMissing(await getMyProfile(ctx));
+  const jobPlans = can(ctx.role, "proposal.write") ? (await db.servicePlan.findMany({ where: { workspaceId: ctx.workspaceId, active: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })).map((p) => ({ id: p.id, name: p.name, price: `£${(p.monthlyMinor / 100).toFixed(2)}` })) : [];
   const create = [
     ...(can(ctx.role, "proposal.write") ? [{ href: "?new=ticket", label: "New ticket" }] : []),
     ...(can(ctx.role, "calendar.write") ? [{ href: "/calendar/new", label: "New event" }] : []),
@@ -48,7 +49,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           <span>Finish setting up your profile: add your {profileTodo.join(" and ")}.</span><ArrowRight size={15} aria-hidden />
         </Link>
       )}
-      {can(ctx.role, "proposal.write") && <NewJob customers={jobCustomers} team={jobTeam} />}
+      {can(ctx.role, "proposal.write") && <NewJob customers={jobCustomers} team={jobTeam} plans={jobPlans} />}
       <header className="sticky top-0 z-30 border-b border-line bg-white shadow-[0_1px_0_rgba(14,19,17,.03)]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
           <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[11rem]">

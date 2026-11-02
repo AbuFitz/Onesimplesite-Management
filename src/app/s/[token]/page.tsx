@@ -3,6 +3,10 @@ import { SignForm, DeclineForm } from "@/components/sign-form";
 import { DocSheet, DocBody } from "@/components/doc";
 import { SignShell } from "@/components/public-shell";
 import { fmtDate } from "@/components/ui";
+import { db } from "@/lib/db";
+import { getCompany } from "@/modules/settings/service";
+import { samplePack } from "@/modules/settings/sample";
+import { documentValues } from "@/modules/settings/plans";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Review and sign", robots: { index: false } };
@@ -13,8 +17,30 @@ const WHY: Record<string, string> = {
 };
 const day = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(d);
 
+/** /s/sample: the real signing page with a made-up order, for the team and the test emails. Nothing is recorded. */
+async function SamplePage() {
+  const w = await db.workspace.findFirst({ orderBy: { createdAt: "asc" } });
+  const latest = (kind: string) => w ? db.termsVersion.findFirst({ where: { workspaceId: w.id, kind, status: "published" } }).then((p) => p ?? db.termsVersion.findFirst({ where: { workspaceId: w.id, kind }, orderBy: { number: "desc" } })) : null;
+  const [terms, sla, hosting] = await Promise.all([latest("terms"), latest("sla"), latest("hosting")]);
+  const vars = w ? await documentValues(w.id) : {};
+  const text = samplePack(
+    { legalName: w?.legalName ?? null, companyNumber: w?.companyNumber ?? null, registeredAddress: w?.registeredAddress ?? null, vatNumber: w?.vatNumber ?? null },
+    { terms: { number: terms?.number ?? 1, body: terms?.body ?? "## Services\n1.1 Our Services Agreement appears here once it is written." }, ...(sla ? { sla: { number: sla.number, body: sla.body } } : {}), ...(hosting ? { hosting: { number: hosting.number, body: hosting.body } } : {}) }, vars,
+  );
+  return (
+    <SignShell>
+      <div role="note" className="mx-auto mb-5 max-w-[794px] rounded-2xl bg-[#fbf3d5] px-4 py-3 text-sm text-[#5c4700]"><strong>This is a sample.</strong> It shows exactly what a customer sees. You can try signing; nothing is recorded and no one is emailed.</div>
+      <DocSheet meta={{ title: "Website for Sample Café", ref: "OSS-OF-2026-047", date: day(new Date()), version: "1.0", status: "Sample", mark: "Prepared for Sample Café Ltd" }}>
+        <DocBody text={text} hideSign={(l) => l.startsWith("Accepted by")} />
+      </DocSheet>
+      <div id="sign" className="mx-auto mt-6 max-w-[794px] scroll-mt-4"><SignForm token="sample" defaultName="Alex Sample" consent={CONSENT_TEXT} business="Sample Café Ltd" /></div>
+    </SignShell>
+  );
+}
+
 export default async function SignPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  if (token === "sample") return SamplePage();
   const r = await viewSigning(token);
   if (!r.ok) {
     return (

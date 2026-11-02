@@ -4,6 +4,8 @@ import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { saveDraftAction, sendAgreementAction, reviseProposalAction } from "@/app/actions/crm";
 import { getCompany, companyMissing } from "@/modules/settings/service";
+import { documentValues } from "@/modules/settings/plans";
+import { emptyVars, labelFor } from "@/modules/settings/variables";
 import { customerDetailsMissing } from "@/modules/crm/service";
 import { RecordHeader, Status, ErrorSummary, money, fmtDateTime } from "@/components/ui";
 import { ProposalFields } from "@/components/proposal-fields";
@@ -22,10 +24,17 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const primary = p.customer.contacts.find((c) => c.isPrimary) ?? p.customer.contacts[0];
   const company = await getCompany(ctx);
   const published = await db.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind: "terms", status: "published" } });
+  const planId = (cur.requirements as Record<string, string | undefined> | null)?.plan;
+  const [sla, hosting] = planId ? await Promise.all(["sla", "hosting"].map((kind) => db.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind, status: "published" } }))) : [null, null];
+  const draftOk = process.env.ALLOW_DRAFT_TERMS === "true";
+  const vars = await documentValues(ctx.workspaceId, planId);
+  const needed = emptyVars([published?.body, sla?.body, hosting?.body].filter(Boolean).join("\n"), vars).map(labelFor);
   const checks: [string, boolean, string][] = [
     ["Our company details", companyMissing(company).length === 0, "/settings"],
     [`${p.customer.displayName}'s details`, customerDetailsMissing(p.customer).length === 0, `/customers/${p.customerId}/details`],
-    ["Published Services Agreement", !!published || process.env.ALLOW_DRAFT_TERMS === "true", "/settings/legal/terms"],
+    ["Published Services Agreement", !!published || draftOk, "/settings/legal/terms"],
+    ...(planId ? ([["Published Service Level Agreement", !!sla || draftOk, "/settings/legal/sla"], ["Published Hosting and Care Plan Terms", !!hosting || draftOk, "/settings/legal/hosting"]] as [string, boolean, string][]) : []),
+    ["Plan and contact details filled in", needed.length === 0, "/settings/plans"],
   ];
   const ready = checks.every(([, ok]) => ok);
   return (
@@ -40,7 +49,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
           <h2 id="ed" className="mb-3">{editable ? "Ticket details" : "Sent version (read-only)"}</h2>
           {editable ? (
             <form action={saveDraftAction} className="space-y-4"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} />
-              <ProposalFields initial={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil, recurringPeriod: cur.recurringPeriod, lines: cur.lines, requirements: cur.requirements as Record<string, string | undefined> | null }} />
+              <ProposalFields plans={(await db.servicePlan.findMany({ where: { workspaceId: ctx.workspaceId, active: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })).map((x) => ({ id: x.id, name: x.name, price: `£${(x.monthlyMinor / 100).toFixed(2)}` }))} initial={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil, recurringPeriod: cur.recurringPeriod, lines: cur.lines, requirements: cur.requirements as Record<string, string | undefined> | null }} />
               <button className="btn btn-quiet">Save changes</button></form>
           ) : <div className="whitespace-pre-wrap text-sm">{cur.scope}</div>}
         </section>

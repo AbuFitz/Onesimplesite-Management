@@ -6,6 +6,8 @@ import { can } from "@/modules/identity/permissions";
 import { hasPlaceholders, placeholderCount, normalizeNewlines } from "@/documents/parse";
 import { LEGAL, LEGAL_KINDS, type LegalKind } from "./legal-docs";
 import { starterBody } from "./legal-starters";
+import { SERVICES_AGREEMENT } from "./legal-text";
+import { unknownVars } from "./variables";
 import type { StaffCtx } from "@/modules/identity/session";
 
 const need = (ctx: StaffCtx) => { if (!can(ctx.role, "settings.write")) throw forbidden(); };
@@ -36,45 +38,14 @@ export const companyMissing = (c: { legalName: string | null; registeredAddress:
   [!c.legalName && "legal company name", !c.registeredAddress && "registered address"].filter(Boolean) as string[];
 
 // ───────── Terms and Conditions: versioned, publishable, immutable once published ─────────
-export const STARTER_TERMS = `## Definitions and interpretation
-1.1 [TBC: define the parties, the Services, the Website, the Fees and the Start Date]
-1.2 [TBC: interpretation, headings and the order of precedence between these terms and the Order Summary]
-
-## The Services
-2.1 [TBC: describe the website design, build and any ongoing services provided]
-2.2 [TBC: what is included, what is excluded, and how change requests are handled]
-
-## Fees and payment
-3.1 [TBC: how fees are calculated and invoiced, including the payment schedule agreed for each order]
-3.2 [TBC: late payment, VAT treatment and expenses]
-
-## Client responsibilities
-4.1 [TBC: content, assets, approvals and timely feedback the client must provide]
-
-## Intellectual property
-5.1 [TBC: ownership of the website, third-party materials and the licence granted on payment]
-
-## Hosting and ongoing services
-6.1 [TBC: hosting, maintenance, domain handling, renewals and service levels]
-
-## Liability
-7.1 [TBC: limits and exclusions of liability]
-
-## Term and termination
-8.1 [TBC: term, notice, cancellation of recurring services and what happens on termination]
-
-## Data protection and confidentiality
-9.1 [TBC: roles under data protection law, confidentiality and security]
-
-## General
-10.1 [TBC: entire agreement, variation, governing law and jurisdiction]`;
+export const STARTER_TERMS = SERVICES_AGREEMENT;
 
 export const listTerms = (ctx: StaffCtx, kind: LegalKind = "terms") => db.termsVersion.findMany({ where: { workspaceId: ctx.workspaceId, kind }, orderBy: { number: "desc" } });
 
 /** Creates the placeholder starter draft the first time a document is opened, so the editor is never empty. */
 export async function ensureStarter(ctx: StaffCtx, kind: LegalKind) {
   if (await db.termsVersion.count({ where: { workspaceId: ctx.workspaceId, kind } })) return;
-  const body = kind === "terms" ? STARTER_TERMS : starterBody(kind, await getCompany(ctx));
+  const body = starterBody(kind, await getCompany(ctx));
   await db.termsVersion.create({ data: { workspaceId: ctx.workspaceId, kind, number: 1, title: LEGAL[kind].label, body } }).catch(() => undefined);
 }
 export const ensureStarterTerms = (ctx: StaffCtx) => ensureStarter(ctx, "terms");
@@ -127,6 +98,8 @@ export async function publishTerms(ctx: StaffCtx, id: string) {
     const t = await tx.termsVersion.findFirst({ where: { id, workspaceId: ctx.workspaceId } });
     if (!t) throw notFound();
     if (t.status !== "draft") throw new DomainError("conflict", "Only a draft can be published.");
+    const bad = unknownVars(t.body);
+    if (bad.length) throw new DomainError("validation", `These values are not recognised: ${bad.map((b) => `{{${b}}}`).join(", ")}. Check the spelling.`);
     if (hasPlaceholders(t.body)) throw new DomainError("validation", `${placeholderCount(t.body)} placeholder(s) marked [TBC: ...] still need real wording before this can be published.`);
     await tx.termsVersion.updateMany({ where: { workspaceId: ctx.workspaceId, kind: t.kind, status: "published" }, data: { status: "retired" } });
     const p = await tx.termsVersion.update({ where: { id: t.id }, data: { status: "published", publishedAt: new Date(), publishedBy: ctx.name } });

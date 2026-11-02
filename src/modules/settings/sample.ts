@@ -2,7 +2,7 @@ import { composeAgreement, CONSENT_TEXT, CONSENT_VERSION } from "@/modules/signi
 import { REQUIREMENT_FIELDS } from "@/modules/sales/service";
 
 /** A made-up order wrapped around the real company details and the terms being edited, so the team sees the exact document a customer would. */
-export function sampleAgreement(company: { legalName: string | null; companyNumber: string | null; registeredAddress: string | null; vatNumber: string | null }, terms: { number: number; body: string }) {
+export function sampleAgreement(company: { legalName: string | null; companyNumber: string | null; registeredAddress: string | null; vatNumber: string | null }, terms: { number: number; body: string }, vars: Record<string, string> = {}) {
   void REQUIREMENT_FIELDS;
   const day = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(new Date());
   return composeAgreement({
@@ -13,7 +13,25 @@ export function sampleAgreement(company: { legalName: string | null; companyNumb
     provider: { legalName: company.legalName || "[Your company name]", companyNumber: company.companyNumber, registeredAddress: company.registeredAddress || "[Your registered address]", vatNumber: company.vatNumber },
     client: { legalName: "Sample Customer Ltd", kind: "company", companyNumber: "01234567", billingAddress: "1 Example Street, Bristol, BS1 1AA", vatNumber: null },
     contact: { name: "Alex Sample", email: "alex@example.com" }, issuedBy: { name: "Your Name", position: "Director" },
-    terms,
+    docs: { terms },
+    vars: { general_email: "hello@onesimplesite.co.uk", availability_target: "99.9%", support_hours: "Monday to Friday, 9:00 am to 5:00 pm UK time", ...vars },
   });
 }
 export { CONSENT_TEXT, CONSENT_VERSION };
+
+type D = { number: number; body: string };
+/** The full pack as a customer would see it, with a made-up order, for the sample signing page and its email. */
+export function samplePack(company: { legalName: string | null; companyNumber: string | null; registeredAddress: string | null; vatNumber: string | null }, docs: { terms: D; sla?: D; hosting?: D }, vars: Record<string, string>) {
+  const day = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(new Date());
+  return composeAgreement({
+    reference: "OSS-OF-2026-047", title: "Website for Sample Café", dateLabel: day, validUntilLabel: day, currency: "GBP", oneOffMinor: 150000, recurringMinor: 2900, recurringPeriod: "month",
+    lines: [{ description: "Website design and build", quantity: 1, unitMinor: 150000, recurring: false }, { description: "Standard Care Plan", quantity: 1, unitMinor: 2900, recurring: true }],
+    scope: "Design and build of a mobile-friendly website with a contact form and an online booking page.",
+    requirements: { pages: "Home\nMenu\nAbout\nContact", features: "Contact form\nOnline booking", domainHosting: "We register the web address", contentBy: "A mix of both", timeline: "Within a month", payment: "50% on signing\n50% on launch" },
+    provider: { legalName: company.legalName || "[Your company name]", companyNumber: company.companyNumber, registeredAddress: company.registeredAddress || "[Your registered address]", vatNumber: company.vatNumber },
+    client: { legalName: "Sample Café Ltd", kind: "company", companyNumber: "01234567", billingAddress: "1 Example Street, Bristol, BS1 1AA", vatNumber: null },
+    contact: { name: "Alex Sample", email: "alex@example.com" }, issuedBy: { name: "Abukar Sharif", position: "Director" },
+    docs, plan: docs.sla ? { name: "Standard Care Plan", monthlyMinor: 2900, revisionsPerMonth: 3, backupFrequency: "Daily", backupRetention: "14 days" } : undefined,
+    vars: { general_email: "hello@onesimplesite.co.uk", availability_target: "99.9%", support_hours: "Monday to Friday, 9:00 am to 5:00 pm UK time", ...vars },
+  });
+}
