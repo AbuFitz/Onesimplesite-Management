@@ -6,6 +6,7 @@ import { newToken } from "@/lib/tokens";
 import { manageLink } from "@/lib/env";
 import { can, ROLE_INFO } from "./permissions";
 import { allocateUsername, baseUsername } from "./username";
+import { suggestAlias, isOurAddress } from "@/lib/sender-identities";
 import type { StaffCtx } from "./session";
 
 const ROLES = ["owner", "member", "client_director", "delivery", "sales", "support", "finance"] as const;
@@ -39,8 +40,11 @@ export async function inviteStaff(ctx: StaffCtx, raw: unknown) {
     const existing = await tx.staffMembership.findUnique({ where: { workspaceId_email: { workspaceId: ctx.workspaceId, email: i.email } } });
     if (existing && existing.status === "active") throw new DomainError("conflict", "That person already has an active login.");
     const username = await allocateUsername(tx, ctx.workspaceId, i.name, existing?.id);
-    if (existing) await tx.staffMembership.update({ where: { id: existing.id }, data: { displayName: i.name, username, role: i.role, status: "pending", deactivatedAt: null } });
-    else await tx.staffMembership.create({ data: { workspaceId: ctx.workspaceId, email: i.email, displayName: i.name, username, role: i.role, status: "pending" } });
+    // The address customers see for this person. Defaults to their first name; an owner can change it on the Team page.
+    const wanted = existing?.aliasEmail ?? suggestAlias(i.name);
+    const aliasEmail = wanted && !(await tx.staffMembership.findFirst({ where: { workspaceId: ctx.workspaceId, aliasEmail: wanted, NOT: existing ? { id: existing.id } : undefined }, select: { id: true } })) ? wanted : null;
+    if (existing) await tx.staffMembership.update({ where: { id: existing.id }, data: { displayName: i.name, username, aliasEmail, role: i.role, status: "pending", deactivatedAt: null } });
+    else await tx.staffMembership.create({ data: { workspaceId: ctx.workspaceId, email: i.email, displayName: i.name, username, aliasEmail, role: i.role, status: "pending" } });
     const { link, id, expiresAt } = await issueInvite(tx, ctx, i.email, i.role);
     await enqueue(tx, ctx.workspaceId, "email.staff_invitation", `staff.invite:${id}`, {
       to: i.email, name: i.name, inviter: ctx.name, roleLabel: ROLE_INFO[i.role].label.replace(" (recommended)", ""), link,
@@ -83,5 +87,19 @@ export async function setActive(ctx: StaffCtx, staffId: string, active: boolean)
       await tx.staffMembership.update({ where: { id: m.id }, data: { status: m.userId ? "active" : "pending", deactivatedAt: null } });
     }
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: active ? "staff.reactivated" : "staff.deactivated", targetType: "staff", targetId: m.email });
+  });
+}
+
+/** The address customers see this person's emails come from. It must be one of our own addresses and unique in the team. */
+export async function setAlias(ctx: StaffCtx, staffId: string, raw: string) {
+  guard(ctx);
+  const alias = raw.trim().toLowerCase();
+  if (alias && !isOurAddress(alias)) throw new DomainError("validation", "Use an address that ends in @onesimplesite.co.uk.");
+  await db.$transaction(async (tx) => {
+    const m = await tx.staffMembership.findFirst({ where: { id: staffId, workspaceId: ctx.workspaceId } });
+    if (!m) throw notFound();
+    if (alias && (await tx.staffMembership.findFirst({ where: { workspaceId: ctx.workspaceId, aliasEmail: alias, NOT: { id: staffId } }, select: { id: true } }))) throw new DomainError("conflict", "Someone else already uses that address.");
+    await tx.staffMembership.update({ where: { id: staffId }, data: { aliasEmail: alias || null } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "staff.alias_set", targetType: "staff", targetId: staffId, detail: { alias: alias || null } });
   });
 }

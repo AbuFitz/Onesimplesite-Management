@@ -33,7 +33,7 @@ function make(ns: "staff" | "portal", allowSignUp: boolean) {
           const { fmtFrom } = await import("./sender-identities");
           const when = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/London" }).format(new Date());
           const r = await renderEmail("password_changed", { to: user.email, name: user.name, when });
-          await sendMail({ from: fmtFrom("general"), to: user.email, subject: r.subject, html: r.html, text: r.text });
+          await sendMail({ from: fmtFrom("noreply"), to: user.email, subject: r.subject, html: r.html, text: r.text });
         } catch { /* a failed notice must never block the reset itself */ }
       },
       sendResetPassword: async ({ user, url }) => {
@@ -41,7 +41,7 @@ function make(ns: "staff" | "portal", allowSignUp: boolean) {
         const { sendMail } = await import("./mail");
         const { fmtFrom } = await import("./sender-identities");
         const r = await renderEmail("password_reset", { to: user.email, name: user.name, link: url, minutes: 60 });
-        await sendMail({ from: fmtFrom("general"), to: user.email, subject: r.subject, html: r.html, text: r.text });
+        await sendMail({ from: fmtFrom("noreply"), to: user.email, subject: r.subject, html: r.html, text: r.text });
       },
     },
     advanced: { cookiePrefix: `oss-${ns}`, useSecureCookies: e.APP_ENV === "production" },

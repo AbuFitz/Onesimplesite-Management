@@ -128,6 +128,7 @@ model StaffMembership {
   email       String
   displayName String
   username    String?
+  aliasEmail  String? // customer-facing address, e.g. abukar@onesimplesite.co.uk
   jobTitle    String?
   phone       String?
   signature   String?
@@ -141,6 +142,7 @@ model StaffMembership {
 
   @@unique([workspaceId, email])
   @@unique([workspaceId, username])
+  @@unique([workspaceId, aliasEmail])
   @@index([userId])
 }
 

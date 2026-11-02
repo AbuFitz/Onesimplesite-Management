@@ -44,4 +44,4 @@ export async function changeOwnEmail(ctx: StaffCtx, rawEmail: string, password: 
 }
 
 export const getMyProfile = (ctx: StaffCtx) =>
-  db.staffMembership.findUniqueOrThrow({ where: { id: ctx.staffId }, select: { displayName: true, email: true, username: true, jobTitle: true, phone: true, signature: true, role: true } });
+  db.staffMembership.findUniqueOrThrow({ where: { id: ctx.staffId }, select: { displayName: true, email: true, username: true, aliasEmail: true, jobTitle: true, phone: true, signature: true, role: true } });

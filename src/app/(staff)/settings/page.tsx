@@ -25,7 +25,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           <div><label className="label" htmlFor="legalName">Legal company name</label><input id="legalName" name="legalName" className="field" defaultValue={c.legalName ?? ""} /></div>
           <div><label className="label" htmlFor="companyNumber">Company number (if any)</label><input id="companyNumber" name="companyNumber" className="field" defaultValue={c.companyNumber ?? ""} /></div>
           <div><label className="label" htmlFor="registeredAddress">Registered address</label><textarea id="registeredAddress" name="registeredAddress" className="field" defaultValue={c.registeredAddress ?? ""} /></div>
-          <div><label className="label" htmlFor="vatNumber">VAT number (only if VAT registered)</label><input id="vatNumber" name="vatNumber" className="field" defaultValue={c.vatNumber ?? ""} /></div>
+          <div><label className="label" htmlFor="vatNumber">VAT number (leave empty: we are not VAT registered)</label><input id="vatNumber" name="vatNumber" className="field" defaultValue={c.vatNumber ?? ""} /></div>
           <button className="btn">Save company details</button>
         </form>
       </section>

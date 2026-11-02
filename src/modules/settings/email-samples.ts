@@ -1,15 +1,15 @@
 import { renderEmail, type TemplateName } from "@/emails/templates";
 
 /** Every email the system sends, in the order a customer meets them, with sample content. Used by the preview and the test sender. */
-export const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "Team"; when: string; sender: "general" | "contracts" }[] = [
-  { id: "contract_request", label: "Order to review and sign", audience: "Customer", when: "When you press Send for signature on a ticket. One email, one link.", sender: "contracts" },
-  { id: "signing_confirmation", label: "Signed copy", audience: "Customer", when: "Straight after they sign. The signed PDF is attached.", sender: "contracts" },
-  { id: "invitation", label: "Portal invitation", audience: "Customer", when: "When you invite a customer to their client portal.", sender: "general" },
-  { id: "password_reset", label: "Password reset", audience: "Customer", when: "When anyone asks to reset a password.", sender: "general" },
-  { id: "password_changed", label: "Password changed", audience: "Customer", when: "After a password is changed, as a safety notice.", sender: "general" },
-  { id: "signing_notice", label: "Signed notice to us", audience: "Team", when: "Sent to hello@ when a customer signs.", sender: "contracts" },
-  { id: "staff_invitation", label: "Team invitation", audience: "Team", when: "When you add someone to the team.", sender: "general" },
-  { id: "backup_reminder", label: "Backup reminder", audience: "Team", when: "Weekly, if no backup has been taken.", sender: "general" },
+export const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "Team"; when: string; sender: "general" | "noreply" | "legal" | "support" }[] = [
+  { id: "contract_request", label: "Order to review and sign", audience: "Customer", when: "When you press Send for signature on a ticket. One email, one link.", sender: "legal" },
+  { id: "signing_confirmation", label: "Signed copy", audience: "Customer", when: "Straight after they sign. The signed PDF is attached.", sender: "legal" },
+  { id: "invitation", label: "Portal invitation", audience: "Customer", when: "When you invite a customer to their client portal.", sender: "noreply" },
+  { id: "password_reset", label: "Password reset", audience: "Customer", when: "When anyone asks to reset a password.", sender: "noreply" },
+  { id: "password_changed", label: "Password changed", audience: "Customer", when: "After a password is changed, as a safety notice.", sender: "noreply" },
+  { id: "signing_notice", label: "Signed notice to us", audience: "Team", when: "Sent to hello@ when a customer signs.", sender: "noreply" },
+  { id: "staff_invitation", label: "Team invitation", audience: "Team", when: "When you add someone to the team.", sender: "noreply" },
+  { id: "backup_reminder", label: "Backup reminder", audience: "Team", when: "Weekly, if no backup has been taken.", sender: "noreply" },
 ];
 
 const LINK = "https://portal.onesimplesite.co.uk/s/example";

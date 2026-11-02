@@ -35,27 +35,30 @@ export async function drainOutbox(limit = 20) {
 }
 
 async function handle(topic: string, key: string, p: Record<string, unknown>) {
+  // A person who triggered the email can be the reply address (replies go to them, the sender stays the function address).
+  const replyOverride = typeof p.replyTo === "string" ? p.replyTo : undefined;
+  const fromOverride = typeof p.fromPerson === "string" ? p.fromPerson : undefined;
   const send = async <K extends TemplateName>(name: K, data: EmailData[K], from: SenderKey, to: string, extra?: Partial<Mail>) => {
     const r = await renderEmail(name, data);
-    await sendMail({ from: fmtFrom(from), to, subject: r.subject, html: r.html, text: r.text, replyTo: SENDERS.general.address, ...extra }, key);
+    await sendMail({ from: fromOverride ?? fmtFrom(from), to, subject: r.subject, html: r.html, text: r.text, replyTo: replyOverride ?? SENDERS[from].replyTo, ...extra }, key);
   };
   const finalPdf = async () => {
     const d = await db.contractDocument.findUnique({ where: { contractId_kind: { contractId: String(p.contractId), kind: "final_pdf" } } });
     return d ? [{ filename: `${String(p.ref)}-signed.pdf`, content: Buffer.from(d.bytes) }] : undefined;
   };
   switch (topic) {
-    case "email.proposal": return send("proposal", p as EmailData["proposal"], "general", String(p.to));
-    case "email.contract_request": return send("contract_request", p as EmailData["contract_request"], "contracts", String(p.to));
-    case "email.backup_reminder": return send("backup_reminder", p as EmailData["backup_reminder"], "general", internalNoticeTo());
-    case "email.staff_invitation": return send("staff_invitation", p as EmailData["staff_invitation"], "general", String(p.to));
-    case "email.invitation": return send("invitation", p as EmailData["invitation"], "general", String(p.to));
+    case "email.proposal": return send("proposal", p as EmailData["proposal"], "legal", String(p.to));
+    case "email.contract_request": return send("contract_request", p as EmailData["contract_request"], "legal", String(p.to));
+    case "email.backup_reminder": return send("backup_reminder", p as EmailData["backup_reminder"], "noreply", internalNoticeTo());
+    case "email.staff_invitation": return send("staff_invitation", p as EmailData["staff_invitation"], "noreply", String(p.to));
+    case "email.invitation": return send("invitation", p as EmailData["invitation"], "noreply", String(p.to));
     case "email.signing_confirmation": {
       const attachments = await finalPdf();
-      return send("signing_confirmation", { ...(p as EmailData["signing_confirmation"]), hasAttachment: !!attachments }, "contracts", String(p.to), { attachments });
+      return send("signing_confirmation", { ...(p as EmailData["signing_confirmation"]), hasAttachment: !!attachments }, "legal", String(p.to), { attachments });
     }
     case "email.signing_notice": {
       const attachments = await finalPdf();
-      return send("signing_notice", p as EmailData["signing_notice"], "contracts", internalNoticeTo(), { attachments });
+      return send("signing_notice", p as EmailData["signing_notice"], "noreply", internalNoticeTo(), { attachments });
     }
     case "notify.proposal_accepted":
     case "notify.contract_completed":

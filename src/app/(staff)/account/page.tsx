@@ -15,6 +15,7 @@ export default async function Account() {
   return (
     <>
       <RecordHeader title="My account" meta={`${ROLE_INFO[ctx.role].label}${me.username ? ` · username ${me.username}` : ""}`} />
+      <p className="mb-8 max-w-2xl rounded-2xl bg-soft px-5 py-4 text-sm">{me.aliasEmail ? <>Customers see your emails and ticket replies as <strong>{me.aliasEmail}</strong>. Your sign-in address stays private.</> : <>No customer-facing address is set for you yet, so your emails go out as hello@. Ask an owner to set one on the Team page.</>}</p>
       {missing.length > 0 && (
         <div className="mb-8 rounded-2xl border border-line bg-soft px-5 py-4">
           <p className="font-semibold">Finish setting up your profile</p>

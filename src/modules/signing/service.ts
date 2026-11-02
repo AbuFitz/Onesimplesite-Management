@@ -304,7 +304,8 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
     const { token, hash } = newToken();
     await tx.scopedLinkToken.create({ data: { workspaceId: ctx.workspaceId, purpose: "contract_sign", entityId: req.id, tokenHash: hash, recipientEmail: i.email, expiresAt } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "agreement.sent", targetType: "contract", targetId: contract.id, customerId: p.customerId, detail: { to: i.email, termsVersion: terms!.number, draftWording: useDraft } });
-    await enqueue(tx, ctx.workspaceId, "email.contract_request", `contract.request:${req.id}`, { to: i.email, signerName: i.name, title: p.title, ref: reference, business: p.customer.legalName ?? p.customer.displayName, link: portalLink(`/s/${token}`), expires: day(expiresAt) });
+    const alias = (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { aliasEmail: true } }))?.aliasEmail;
+    await enqueue(tx, ctx.workspaceId, "email.contract_request", `contract.request:${req.id}`, { ...(alias ? { replyTo: alias } : {}), to: i.email, signerName: i.name, title: p.title, ref: reference, business: p.customer.legalName ?? p.customer.displayName, link: portalLink(`/s/${token}`), expires: day(expiresAt) });
     return { contractId: contract.id, requestId: req.id, token, draftWording: useDraft };
   });
 }

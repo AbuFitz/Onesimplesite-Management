@@ -83,7 +83,7 @@ export async function archiveNoteAction(fd: FormData) {
   redirect("/notes");
 }
 
-import { inviteStaff, changeRole, setActive } from "@/modules/identity/team";
+import { inviteStaff, changeRole, setActive, setAlias } from "@/modules/identity/team";
 
 export async function inviteStaffAction(_: unknown, fd: FormData): Promise<{ error?: string; link?: string; email?: string }> {
   const ctx = await requireStaff("staff.manage");
@@ -92,6 +92,11 @@ export async function inviteStaffAction(_: unknown, fd: FormData): Promise<{ err
     flushEmails();
     return { link: r.link, email: r.email };
   } catch (e) { return { error: msg(e) }; }
+}
+export async function setAliasAction(fd: FormData) {
+  const ctx = await requireStaff("staff.manage");
+  try { await setAlias(ctx, String(fd.get("id")), String(fd.get("alias") ?? "")); } catch (e) { return back("/team", e); }
+  redirect("/team");
 }
 export async function changeRoleAction(fd: FormData) {
   const ctx = await requireStaff("staff.manage");
