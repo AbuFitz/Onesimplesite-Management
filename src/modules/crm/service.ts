@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { audit, nextReference } from "@/lib/audit";
+import { audit, nextRef } from "@/lib/audit";
 import { DomainError, forbidden, stale } from "@/lib/errors";
 import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
@@ -20,7 +20,7 @@ export async function createLead(ctx: StaffCtx, raw: unknown) {
   if (!can(ctx.role, "customer.write")) throw forbidden();
   const i = createLeadInput.parse(raw);
   return db.$transaction(async (tx) => {
-    const reference = await nextReference(tx, ctx.workspaceId, "customer", "C");
+    const reference = await nextRef(tx, ctx.workspaceId, "customer");
     const customer = await tx.customer.create({
       data: { workspaceId: ctx.workspaceId, reference, displayName: i.displayName, source: i.source || null, ownerId: ctx.staffId, phone: i.phone || null },
     });

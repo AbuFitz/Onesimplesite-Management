@@ -27,7 +27,7 @@ export async function signAction(_: unknown, fd: FormData): Promise<{ error?: st
   const h = await headers();
   const ip = process.env.TRUST_PROXY === "1" ? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null : null;
   try {
-    await submitSignature(token, { name: fd.get("name"), method: fd.get("method"), image: String(fd.get("image") ?? "") || undefined, consent: fd.get("consent") === "on" }, { ip, userAgent: h.get("user-agent") });
+    await submitSignature(token, { name: fd.get("name"), position: String(fd.get("position") ?? "") || undefined, method: fd.get("method"), image: String(fd.get("image") ?? "") || undefined, consent: fd.get("consent") === "on" }, { ip, userAgent: h.get("user-agent") });
     flushEmails();
   } catch (e) {
     if (e instanceof DomainError) return { error: e.message };

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { db, type Tx } from "@/lib/db";
-import { audit, enqueue, nextReference } from "@/lib/audit";
+import { audit, enqueue, nextRef } from "@/lib/audit";
 import { DomainError, forbidden, notFound, stale } from "@/lib/errors";
 import { newToken, sha256 } from "@/lib/tokens";
 import { portalLink } from "@/lib/env";
@@ -49,7 +49,7 @@ export async function createProposal(ctx: StaffCtx, customerId: string, opportun
   return db.$transaction(async (tx) => {
     const c = await tx.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId } });
     if (!c) throw notFound("Customer not found.");
-    const reference = await nextReference(tx, ctx.workspaceId, "proposal", "P");
+    const reference = await nextRef(tx, ctx.workspaceId, "quotation");
     const p = await tx.proposal.create({
       data: { workspaceId: ctx.workspaceId, customerId, opportunityId, reference, title: i.title, createdById: ctx.staffId },
     });
@@ -221,7 +221,7 @@ async function generateContractFromVersion(tx: Tx, versionId: string) {
   const v = await tx.proposalVersion.findUniqueOrThrow({ where: { id: versionId }, include: { proposal: true } });
   const existing = await tx.contract.findUnique({ where: { proposalVersionId: versionId } });
   if (existing) return existing;
-  const reference = await nextReference(tx, v.workspaceId, "contract", "K");
+  const reference = await nextRef(tx, v.workspaceId, "order");
   return tx.contract.create({
     data: {
       workspaceId: v.workspaceId, customerId: v.proposal.customerId, reference, title: v.proposal.title,

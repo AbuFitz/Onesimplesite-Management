@@ -3,7 +3,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { signAction, declineAction } from "@/app/actions/public";
 import { ErrorSummary } from "./ui";
 
-export function SignForm({ token, defaultName, consent }: { token: string; defaultName: string; consent: string }) {
+export function SignForm({ token, defaultName, consent, business }: { token: string; defaultName: string; consent: string; business?: string }) {
   const [state, act, pending] = useActionState(signAction, undefined as { error?: string } | undefined);
   const [method, setMethod] = useState<"typed" | "drawn">("drawn");
   const [name, setName] = useState(defaultName);
@@ -26,35 +26,38 @@ export function SignForm({ token, defaultName, consent }: { token: string; defau
   const up = () => { if (drawing.current) { drawing.current = false; setImage(dirty.current ? canvas.current!.toDataURL("image/png") : ""); } };
   const clear = () => { const c = canvas.current!; c.getContext("2d")!.clearRect(0, 0, c.width, c.height); dirty.current = false; setImage(""); };
 
+  const today = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(new Date());
   return (
-    <form action={act} className="mt-12 space-y-5 border-t border-line pt-8">
+    <form action={act} className="d-sheet !overflow-visible px-[var(--g)] py-8" aria-labelledby="sign-h">
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="method" value={method} />
       <input type="hidden" name="image" value={method === "drawn" ? image : ""} />
-      <h2 className="text-xl">Sign this agreement</h2>
-      <ErrorSummary message={state?.error} />
-      <div>
-        <label className="label" htmlFor="name">Your full name</label>
-        <input id="name" name="name" className="field" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
-      </div>
-      <fieldset>
-        <legend className="label">Signature</legend>
-        <div className="flex gap-2 mb-3" role="radiogroup" aria-label="Signature method">
-          {(["drawn", "typed"] as const).map((m) => (
-            <button type="button" key={m} role="radio" aria-checked={method === m} onClick={() => setMethod(m)} className={`btn ${method === m ? "" : "btn-quiet"}`}>{m === "drawn" ? "Draw" : "Type my name"}</button>
-          ))}
-        </div>
-        {method === "typed" ? (
-          <p aria-live="polite" className="border-b border-ink min-h-16 flex items-end pb-1 text-3xl italic break-words" style={{ fontFamily: "'Snell Roundhand','Segoe Script','Brush Script MT',cursive" }}>{name || <span className="text-muted text-base not-italic">Your typed name appears here</span>}</p>
-        ) : (
-          <div>
-            <canvas ref={canvas} aria-label="Signature drawing area" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} className="w-full h-40 bg-white border border-ink rounded-[8px]" style={{ touchAction: "none" }} />
-            <button type="button" className="btn btn-quiet mt-2" onClick={clear}>Clear</button>
+      <div className="d-sig !max-w-none">
+        <span className="d-pill" id="sign-h">{business ? `Accepted by ${business}` : "Sign this order"}</span>
+        <p className="d-small mb-4">Draw your signature with your finger or mouse, or type your name. Then confirm and submit.</p>
+        <ErrorSummary message={state?.error} />
+        <div className="d-row">
+          <span className="lb" id="sig-l">Signature</span>
+          <div className="mb-2 mt-1 flex gap-2" role="radiogroup" aria-label="Signature method">
+            {(["drawn", "typed"] as const).map((m) => (
+              <button type="button" key={m} role="radio" aria-checked={method === m} onClick={() => setMethod(m)} className={`btn !min-h-10 ${method === m ? "" : "btn-quiet"}`}>{m === "drawn" ? "Draw" : "Type my name"}</button>
+            ))}
           </div>
-        )}
-      </fieldset>
-      <label className="flex items-start gap-3 text-sm"><input className="mt-1 size-5 shrink-0" type="checkbox" name="consent" required /><span>{consent}</span></label>
-      <button className="btn w-full sm:w-auto" disabled={pending || (method === "drawn" && !image)}>{pending ? "Signing…" : "Sign and submit"}</button>
+          {method === "typed" ? (
+            <div aria-live="polite" aria-labelledby="sig-l" className="ln tall typed break-words">{name || <span className="text-base not-italic text-muted">Your typed name appears here</span>}</div>
+          ) : (
+            <div>
+              <canvas ref={canvas} aria-labelledby="sig-l" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} className="h-44 w-full rounded-[8px] border border-[#8f9993] bg-white/80" style={{ touchAction: "none" }} />
+              <div className="mt-2 flex items-center justify-between"><button type="button" className="btn btn-quiet !min-h-9" onClick={clear}>Clear</button><span className="d-small">{image ? "Signature captured" : "Sign in the box above"}</span></div>
+            </div>
+          )}
+        </div>
+        <div className="d-row"><label className="lb" htmlFor="name">Name</label><input id="name" name="name" className="field" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required /></div>
+        <div className="d-row"><label className="lb" htmlFor="position">Position <span className="normal-case tracking-normal text-muted">(optional)</span></label><input id="position" name="position" className="field" autoComplete="organization-title" placeholder="e.g. Director" /></div>
+        <div className="d-row"><span className="lb">Date</span><div className="ln">{today}</div></div>
+      </div>
+      <label className="mt-6 flex items-start gap-3 text-sm"><input className="mt-1 size-5 shrink-0 accent-[#0c6a49]" type="checkbox" name="consent" required /><span>{consent}</span></label>
+      <button className="btn mt-5 w-full !bg-moss !border-moss hover:!bg-[#0a5a3e] sm:w-auto sm:px-10" disabled={pending || (method === "drawn" && !image)}>{pending ? "Signing…" : "Sign and submit"}</button>
     </form>
   );
 }

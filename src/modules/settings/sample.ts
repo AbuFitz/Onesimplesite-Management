@@ -6,12 +6,13 @@ export function sampleAgreement(company: { legalName: string | null; companyNumb
   void REQUIREMENT_FIELDS;
   const day = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(new Date());
   return composeAgreement({
-    reference: "K-0000", title: "Website for Sample Customer", dateLabel: day, currency: "GBP", oneOffMinor: 150000, recurringMinor: 2500, recurringPeriod: "month",
+    reference: "OSS-OF-2026-047", title: "Website for Sample Customer", dateLabel: day, validUntilLabel: day, currency: "GBP", oneOffMinor: 150000, recurringMinor: 2500, recurringPeriod: "month",
     lines: [{ description: "Website design and build", quantity: 1, unitMinor: 150000, recurring: false }, { description: "Hosting and upkeep", quantity: 1, unitMinor: 2500, recurring: true }],
     scope: "Design and build of a mobile-friendly website with a contact form and an online booking page.",
     requirements: { pages: "Home\nServices\nAbout\nContact", features: "Contact form\nOnline booking", domainHosting: "We register the web address", contentBy: "A mix of both", timeline: "Within a month", payment: "50% on signing\n50% on launch" },
     provider: { legalName: company.legalName || "[Your company name]", companyNumber: company.companyNumber, registeredAddress: company.registeredAddress || "[Your registered address]", vatNumber: company.vatNumber },
     client: { legalName: "Sample Customer Ltd", kind: "company", companyNumber: "01234567", billingAddress: "1 Example Street, Bristol, BS1 1AA", vatNumber: null },
+    contact: { name: "Alex Sample", email: "alex@example.com" }, issuedBy: { name: "Your Name", position: "Director" },
     terms,
   });
 }

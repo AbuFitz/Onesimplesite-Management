@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import { renderEmail, type TemplateName } from "@/emails/templates";
 
 const fx = {
-  proposal: { to: "x", ref: "P-0007", title: "Harbour Bakery website", version: 2, link: "https://portal.example/p/token", validUntil: "30 November 2026", oneOff: "£1,500.00", recurring: "£25.00 per month" },
-  contract_request: { to: "x", signerName: "Casey Morgan", title: "Harbour Bakery website", ref: "K-0003", link: "https://portal.example/s/token", expires: "13 November 2026", business: "Harbour Bakery" },
-  signing_confirmation: { to: "x", signerName: "Casey Morgan", title: "Harbour Bakery website", ref: "K-0003", signedAt: "30 October 2026 at 14:05", fileSha: "a".repeat(64), hasAttachment: true },
-  signing_notice: { to: "x", title: "Harbour Bakery website", ref: "K-0003", business: "Harbour Bakery", signerName: "Casey Morgan", signerEmail: "casey@harbour.example", signedAt: "30 October 2026 at 14:05", link: "https://manage.example/contracts/1", fileSha: "a".repeat(64) },
+  proposal: { to: "x", ref: "OSS-QT-2026-007", title: "Harbour Bakery website", version: 2, link: "https://portal.example/p/token", validUntil: "30 November 2026", oneOff: "£1,500.00", recurring: "£25.00 per month" },
+  contract_request: { to: "x", signerName: "Casey Morgan", title: "Harbour Bakery website", ref: "OSS-OF-2026-003", link: "https://portal.example/s/token", expires: "13 November 2026", business: "Harbour Bakery" },
+  signing_confirmation: { to: "x", signerName: "Casey Morgan", title: "Harbour Bakery website", ref: "OSS-OF-2026-003", signedAt: "30 October 2026 at 14:05", fileSha: "a".repeat(64), hasAttachment: true },
+  signing_notice: { to: "x", title: "Harbour Bakery website", ref: "OSS-OF-2026-003", business: "Harbour Bakery", signerName: "Casey Morgan", signerEmail: "casey@harbour.example", signedAt: "30 October 2026 at 14:05", link: "https://manage.example/contracts/1", fileSha: "a".repeat(64) },
   password_reset: { to: "x", name: "Casey Morgan", link: "https://manage.example/reset-password?token=abc", minutes: 60 },
   password_changed: { to: "x", name: "Casey Morgan", when: "30 October 2026 at 14:05" },
   backup_reminder: { to: "x", lastBackup: "23 October 2026", link: "https://manage.example/backup" },

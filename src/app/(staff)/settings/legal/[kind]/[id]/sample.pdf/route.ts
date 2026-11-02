@@ -13,7 +13,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ kind: stri
   const text = sampleAgreement(await getCompany(ctx), { number: t.number, body: t.body });
   const when = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/London" }).format(new Date());
   const pdf = await buildSignedPdf({
-    title: "Sample agreement", reference: "K-0000", contentText: text, contentSha256: sha256(text), signerName: "Sample Signer", signerEmail: "sample@example.com", method: "typed",
+    title: "Sample agreement", reference: "OSS-OF-2026-000", contentText: text, contentSha256: sha256(text), signerName: "Sample Signer", signerEmail: "sample@example.com", method: "typed",
     signedAtLondon: when, signedAtUtc: new Date().toISOString(), consentText: CONSENT_TEXT, consentVersion: CONSENT_VERSION, draftWording: t.status !== "published",
   });
   return new Response(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="sample-agreement-v${t.number}.pdf"`, "Cache-Control": "private, no-store" } });

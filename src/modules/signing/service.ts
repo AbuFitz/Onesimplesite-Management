@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { db, type Tx } from "@/lib/db";
-import { audit, enqueue, nextReference } from "@/lib/audit";
+import { audit, enqueue, nextRef } from "@/lib/audit";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { newToken, sha256, sha256Bytes } from "@/lib/tokens";
 import { portalLink, manageLink } from "@/lib/env";
@@ -107,12 +107,13 @@ export async function viewSigning(token: string) {
   const s = await resolve(db, token);
   if (!s.ok) return s;
   const r = await db.signingRequest.findUniqueOrThrow({ where: { id: s.requestId }, include: { contract: { select: { title: true, reference: true, customer: { select: { displayName: true } } } } } });
-  return { ok: true as const, signerName: r.signerName, signerEmail: r.signerEmail, contentText: r.contentText, title: r.contract.title, reference: r.contract.reference, business: r.contract.customer.displayName, expiresAt: r.expiresAt };
+  return { ok: true as const, signerName: r.signerName, signerEmail: r.signerEmail, contentText: r.contentText, title: r.contract.title, reference: r.contract.reference, business: r.contract.customer.displayName, expiresAt: r.expiresAt, sentAt: r.createdAt };
 }
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 export const signInput = z.object({
   name: z.string().trim().min(2, "Enter your full name.").max(200),
+  position: z.string().trim().max(120).optional().transform((v) => v || undefined),
   method: z.enum(["typed", "drawn"]),
   image: z.string().max(400_000).optional(),
   consent: z.literal(true, { error: "Please confirm you have read and agree to sign." }),
@@ -140,7 +141,7 @@ export async function submitSignature(token: string, raw: unknown, ev: { ip?: st
       const signedAt = new Date();
       const evidence = {
         contractReference: req.contract.reference, signingRequestId: req.id, contentSha256: req.contentSha256,
-        signerName: i.name, signerEmail: req.signerEmail, method: i.method, consentText: CONSENT_TEXT, consentVersion: CONSENT_VERSION,
+        signerName: i.name, signerPosition: i.position ?? null, signerEmail: req.signerEmail, method: i.method, consentText: CONSENT_TEXT, consentVersion: CONSENT_VERSION,
         signedAtUtc: signedAt.toISOString(), ipAddress: ev.ip ?? null, userAgent: ev.userAgent?.slice(0, 300) ?? null, tokenId: s.tokenId,
         note: "Electronic signature capture; identity is not verified beyond control of the emailed link.",
       };
@@ -148,7 +149,7 @@ export async function submitSignature(token: string, raw: unknown, ev: { ip?: st
       const pdf = await buildSignedPdf({
         draftWording: !!termsRow && termsRow.status !== "published" && termsRow.status !== "retired",
         title: req.contract.title, reference: req.contract.reference, contentText: req.contentText, contentSha256: req.contentSha256,
-        signerName: i.name, signerEmail: req.signerEmail, method: i.method, signatureImage: image,
+        signerName: i.name, signerPosition: i.position, signerEmail: req.signerEmail, method: i.method, signatureImage: image,
         signedAtLondon: london(signedAt), signedAtUtc: signedAt.toISOString(), consentText: CONSENT_TEXT, consentVersion: CONSENT_VERSION,
       });
       const fileSha = sha256Bytes(pdf);
@@ -198,33 +199,64 @@ export async function declineSigning(token: string, reason: string) {
 
 // ───────── One agreement: order summary + website requirements + price + our Terms & Conditions ─────────
 type ComposeIn = {
-  reference: string; title: string; dateLabel: string; currency: string; oneOffMinor: number; recurringMinor: number; recurringPeriod: string | null;
+  reference: string; title: string; dateLabel: string; validUntilLabel: string; currency: string; oneOffMinor: number; recurringMinor: number; recurringPeriod: string | null;
   lines: { description: string; quantity: number; unitMinor: number; recurring: boolean }[];
   scope: string; requirements: Record<string, string | undefined>;
   provider: { legalName: string; companyNumber: string | null; registeredAddress: string; vatNumber: string | null };
   client: { legalName: string; kind: string; companyNumber: string | null; billingAddress: string; vatNumber: string | null };
+  contact?: { name: string; email: string | null };
+  issuedBy?: { name: string; position: string };
   terms: { number: number; body: string };
 };
+const cell = (t: string) => t.replace(/\|/g, "/").replace(/\s*\n\s*/g, ", ").trim();
+const lines_ = (t: string | undefined) => (t ?? "").split("\n").map((l) => l.trim().replace(/^[-•]\s*/, "")).filter(Boolean);
+
+/**
+ * The order form the customer reads and signs, in the structure of the OneSimpleSite quotation:
+ * prepared by and for, the project, what is included, price, payment, our Services Agreement, acceptance.
+ */
 export function composeAgreement(c: ComposeIn) {
-  const party = (label: string, p: { legalName: string; companyNumber: string | null; address: string; vatNumber: string | null }) =>
-    `party: ${label} | ${p.legalName} | ${[p.companyNumber && `Company no. ${p.companyNumber}`, p.address.replace(/\s*\n\s*/g, ", "), p.vatNumber && `VAT no. ${p.vatNumber}`].filter(Boolean).join(" ; ")}`;
-  const money_ = (m: number) => money(m, c.currency);
-  c = { ...c, scope: normalizeNewlines(c.scope), requirements: Object.fromEntries(Object.entries(c.requirements).map(([k, v]) => [k, v && normalizeNewlines(v)])) };
-  const reqLines = REQUIREMENT_FIELDS.filter(([k]) => k !== "payment" && c.requirements[k]?.trim()).flatMap(([k, label]) => [`${label}:`, ...c.requirements[k]!.trim().split("\n").map((l) => (l.trim() ? `- ${l.trim().replace(/^[-•]\s*/, "")}` : ""))]);
-  return [
-    party("Provider", { legalName: c.provider.legalName, companyNumber: c.provider.companyNumber, address: c.provider.registeredAddress, vatNumber: c.provider.vatNumber }),
-    party("Client", { legalName: c.client.legalName, companyNumber: c.client.companyNumber, address: c.client.billingAddress, vatNumber: c.client.vatNumber }),
-    "", "## Order summary", `Reference: ${c.reference}`, `Project: ${c.title}`, `Date: ${c.dateLabel}`,
-    "", "## Scope of work", ...c.scope.split("\n"),
-    ...(reqLines.length ? ["", "## Website requirements", ...reqLines] : []),
-    "", "## Price and payment",
-    ...c.lines.map((l) => `- ${l.description}${l.quantity > 1 ? ` x ${l.quantity}` : ""}${l.recurring ? ` (recurring${c.recurringPeriod ? `, per ${c.recurringPeriod}` : ""})` : ""}: ${money_(l.quantity * l.unitMinor)}`),
-    "", `One-off total: ${money_(c.oneOffMinor)}`, ...(c.recurringMinor > 0 ? [`Recurring total: ${money_(c.recurringMinor)}${c.recurringPeriod ? ` per ${c.recurringPeriod}` : ""}`] : []),
-    ...(c.requirements.payment?.trim() ? ["", "Payment schedule:", ...c.requirements.payment.trim().split("\n").map((l) => (l.trim() ? `- ${l.trim().replace(/^[-•]\s*/, "")}` : ""))] : []),
-    "note: Amounts exclude VAT unless stated. Invoices are issued separately for the amounts and dates above.",
-    "", "## Services Agreement", `note: Our Services Agreement (version ${c.terms.number}) forms part of this order.`, "",
+  const m = (n: number) => money(n, c.currency);
+  const req = Object.fromEntries(Object.entries(c.requirements).map(([k, v]) => [k, v && normalizeNewlines(v)])) as Record<string, string | undefined>;
+  const per = c.recurringPeriod ? `per ${c.recurringPeriod}` : "recurring";
+  const included = [...lines_(req.features), ...lines_(req.integrations)];
+  const notes = lines_(req.notes), pay = lines_(req.payment);
+  const row = (k: string, v: string | undefined) => (v?.trim() ? [`kv: ${k} | ${cell(v)}`] : []);
+  let section = 0;
+  // Headings are numbered by the document parser; the count is kept here so clauses carry the right number.
+  const h = (title: string) => { section += 1; return `## ${title}`; };
+  const clauses = (items: string[]) => items.map((x, i) => `${section}.${i + 1} ${x}`);
+
+  const out: string[] = [
+    `This order form sets out what ${c.provider.legalName} will do for ${c.client.legalName}, the fixed price, and how we will work together. Signing it makes it a binding agreement on the terms of our Services Agreement below.`,
+    "",
+    `party: Prepared by | ${c.provider.legalName} | ${[c.provider.companyNumber && `Registered in England and Wales, no. ${c.provider.companyNumber}`, `Registered office: ${cell(c.provider.registeredAddress)}`, "Email: hello@onesimplesite.co.uk", c.provider.vatNumber && `VAT no. ${c.provider.vatNumber}`].filter(Boolean).join(" ; ")}`,
+    `party: Prepared for | ${c.client.legalName} | ${[c.contact?.name, c.contact?.email && `Email: ${c.contact.email}`, c.client.companyNumber && `Company no. ${c.client.companyNumber}`, cell(c.client.billingAddress), c.client.vatNumber && `VAT no. ${c.client.vatNumber}`].filter(Boolean).join(" ; ")}`,
+    "",
+    `kv: Order number | ${c.reference}`, `kv: Date | ${c.dateLabel}`, `kv: Valid until | ${c.validUntilLabel}`,
+    "", h("The project"),
+    `kv: Project name | ${cell(c.title)}`, ...row("Summary", c.scope), ...row("Pages", req.pages), ...row("Domain and hosting", req.domainHosting), ...row("Content", req.contentBy), ...row("Timeline", req.timeline),
+  ];
+  if (included.length) out.push("", h("What is included"), ...included.map((x) => `- ${x}`));
+  if (notes.length) out.push("", h("Not included, and other notes"), ...clauses(notes));
+  out.push(
+    "", h("Price"),
+    "| Item | Description | Amount |",
+    ...c.lines.map((l) => `| ${cell(l.description)}${l.quantity > 1 ? ` x ${l.quantity}` : ""} | ${l.recurring ? `Recurring, ${per}` : "One-off"} | ${m(l.quantity * l.unitMinor)}${l.recurring ? ` ${per}` : ""} |`),
+    `| Total (one-off) |  | ${m(c.oneOffMinor)} |`,
+    ...(c.recurringMinor > 0 ? [`| Total (recurring) |  | ${m(c.recurringMinor)} ${per} |`] : []),
+    "",
+    c.provider.vatNumber ? "note: Amounts exclude VAT, which is added at the current rate. Invoices are issued separately for the amounts and dates below." : `note: VAT is not charged because ${c.provider.legalName} is not VAT-registered. Invoices are issued separately for the amounts and dates below.`,
+    ...clauses(pay),
+    "", h("Services Agreement"), `note: Our Services Agreement (version ${c.terms.number}) forms part of this order.`, "",
     renumberTerms(c.terms.body.trim()),
-  ].join("\n");
+    "", h("Accepting this order"),
+    ...clauses(["To accept, sign below. Signing is your acceptance of this order and of our Services Agreement."]),
+    "",
+    `sign: For ${c.provider.legalName.toUpperCase()}${c.issuedBy ? ` | ${c.issuedBy.name} | ${c.issuedBy.name} | ${c.issuedBy.position} | ${c.dateLabel}` : ""}`,
+    `sign: Accepted by ${c.client.legalName.toUpperCase()}`,
+  );
+  return out.join("\n");
 }
 
 /**
@@ -253,12 +285,16 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
     await tx.proposalVersion.update({ where: { id: v.id }, data: { sentAt: new Date(), sentToEmail: i.email, validUntil: v.validUntil ?? expiresAt } });
     await tx.proposal.update({ where: { id: p.id }, data: { status: "sent", version: { increment: 1 } } });
     if (p.opportunityId) await tx.opportunity.updateMany({ where: { id: p.opportunityId, workspaceId: ctx.workspaceId, stage: { in: ["new", "qualified"] } }, data: { stage: "contract_pending", version: { increment: 1 } } });
-    const reference = await nextReference(tx, ctx.workspaceId, "contract", "K");
+    // The order shares the quotation's number (OSS-QT-2026-047 becomes OSS-OF-2026-047). A revised quotation adds -R2, -R3...
+    const base = /^OSS-QT-/.test(p.reference) ? p.reference.replace("OSS-QT-", "OSS-OF-") : await nextRef(tx, ctx.workspaceId, "order");
+    const reference = p.currentVersion > 1 ? `${base}-R${p.currentVersion}` : base;
     const contentText = composeAgreement({
-      reference, title: p.title, dateLabel: day(new Date()), currency: v.currency, oneOffMinor: v.oneOffMinor, recurringMinor: v.recurringMinor, recurringPeriod: v.recurringPeriod,
+      reference, title: p.title, dateLabel: day(new Date()), validUntilLabel: day(v.validUntil ?? expiresAt), currency: v.currency, oneOffMinor: v.oneOffMinor, recurringMinor: v.recurringMinor, recurringPeriod: v.recurringPeriod,
       lines: v.lines, scope: v.scope, requirements: (v.requirements ?? {}) as Record<string, string | undefined>,
       provider: { legalName: company.legalName!, companyNumber: company.companyNumber, registeredAddress: company.registeredAddress!, vatNumber: company.vatNumber },
       client: { legalName: p.customer.legalName!, kind: p.customer.kind, companyNumber: p.customer.companyNumber, billingAddress: p.customer.billingAddress!, vatNumber: p.customer.vatNumber },
+      contact: { name: i.name, email: i.email },
+      issuedBy: { name: ctx.name, position: (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { jobTitle: true } }))?.jobTitle || "OneSimpleSite" },
       terms: { number: terms!.number, body: terms!.body },
     });
     const contract = await tx.contract.create({

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { audit, enqueue, nextReference } from "@/lib/audit";
+import { audit, enqueue, nextRef } from "@/lib/audit";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
@@ -49,7 +49,7 @@ export async function runCompletionWorkflow(tx: Tx, contractId: string) {
   const c = await tx.contract.findUniqueOrThrow({ where: { id: contractId }, include: { proposalVersion: { include: { proposal: true } } } });
   let project = await tx.project.findUnique({ where: { contractId } });
   if (!project) {
-    const reference = await nextReference(tx, c.workspaceId, "project", "PR");
+    const reference = await nextRef(tx, c.workspaceId, "project");
     project = await tx.project.create({
       data: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, reference, name: c.title, scopeSnapshot: c.scopeSnapshot, stage: "planned" },
     });

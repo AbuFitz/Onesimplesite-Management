@@ -7,7 +7,7 @@
  *   note: highlighted note
  *   kv: Label | Value             (a row in a details list)
  *   | a | b | c |                 (a table; the first row is the header)
- *   sign: Who signs               (a signature box: signature, name, position, date)
+ *   sign: Who signs | typed signature | name | position | date   (a signature box; everything after the label is optional)
  *   Sub-heading:                  (a line ending in ":" and short, or a known label)
  * Everything else is a paragraph. Blank lines are spacing.
  */
@@ -21,7 +21,7 @@ export type Block =
   | { t: "note"; text: string }
   | { t: "kv"; label: string; value: string }
   | { t: "table"; head: string[]; rows: string[][] }
-  | { t: "sign"; label: string }
+  | { t: "sign"; label: string; typed?: string; name?: string; position?: string; date?: string }
   | { t: "p"; text: string }
   | { t: "gap" };
 
@@ -39,7 +39,7 @@ export function parseDoc(text: string): Block[] {
     else if ((m = l.match(/^##\s+(.*)$/))) out.push({ t: "h", no: String(++section).padStart(2, "0"), text: m[1].trim() });
     else if ((m = l.match(/^note:\s*(.*)$/i))) out.push({ t: "note", text: m[1].trim() });
     else if ((m = l.match(/^kv:\s*([^|]*)\|(.*)$/i))) out.push({ t: "kv", label: m[1].trim(), value: m[2].trim() });
-    else if ((m = l.match(/^sign:\s*(.*)$/i))) out.push({ t: "sign", label: m[1].trim() });
+    else if ((m = l.match(/^sign:\s*(.*)$/i))) { const [label, typed, name, position, date] = m[1].split("|").map((x) => x.trim()); out.push({ t: "sign", label, typed: typed || undefined, name: name || undefined, position: position || undefined, date: date || undefined }); }
     else if (l.trim().startsWith("|")) {
       const cells = l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
       if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue; // separator row

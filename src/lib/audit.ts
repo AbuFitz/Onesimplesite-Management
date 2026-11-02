@@ -21,7 +21,34 @@ export async function audit(
   });
 }
 
-/** Atomic reference allocation (never count+1). */
+/**
+ * OneSimpleSite references: OSS-<TYPE>-<YEAR>-<NNN>, for example OSS-QT-2026-047. Customers have no year (OSS-CU-0001).
+ * Allocated atomically in the database, one counter per type and year, never "count + 1".
+ */
+const REFS = {
+  customer: { code: "CU", yearly: false, pad: 4 },
+  quotation: { code: "QT", yearly: true, pad: 3 },
+  order: { code: "OF", yearly: true, pad: 3 },
+  project: { code: "PJ", yearly: true, pad: 3 },
+  ticket: { code: "TK", yearly: true, pad: 4 },
+  dpa: { code: "DP", yearly: true, pad: 3 },
+  change: { code: "CR", yearly: true, pad: 3 },
+} as const;
+export type RefKind = keyof typeof REFS;
+export const londonYear = (d = new Date()) => Number(new Intl.DateTimeFormat("en-GB", { year: "numeric", timeZone: "Europe/London" }).format(d));
+
+export async function nextRef(tx: Tx, workspaceId: string, kind: RefKind) {
+  const r = REFS[kind], year = londonYear();
+  const name = r.yearly ? `${kind}:${year}` : kind;
+  const rows = await tx.$queryRaw<{ value: number }[]>`
+    INSERT INTO "SequenceCounter" ("workspaceId","name","value") VALUES (${workspaceId}::uuid, ${name}, 1)
+    ON CONFLICT ("workspaceId","name") DO UPDATE SET "value" = "SequenceCounter"."value" + 1
+    RETURNING "value"`;
+  const n = String(rows[0].value).padStart(r.pad, "0");
+  return r.yearly ? `OSS-${r.code}-${year}-${n}` : `OSS-${r.code}-${n}`;
+}
+
+/** Atomic reference allocation (never count+1). Older style, kept for any caller not yet moved to nextRef. */
 export async function nextReference(tx: Tx, workspaceId: string, name: string, prefix: string) {
   const rows = await tx.$queryRaw<{ value: number }[]>`
     INSERT INTO "SequenceCounter" ("workspaceId","name","value") VALUES (${workspaceId}::uuid, ${name}, 1)

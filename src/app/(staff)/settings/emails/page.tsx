@@ -22,12 +22,12 @@ const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "Team"; 
 function sample(id: TemplateName) {
   const to = "customer@example.com";
   switch (id) {
-    case "contract_request": return renderEmail(id, { to, signerName: "Alex", title: "Website for Sample Café", ref: "K-0000", link: SAMPLE_LINK, expires: "30 November 2026", business: "Sample Café Ltd" });
-    case "signing_confirmation": return renderEmail(id, { to, signerName: "Alex", title: "Website for Sample Café", ref: "K-0000", signedAt: "30 October 2026, 14:05", fileSha: "9f2c1ab07d3e44f1", hasAttachment: true });
+    case "contract_request": return renderEmail(id, { to, signerName: "Alex", title: "Website for Sample Café", ref: "OSS-OF-2026-047", link: SAMPLE_LINK, expires: "30 November 2026", business: "Sample Café Ltd" });
+    case "signing_confirmation": return renderEmail(id, { to, signerName: "Alex", title: "Website for Sample Café", ref: "OSS-OF-2026-047", signedAt: "30 October 2026, 14:05", fileSha: "9f2c1ab07d3e44f1", hasAttachment: true });
     case "invitation": return renderEmail(id, { to, businessName: "Sample Café Ltd", inviter: "Jamie at OneSimpleSite", link: SAMPLE_LINK, expires: "6 November 2026" });
     case "password_reset": return renderEmail(id, { to, name: "Alex", link: SAMPLE_LINK, minutes: 60 });
     case "password_changed": return renderEmail(id, { to, name: "Alex", when: "30 October 2026, 14:05" });
-    case "signing_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", title: "Website for Sample Café", ref: "K-0000", business: "Sample Café Ltd", signerName: "Alex", signerEmail: to, signedAt: "30 October 2026, 14:05", link: "https://manage.onesimplesite.co.uk/contracts/example", fileSha: "9f2c1ab07d3e44f1" });
+    case "signing_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", title: "Website for Sample Café", ref: "OSS-OF-2026-047", business: "Sample Café Ltd", signerName: "Alex", signerEmail: to, signedAt: "30 October 2026, 14:05", link: "https://manage.onesimplesite.co.uk/contracts/example", fileSha: "9f2c1ab07d3e44f1" });
     case "staff_invitation": return renderEmail(id, { to: "new.person@onesimplesite.co.uk", name: "New Person", inviter: "Jamie", roleLabel: "Team member", link: "https://manage.onesimplesite.co.uk/invite/example", expires: "6 November 2026" });
     case "backup_reminder": return renderEmail(id, { to: "hello@onesimplesite.co.uk", lastBackup: "23 October 2026", link: "https://manage.onesimplesite.co.uk/backup" });
     default: return renderEmail("password_changed", { to, name: "Alex", when: "" });
