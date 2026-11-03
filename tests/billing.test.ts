@@ -140,7 +140,7 @@ describe("checkout requests sent to Stripe", () => {
       expect(calls.filter((x) => x.url.endsWith("/customers"))).toHaveLength(1);                        // created once, then reused
       expect((await db.customer.findUniqueOrThrow({ where: { id: c.id } })).stripeCustomerId).toBe("cus_123");
       const [site, plan] = calls.filter((x) => x.url.endsWith("/checkout/sessions")).map((x) => x.body);
-      expect(site.get("mode")).toBe("payment"); expect(site.get("customer")).toBe("cus_123");
+      expect(site.get("payment_method_types[0]")).toBe("card"); expect(site.get("mode")).toBe("payment"); expect(site.get("customer")).toBe("cus_123");
       expect(site.get("line_items[0][price_data][unit_amount]")).toBe("120000"); expect(site.get("line_items[0][price_data][currency]")).toBe("gbp");
       expect(site.get("line_items[0][price_data][recurring][interval]")).toBeNull();
       expect(site.get("metadata[intentId]")).toBe(one!.id); expect(site.get("payment_intent_data[metadata][intentId]")).toBe(one!.id);

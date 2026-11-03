@@ -13,8 +13,8 @@ export default async function PublicLegal({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const page = LEGAL_PAGES[slug];
   if (!page) notFound();
-  const w = await db.workspace.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } });
-  const vars = w ? await documentValues(w.id) : {};
+  const w = await db.workspace.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true, legalName: true, registeredAddress: true } });
+  const vars = { ...(w ? await documentValues(w.id) : {}), legal_name: w?.legalName?.trim() || "OneSimpleSite", registered_office: w?.registeredAddress?.trim().replace(/\s*\n\s*/g, ", ") || "United Kingdom" };
   const others = Object.values(LEGAL_PAGES).filter((p) => p.slug !== slug).map((p) => ({ href: `/legal/${p.slug}`, label: p.title.replace("Portal ", "").replace(" Notice", "").replace(" of Use", " of use") }));
   return <PolicyPage title={page.title} intro={page.intro} version={page.version} updated={LEGAL_PAGES_UPDATED} body={fillVars(page.body, vars)} others={others} />;
 }
