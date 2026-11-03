@@ -3,26 +3,29 @@ import Image from "next/image";
 import Link from "next/link";
 import { requireClient } from "@/modules/identity/session";
 import { signOutPortal } from "@/app/actions/auth";
-import { PortalNav } from "@/components/portal-nav";
+import { PortalNav, PortalTabs } from "@/components/portal-nav";
 import { Avatar } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const c = await requireClient();
+  const business = c.memberships.map((m) => m.customer.displayName).join(", ");
   return (
-    <div className="min-h-dvh bg-white">
+    <div className="min-h-dvh bg-bone pb-28 sm:pb-12">
       <LiveRefresh seconds={15} />
-      <header className="border-b border-line" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="mx-auto max-w-4xl px-5">
-          <div className="flex h-14 items-center justify-between">
-            <Link href="/overview" aria-label="Client Portal home" className="flex items-center gap-3"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={126} height={26} priority /><span className="hidden text-sm text-muted sm:inline">Client Portal</span></Link>
-            <div className="flex items-center gap-3"><span className="hidden text-sm text-muted sm:inline">{c.memberships.map((m) => m.customer.displayName).join(", ")}</span><Avatar name={c.name} size={32} />
-              <form action={signOutPortal}><button className="text-sm text-muted hover:text-ink min-h-10">Sign out</button></form></div>
+      <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <Link href="/overview" aria-label="Client portal home"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={140} height={29} priority /></Link>
+          <div className="flex items-center gap-3">
+            <span className="hidden max-w-[16rem] truncate text-sm font-semibold sm:inline">{business}</span>
+            <Avatar name={c.name} size={38} />
+            <form action={signOutPortal}><button className="btn btn-quiet !min-h-10 !px-4 text-sm">Sign out</button></form>
           </div>
-          <PortalNav />
         </div>
+        <div className="mx-auto max-w-5xl px-4 pb-2 sm:px-6"><PortalNav /></div>
       </header>
-      <main id="main" className="mx-auto max-w-4xl px-5 pb-20 pt-8">{children}</main>
+      <main id="main" className="mx-auto max-w-5xl px-4 pt-4 sm:px-6">{children}</main>
+      <PortalTabs />
     </div>
   );
 }
