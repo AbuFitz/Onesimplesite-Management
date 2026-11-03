@@ -16,7 +16,7 @@ export function Composer({ name }: { name: string }) {
         <Avatar name={name} />
         <div className="min-w-0 flex-1">
           {!open ? (
-            <button type="button" onClick={() => setOpen(true)} className="flex min-h-10 w-full items-center rounded-full bg-soft px-4 text-left text-[15px] text-muted hover:bg-[#e8ece9]">Post something to the team…</button>
+            <button type="button" onClick={() => setOpen(true)} className="flex min-h-10 w-full items-center rounded-lg bg-soft px-4 text-left text-[15px] text-muted hover:bg-[#e8ece9]">Post something to the team…</button>
           ) : (
             <div className="space-y-3">
               <ErrorSummary message={s?.error} />

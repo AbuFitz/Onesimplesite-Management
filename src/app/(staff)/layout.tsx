@@ -61,7 +61,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           <form action="/search" role="search" className="relative mx-auto hidden max-w-lg flex-1 sm:block">
             <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <label htmlFor="gs" className="sr-only">Search</label>
-            <input id="gs" name="q" type="search" placeholder="Search customers, tickets, projects" className="field !min-h-9 !rounded-full !bg-soft !border-transparent !pl-9 !text-sm hover:!border-line focus:!bg-white" />
+            <input id="gs" name="q" type="search" placeholder="Search customers, tickets, projects" className="field !min-h-9 !rounded-lg !bg-soft !border-transparent !pl-9 !text-sm hover:!border-line focus:!bg-white" />
           </form>
           <div className="ml-auto flex items-center gap-2">
             <span className="sm:hidden"><Link href="/search" aria-label="Search" className="btn btn-quiet !min-h-10 !px-3"><Search size={17} aria-hidden /></Link></span>

@@ -34,7 +34,7 @@ export function FilePicker({ label = "Add pictures or a PDF", hint }: { label?: 
   }
   return (
     <div>
-      <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-bone px-4 font-semibold hover:bg-[#e6e2d8] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ink">
+      <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[10px] border border-line bg-white px-4 font-semibold hover:bg-bone has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ink">
         <Paperclip size={17} aria-hidden /> {label}
         <input ref={input} onChange={onPick} type="file" name="files" multiple accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" className="sr-only" />
       </label>
@@ -43,9 +43,9 @@ export function FilePicker({ label = "Add pictures or a PDF", hint }: { label?: 
       {files.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-2" aria-label="Files to send">
           {files.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="inline-flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-3 pr-1 text-sm">
+            <li key={`${f.name}-${i}`} className="inline-flex items-center gap-2 rounded-lg border border-line bg-white py-1 pl-3 pr-1 text-sm">
               <span className="max-w-40 truncate">{f.name}</span><span className="text-muted">{kb(f.size)}</span>
-              <button type="button" onClick={() => sync(files.filter((_, j) => j !== i))} className="grid size-7 place-items-center rounded-full hover:bg-bone" aria-label={`Remove ${f.name}`}><X size={14} aria-hidden /></button>
+              <button type="button" onClick={() => sync(files.filter((_, j) => j !== i))} className="grid size-7 place-items-center rounded-md hover:bg-bone" aria-label={`Remove ${f.name}`}><X size={14} aria-hidden /></button>
             </li>
           ))}
         </ul>
@@ -66,7 +66,7 @@ export function Files({ items, base }: { items: { id: string; filename: string; 
           {a.internal && <span className="block bg-ink px-2 py-0.5 text-xs font-semibold text-white">Only we see this</span>}
         </a></li>
       ) : (
-        <li key={a.id}><a href={`${base}/${a.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-bone px-4 text-sm font-semibold hover:bg-[#e6e2d8]"><Paperclip size={15} aria-hidden />{a.filename}{a.internal && <span className="text-muted">(only we see this)</span>}</a></li>
+        <li key={a.id}><a href={`${base}/${a.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-white px-4 text-sm font-semibold hover:bg-[#e6e2d8]"><Paperclip size={15} aria-hidden />{a.filename}{a.internal && <span className="text-muted">(only we see this)</span>}</a></li>
       ))}
     </ul>
   );
