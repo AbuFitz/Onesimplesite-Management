@@ -1,6 +1,7 @@
 import { money } from "./ui";
 import { PriceLines } from "./price-lines";
 import { REQUIREMENT_FIELDS } from "@/modules/sales/service";
+import { PROJECT_TYPES } from "@/modules/projects/service";
 
 type Line = { description: string; quantity: number; unitMinor: number; recurring: boolean };
 type Initial = { title: string; scope: string; terms: string; validUntil?: Date | null; recurringPeriod?: string | null; lines: Line[]; requirements?: Record<string, string | undefined> | null };
@@ -14,6 +15,7 @@ export function ProposalFields({ initial, defaults, plans = [] }: { initial?: In
       <div><label className="label" htmlFor="scope">What we are building</label><textarea id="scope" name="scope" className="field min-h-24" defaultValue={initial?.scope ?? defaults?.scope} required /></div>
       <PriceLines lines={initial?.lines ?? []} />
       {plans.length > 0 && <div><label className="label" htmlFor="plan">Care plan</label><select id="plan" name="plan" className="field" defaultValue={initial?.requirements?.plan ?? ""}><option value="">No care plan</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.name}, {p.price} a month</option>)}</select><p className="hint mt-1">Choosing a plan adds its monthly price and brings the Service Level Agreement and Hosting terms into the pack.</p></div>}
+      <div><label className="label" htmlFor="pjt">What kind of project is it?</label><select id="pjt" name="projectType" className="field" defaultValue={initial?.requirements?.projectType ?? "new_site"}>{Object.entries(PROJECT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select><p className="hint mt-1">Decides the steps and usual tasks on the project that's created when they sign. You can change it later.</p></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div><label className="label" htmlFor="rp">Repeating items are charged</label><select id="rp" name="recurringPeriod" className="field" defaultValue={initial?.recurringPeriod ?? ""}><option value="">Not applicable</option><option value="month">Monthly</option><option value="year">Yearly</option></select></div>
       </div>

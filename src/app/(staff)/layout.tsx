@@ -9,6 +9,7 @@ import { Search } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { can, ROLE_INFO } from "@/modules/identity/permissions";
 import { SideNav, BottomNav, type NavGroup } from "@/components/nav";
+import { SmartBubble } from "@/components/smart-bubble";
 import { CommandPalette } from "@/components/command-palette";
 import { NewMenu, UserMenu } from "@/components/menus";
 import { after } from "next/server";
@@ -69,6 +70,7 @@ export default async function StaffLayout({ children, modal }: { children: React
         <main id="main" className="page panel min-w-0">{children}<LegalLinks className="mt-12 justify-start" /></main>
       </div>
       {modal}
+      <SmartBubble />
       <BottomNav />
     </div>
   );

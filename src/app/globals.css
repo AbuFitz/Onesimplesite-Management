@@ -34,16 +34,16 @@
 :root { --card-line: #cfd5d0; --card-head: #fafaf8; --card-rule: #e3e7e3; --canvas-2: #efeee9; }
 /* The team app: a quiet, monochrome workspace in the spirit of Midday, Twenty and Plane (near-black actions, hairline borders, small type, one blue accent).
    It shares nothing with the customer portal's green and pastels, so the two never feel alike. */
-.staff-theme { --color-spring: #0c0c0e; --color-spring-deep: #27272a; --color-moss: #2450d6; --color-app: #f4f4f5; --color-bone: #f4f4f5; --color-soft: #f4f4f5; --color-line: #e4e4e7; --color-edge: #a1a1aa; --color-muted: #52525b; --color-ink: #09090b;
+.staff-theme { --color-spring: #0c0c0e; --color-spring-deep: #27272a; --color-moss: #0c6a49; --color-app: #f4f4f5; --color-bone: #f4f4f5; --color-soft: #f4f4f5; --color-line: #e4e4e7; --color-edge: #a1a1aa; --color-muted: #52525b; --color-ink: #09090b;
   --card-line: #e4e4e7; --card-head: #fafafa; --card-rule: #ececef; --canvas-2: #f4f4f5; font-size: 14px; }
 .staff-theme .btn:not(.btn-quiet):not(.btn-dark) { color: #fff; }
 .staff-theme .btn:not(.btn-quiet):not(.btn-dark):hover { color: #fff; }
 .staff-theme .btn-dark { background: #0c0c0e; border-color: #0c0c0e; }
 .staff-theme .btn-quiet { border-color: #e4e4e7; box-shadow: none; }
 .staff-theme .btn-quiet:hover { background: #f4f4f5; border-color: #d4d4d8; }
-.staff-theme .field:focus { border-color: #2450d6; box-shadow: 0 0 0 3px rgba(36,80,214,.16); }
-.staff-theme :focus-visible { outline-color: #2450d6; }
-.staff-theme ::selection { background: #dbe4ff; }
+.staff-theme .field:focus { border-color: #0c6a49; box-shadow: 0 0 0 3px rgba(12,106,73,.18); }
+.staff-theme :focus-visible { outline-color: #0c6a49; }
+.staff-theme ::selection { background: #cdeee0; }
 .staff-theme h1 { letter-spacing: -0.03em; }
 html { background: #fff; color: var(--color-ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.55; font-weight: 450; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss03"; }
 body { min-height: 100dvh; background: #fff; }

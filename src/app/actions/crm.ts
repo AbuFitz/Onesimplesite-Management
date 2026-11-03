@@ -37,7 +37,7 @@ function parseProposal(fd: FormData) {
     if (!d) continue;
     lines.push({ description: d, quantity: Number(fd.get(`l${i}q`) || 1), unitMinor: Math.round(Number(fd.get(`l${i}p`) || 0) * 100), recurring: fd.get(`l${i}r`) === "on" });
   }
-  const requirements = Object.fromEntries(["pages", "features", "integrations", "domainHosting", "contentBy", "timeline", "payment", "notes", "plan"].map((k) => [k, String(fd.get(k === "plan" ? "plan" : `req_${k}`) ?? "")]).filter(([, v]) => v.trim()));
+  const requirements = Object.fromEntries(["pages", "features", "integrations", "domainHosting", "contentBy", "timeline", "payment", "notes", "plan", "projectType"].map((k) => [k, String(fd.get(k === "plan" || k === "projectType" ? k : `req_${k}`) ?? "")]).filter(([, v]) => v.trim()));
   return { requirements, title: String(fd.get("title") ?? ""), scope: String(fd.get("scope") ?? ""), terms: String(fd.get("terms") ?? ""), validUntil: fd.get("validUntil") || undefined, recurringPeriod: (fd.get("recurringPeriod") || undefined) as "month" | "year" | undefined, lines };
 }
 

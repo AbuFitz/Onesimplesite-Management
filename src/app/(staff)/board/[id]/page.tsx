@@ -30,8 +30,8 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
           <VisBadge v={post.visibility} />
           {manage && write && (
             <div className="flex gap-1.5">
-              <form action={pinAction}><input type="hidden" name="id" value={post.id} /><input type="hidden" name="pin" value={post.pinned ? "0" : "1"} /><button className="btn btn-quiet !min-h-9 gap-1.5 px-3 text-sm">{post.pinned ? <PinOff size={14} aria-hidden /> : <Pin size={14} aria-hidden />}{post.pinned ? "Unpin" : "Pin"}</button></form>
-              <ConfirmForm action={deletePostAction} message="Delete this post and its comments? This can't be undone."><input type="hidden" name="id" value={post.id} /><button className="btn btn-quiet !min-h-9 gap-1.5 px-3 text-sm text-danger" aria-label="Delete this post"><Trash2 size={14} aria-hidden />Delete</button></ConfirmForm>
+              <form action={pinAction}><input type="hidden" name="id" value={post.id} /><input type="hidden" name="pin" value={post.pinned ? "0" : "1"} /><button className="btn btn-quiet !min-h-11 sm:!min-h-9 gap-1.5 px-3 text-sm">{post.pinned ? <PinOff size={14} aria-hidden /> : <Pin size={14} aria-hidden />}{post.pinned ? "Unpin" : "Pin"}</button></form>
+              <ConfirmForm action={deletePostAction} message="Delete this post and its comments? This can't be undone."><input type="hidden" name="id" value={post.id} /><button className="btn btn-quiet !min-h-11 sm:!min-h-9 gap-1.5 px-3 text-sm text-danger" aria-label="Delete this post"><Trash2 size={14} aria-hidden />Delete</button></ConfirmForm>
             </div>
           )}
         </header>

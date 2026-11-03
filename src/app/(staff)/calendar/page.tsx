@@ -71,14 +71,14 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         <section aria-label="Month" className="overflow-hidden rounded-2xl border border-[var(--card-line)] bg-white shadow-[0_1px_2px_rgba(14,19,17,.06)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--card-rule)] bg-[var(--card-head)] px-4 py-3">
             <div className="flex items-center gap-1.5">
-              <Link aria-label="Previous month" className="btn btn-quiet !min-h-9 !w-9 !px-0" href={href({ month: shift(-1), day: undefined })}><ChevronLeft size={17} /></Link>
+              <Link aria-label="Previous month" className="btn btn-quiet !min-h-11 sm:!min-h-9 !w-9 !px-0" href={href({ month: shift(-1), day: undefined })}><ChevronLeft size={17} /></Link>
               <h2 className="min-w-40 text-center text-lg font-bold">{title}</h2>
-              <Link aria-label="Next month" className="btn btn-quiet !min-h-9 !w-9 !px-0" href={href({ month: shift(1), day: undefined })}><ChevronRight size={17} /></Link>
-              <Link className="btn btn-quiet !min-h-9 ml-1" href={href({ month: today.slice(0, 7), day: today })}>Today</Link>
+              <Link aria-label="Next month" className="btn btn-quiet !min-h-11 sm:!min-h-9 !w-9 !px-0" href={href({ month: shift(1), day: undefined })}><ChevronRight size={17} /></Link>
+              <Link className="btn btn-quiet !min-h-11 sm:!min-h-9 ml-1" href={href({ month: today.slice(0, 7), day: today })}>Today</Link>
             </div>
             <nav aria-label="Whose events" className="flex gap-1.5">
-              <Link className={`btn !min-h-9 ${scope === "mine" ? "btn-dark" : "btn-quiet"}`} href={`/calendar?month=${m}&day=${selected}`}>Mine</Link>
-              <Link className={`btn !min-h-9 ${scope === "team" ? "btn-dark" : "btn-quiet"}`} href={`/calendar?scope=team&month=${m}&day=${selected}`}>Team</Link>
+              <Link className={`btn !min-h-11 sm:!min-h-9 ${scope === "mine" ? "btn-dark" : "btn-quiet"}`} href={`/calendar?month=${m}&day=${selected}`}>Mine</Link>
+              <Link className={`btn !min-h-11 sm:!min-h-9 ${scope === "team" ? "btn-dark" : "btn-quiet"}`} href={`/calendar?scope=team&month=${m}&day=${selected}`}>Team</Link>
             </nav>
           </div>
           <div className="grid grid-cols-7 border-b border-[var(--card-rule)] bg-white text-center text-[13px] font-bold text-ink/70">
@@ -95,10 +95,10 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
                     <span className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1 text-[13.5px] font-semibold ${isToday ? "bg-[#18181b] text-white" : ""}`}>{c.getUTCDate()}</span>
                   </span>
                   {canWrite && inMonth && <Link href={`${href({ day: k })}#add`} aria-label={`Add an event on ${k}`} className="absolute right-1 top-1 z-10 hidden size-7 place-items-center rounded-lg bg-[#18181b] text-white opacity-0 shadow-sm transition-opacity focus:opacity-100 group-hover:opacity-100 sm:grid"><Plus size={15} aria-hidden /></Link>}
-                  <span className="pointer-events-none relative flex flex-wrap gap-0.5 sm:hidden">{list.slice(0, 3).map((e) => <span key={e.id} className="h-1.5 w-1.5 rounded-full bg-[#18181b]" />)}{mk.slice(0, 2).map((x) => <span key={x.id} className={`h-1.5 w-1.5 rounded-full ${x.kind === "project" ? "bg-[#f5a524]" : "bg-[#2450d6]"}`} />)}</span>
+                  <span className="pointer-events-none relative flex flex-wrap gap-0.5 sm:hidden">{list.slice(0, 3).map((e) => <span key={e.id} className="h-1.5 w-1.5 rounded-full bg-[#18181b]" />)}{mk.slice(0, 2).map((x) => <span key={x.id} className={`h-1.5 w-1.5 rounded-full ${x.kind === "project" ? "bg-[#f5a524]" : "bg-[#0c6a49]"}`} />)}</span>
                   <span className="pointer-events-none relative hidden flex-col gap-0.5 sm:flex">
                     {list.slice(0, 2).map((e) => <span key={e.id} className={`truncate rounded-md bg-[#f1f1f3] border border-[#e4e4e7] px-1.5 py-0.5 text-[12px] font-semibold text-[#18181b] ${e.status === "cancelled" ? "line-through opacity-60" : ""}`}>{timeOf(e.startsAt)} {e.title}</span>)}
-                    {mk.slice(0, Math.max(0, 3 - Math.min(list.length, 2))).map((x) => <span key={x.id} className={`truncate rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${x.kind === "project" ? "bg-[#fdeccb] text-[#7a4a00]" : "bg-[#e3ebff] text-[#1e3fae]"}`}>{x.kind === "project" ? "Due: " : "Task: "}{x.label}</span>)}
+                    {mk.slice(0, Math.max(0, 3 - Math.min(list.length, 2))).map((x) => <span key={x.id} className={`truncate rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${x.kind === "project" ? "bg-[#fdeccb] text-[#7a4a00]" : "bg-[#dff5ea] text-[#0a5a3d]"}`}>{x.kind === "project" ? "Due: " : "Task: "}{x.label}</span>)}
                     {total > 3 && <span className="px-1 text-[12px] font-semibold text-ink/65">+{total - 3} more</span>}
                   </span>
                 </div>
@@ -106,7 +106,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
             })}
           </div>
           <div className="flex flex-wrap gap-4 border-t border-[var(--card-rule)] bg-[var(--card-head)] px-4 py-2.5 text-[13px] text-ink/75">
-            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-[#18181b]" /> Event</span><span className="flex items-center gap-1.5"><span className="size-3 rounded bg-[#f5a524]" /> Project due</span><span className="flex items-center gap-1.5"><span className="size-3 rounded bg-[#2450d6]" /> Your task due</span>
+            <span className="flex items-center gap-1.5"><span className="size-3 rounded bg-[#18181b]" /> Event</span><span className="flex items-center gap-1.5"><span className="size-3 rounded bg-[#f5a524]" /> Project due</span><span className="flex items-center gap-1.5"><span className="size-3 rounded bg-[#0c6a49]" /> Your task due</span>
           </div>
         </section>
 
@@ -133,10 +133,10 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
                 <p className={`mt-0.5 break-words font-bold ${e.status === "cancelled" ? "line-through" : ""}`}>{e.title}</p>
                 {e.location && <p className="break-all text-sm text-ink/70">{e.location}</p>}
                 {e.status === "cancelled" && <Status label="cancelled" kind="bad" />}
-                <div className="mt-2 flex flex-wrap gap-2"><a className="btn btn-quiet !min-h-8 text-[13px]" href={`/calendar/${e.id}/ics`}><Download size={14} aria-hidden /> Add to my calendar</a>
-                  {canWrite && e.status === "scheduled" && <form action={cancelEventAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="version" value={e.version} /><button className="btn btn-quiet !min-h-8 text-[13px]"><X size={14} aria-hidden /> Cancel event</button></form>}</div>
+                <div className="mt-2 flex flex-wrap gap-2"><a className="btn btn-quiet !min-h-10 sm:!min-h-8 text-[13px]" href={`/calendar/${e.id}/ics`}><Download size={14} aria-hidden /> Add to my calendar</a>
+                  {canWrite && e.status === "scheduled" && <form action={cancelEventAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="version" value={e.version} /><button className="btn btn-quiet !min-h-10 sm:!min-h-8 text-[13px]"><X size={14} aria-hidden /> Cancel event</button></form>}</div>
               </li>))}</ul>}
-            {dayMarks.length > 0 && <ul className="mb-3 space-y-1.5">{dayMarks.map((x) => <li key={x.id}><Link className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-semibold ${x.kind === "project" ? "bg-[#fdeccb] text-[#7a4a00]" : "bg-[#e3ebff] text-[#1e3fae]"}`} href={x.kind === "project" ? `/projects/${x.id}` : "/"}>{x.kind === "project" ? <FolderKanban size={15} aria-hidden /> : <CheckSquare size={15} aria-hidden />}{x.kind === "project" ? "Project due: " : "Task due: "}{x.label}</Link></li>)}</ul>}
+            {dayMarks.length > 0 && <ul className="mb-3 space-y-1.5">{dayMarks.map((x) => <li key={x.id}><Link className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-semibold ${x.kind === "project" ? "bg-[#fdeccb] text-[#7a4a00]" : "bg-[#dff5ea] text-[#0a5a3d]"}`} href={x.kind === "project" ? `/projects/${x.id}` : "/"}>{x.kind === "project" ? <FolderKanban size={15} aria-hidden /> : <CheckSquare size={15} aria-hidden />}{x.kind === "project" ? "Project due: " : "Task due: "}{x.label}</Link></li>)}</ul>}
           </Panel>
 
           <Panel title="Next up" icon={Clock} tone="lilac">

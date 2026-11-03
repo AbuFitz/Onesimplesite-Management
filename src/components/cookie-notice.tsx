@@ -25,8 +25,8 @@ export function CookieNotice({ aboveTabs = false }: { aboveTabs?: boolean }) {
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-          <Link href="/legal/cookies" className="btn btn-quiet !min-h-9">Cookie notice</Link>
-          <button type="button" onClick={ok} className="btn btn-dark !min-h-9">Got it</button>
+          <Link href="/legal/cookies" className="btn btn-quiet !min-h-11 sm:!min-h-9">Cookie notice</Link>
+          <button type="button" onClick={ok} className="btn btn-dark !min-h-11 sm:!min-h-9">Got it</button>
         </div>
       </div>
     </div>

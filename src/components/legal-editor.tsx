@@ -48,7 +48,7 @@ export function LegalEditor({ id, kind, initialTitle, initialBody, meta, saveAct
             <div>
               <label className="sr-only" htmlFor="lg-body">Wording as text</label>
               <div className="mb-2 flex flex-wrap items-center gap-2 text-sm"><label htmlFor="lg-ins" className="text-muted">Insert a value that can change</label>
-                <select id="lg-ins" className="field !min-h-9 w-auto !py-1 !text-sm" value="" onChange={(e) => { const k = e.target.value; if (!k) return; const a = area.current; const at = a ? a.selectionStart : body.length; setBody(body.slice(0, at) + `{{${k}}}` + body.slice(at)); }}>
+                <select id="lg-ins" className="field !min-h-11 sm:!min-h-9 w-auto !py-1 !text-sm" value="" onChange={(e) => { const k = e.target.value; if (!k) return; const a = area.current; const at = a ? a.selectionStart : body.length; setBody(body.slice(0, at) + `{{${k}}}` + body.slice(at)); }}>
                   <option value="">Choose…</option>{[...VARIABLES.map((v) => [v.key, v.label] as const), ["legal_name", "Legal company name"], ["registered_office", "Registered address"], ["care_standard", "Standard Care Plan price"], ["care_ecommerce", "E-commerce Care Plan price"]].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
               <textarea id="lg-body" ref={area} className="field min-h-[50dvh] font-mono text-sm" value={body} onChange={(e) => setBody(e.target.value)} spellCheck />
               <details className="mt-2 text-sm"><summary className="cursor-pointer text-muted">How to lay it out</summary>

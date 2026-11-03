@@ -30,8 +30,8 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
       <div className="min-w-0">
         {can(ctx.role, "notes.write") && <Composer name={ctx.name} />}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <nav aria-label="Filter posts" className="flex flex-wrap gap-2">{FILTERS.map(([id, label]) => <Link key={id} href={href(id)} aria-current={filter === id ? "page" : undefined} className={`btn !min-h-9 ${filter === id ? "" : "btn-quiet"}`}>{label}</Link>)}</nav>
-          <form role="search" className="flex gap-2"><input type="hidden" name="f" value={filter} /><label className="sr-only" htmlFor="bq">Search the board</label><input id="bq" name="q" defaultValue={sp.q} className="field !min-h-9 w-44 !text-sm" placeholder="Search" /></form>
+          <nav aria-label="Filter posts" className="flex flex-wrap gap-2">{FILTERS.map(([id, label]) => <Link key={id} href={href(id)} aria-current={filter === id ? "page" : undefined} className={`btn !min-h-11 sm:!min-h-9 ${filter === id ? "" : "btn-quiet"}`}>{label}</Link>)}</nav>
+          <form role="search" className="flex gap-2"><input type="hidden" name="f" value={filter} /><label className="sr-only" htmlFor="bq">Search the board</label><input id="bq" name="q" defaultValue={sp.q} className="field !min-h-11 sm:!min-h-9 w-44 !text-sm" placeholder="Search" /></form>
         </div>
         {posts.length === 0 ? <Empty title={sp.q ? "No posts match" : "Nothing here yet"}>{sp.q ? "Try a different word." : "Be the first to post something."}</Empty> : (
           <ul className="space-y-3">

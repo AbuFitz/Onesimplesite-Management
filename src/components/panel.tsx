@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 const TONES = { neutral: "bg-[#f4f4f5]", green: "bg-[#f4f4f5]", amber: "bg-[#f4f4f5]", blue: "bg-[#f4f4f5]", lilac: "bg-[#f4f4f5]", rose: "bg-[#f4f4f5]" } as const;
-const DOT = { neutral: "#a1a1aa", green: "#16a34a", amber: "#d99a06", blue: "#2450d6", lilac: "#7c6ee6", rose: "#dc4c3e" } as const;
+const DOT = { neutral: "#a1a1aa", green: "#65a30d", amber: "#d99a06", blue: "#0c6a49", lilac: "#7c6ee6", rose: "#dc4c3e" } as const;
 export type Tone = keyof typeof TONES;
 
 /** A clearly bounded section: its own white card, a visible border, and a heading with a coloured icon. */

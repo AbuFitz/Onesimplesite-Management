@@ -15,7 +15,7 @@ function Level({ role = "member", billing = false, id }: { role?: string; billin
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div><label className="label" htmlFor={`r-${id}`}>Access level</label>
-        <select id={`r-${id}`} name="role" className="field !min-h-9" defaultValue={role}>{ACCESS_LEVELS.map((l) => <option key={l.id} value={l.id}>{l.label}: {l.blurb}</option>)}</select></div>
+        <select id={`r-${id}`} name="role" className="field !min-h-11 sm:!min-h-9" defaultValue={role}>{ACCESS_LEVELS.map((l) => <option key={l.id} value={l.id}>{l.label}: {l.blurb}</option>)}</select></div>
       <label className="flex min-h-9 items-center gap-2 text-sm"><input type="checkbox" name="billing" defaultChecked={billing} className="size-4 accent-[#0c6a49]" /> Can see and pay invoices</label>
     </div>
   );
@@ -37,7 +37,7 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                 {canEdit && (
                   <div className="mt-3 flex flex-wrap items-start gap-6">
                     <form action={approveRequestAction} className="space-y-2"><Hidden customerId={customerId} /><input type="hidden" name="requestId" value={r.id} /><Level id={`q-${r.id}`} role={r.role} billing={r.billing} /><SubmitButton>Approve and invite</SubmitButton></form>
-                    <form action={declineRequestAction} className="space-y-2"><Hidden customerId={customerId} /><input type="hidden" name="requestId" value={r.id} /><label className="label" htmlFor={`d-${r.id}`}>Reason (shown to them)</label><input id={`d-${r.id}`} name="reason" className="field !min-h-9" placeholder="Optional" /><button className="btn btn-quiet">Decline</button></form>
+                    <form action={declineRequestAction} className="space-y-2"><Hidden customerId={customerId} /><input type="hidden" name="requestId" value={r.id} /><label className="label" htmlFor={`d-${r.id}`}>Reason (shown to them)</label><input id={`d-${r.id}`} name="reason" className="field !min-h-11 sm:!min-h-9" placeholder="Optional" /><button className="btn btn-quiet">Decline</button></form>
                   </div>
                 )}
               </li>
@@ -84,10 +84,10 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                       {p.access === "invited" && <form action={revokeAccessAction}><Hidden customerId={customerId} contactId={p.id} /><button className="btn btn-quiet">Cancel the invitation</button></form>}
                       {p.access === "revoked" && <form action={invitePersonAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`g-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><SubmitButton>Give access again</SubmitButton></form>}
                       <form action={updatePersonAction} className="grid gap-3 sm:grid-cols-2"><Hidden customerId={customerId} contactId={p.id} />
-                        <div><label className="label" htmlFor={`n-${p.id}`}>Name</label><input id={`n-${p.id}`} name="name" className="field !min-h-9" defaultValue={p.name} required /></div>
-                        <div><label className="label" htmlFor={`e-${p.id}`}>Email</label><input id={`e-${p.id}`} name="email" type="email" className="field !min-h-9" defaultValue={p.email ?? ""} required /></div>
-                        <div><label className="label" htmlFor={`p-${p.id}`}>Position</label><input id={`p-${p.id}`} name="position" className="field !min-h-9" defaultValue={p.position ?? ""} placeholder="Owner, Manager, Accountant…" /></div>
-                        <div><label className="label" htmlFor={`t-${p.id}`}>Phone</label><input id={`t-${p.id}`} name="phone" className="field !min-h-9" defaultValue={p.phone ?? ""} /></div>
+                        <div><label className="label" htmlFor={`n-${p.id}`}>Name</label><input id={`n-${p.id}`} name="name" className="field !min-h-11 sm:!min-h-9" defaultValue={p.name} required /></div>
+                        <div><label className="label" htmlFor={`e-${p.id}`}>Email</label><input id={`e-${p.id}`} name="email" type="email" className="field !min-h-11 sm:!min-h-9" defaultValue={p.email ?? ""} required /></div>
+                        <div><label className="label" htmlFor={`p-${p.id}`}>Position</label><input id={`p-${p.id}`} name="position" className="field !min-h-11 sm:!min-h-9" defaultValue={p.position ?? ""} placeholder="Owner, Manager, Accountant…" /></div>
+                        <div><label className="label" htmlFor={`t-${p.id}`}>Phone</label><input id={`t-${p.id}`} name="phone" className="field !min-h-11 sm:!min-h-9" defaultValue={p.phone ?? ""} /></div>
                         <div className="sm:col-span-2"><button className="btn btn-quiet">Save details</button></div>
                       </form>
                       <details className="border-t border-line pt-3"><summary className="cursor-pointer text-[#7a2e12]">They've left the business</summary>

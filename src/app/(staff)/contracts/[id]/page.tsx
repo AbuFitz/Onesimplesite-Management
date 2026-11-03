@@ -26,7 +26,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
   const TONE = { due: "bg-[#f8ecbf] text-[#5c4700]", ok: "bg-[#d7f3e6] text-[#0a5a3d]", warn: "bg-[#fbdccf] text-[#7a2e12]", off: "bg-[#ebe9e1] text-ink/70" } as const;
   const stateTone = k.status === "completed" ? "green" : k.status === "declined" || k.status === "voided" ? "rose" : "amber";
   const stateText = ({ completed: "Signed", awaiting_signature: "Waiting to sign", draft: "Not sent yet", declined: "Declined", voided: "Withdrawn" } as Record<string, string>)[k.status] ?? k.status.replaceAll("_", " ");
-  const btn = "btn btn-quiet !min-h-9";
+  const btn = "btn btn-quiet !min-h-11 sm:!min-h-9";
   return (
     <>
       <RecordHeader back={{ href: `/customers/${k.customerId}`, label: k.customer.displayName }} title={k.title} status={<Status label={stateText} kind={k.status === "completed" ? "good" : k.status === "declined" || k.status === "voided" ? "bad" : "warn"} />} meta={<span>{k.reference}</span>} />
@@ -95,7 +95,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
               </>
             )}
           </Panel>
-          {k.project && <Panel title="Project" icon={FolderKanban} tone="amber"><p className="font-semibold">{k.project.name}</p><p className="mt-1 text-sm text-ink/65">{k.project.reference}</p><Link className="btn btn-quiet !min-h-9 mt-3" href={`/projects/${k.project.id}`}>Open the project</Link></Panel>}
+          {k.project && <Panel title="Project" icon={FolderKanban} tone="amber"><p className="font-semibold">{k.project.name}</p><p className="mt-1 text-sm text-ink/65">{k.project.reference}</p><Link className="btn btn-quiet !min-h-11 sm:!min-h-9 mt-3" href={`/projects/${k.project.id}`}>Open the project</Link></Panel>}
         </aside>
       </div>
     </>

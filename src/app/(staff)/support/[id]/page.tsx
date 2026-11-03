@@ -62,8 +62,8 @@ export default async function SupportTicket({ params, searchParams }: { params: 
             ) : <p className="text-sm text-muted">Not priced. If this is outside their plan, set a price and they approve it in the portal before you start.</p>}
             {!["approved", "paid"].includes(t.chargeStatus) && (
               <form action={quoteChangeAction} className="space-y-2"><input type="hidden" name="id" value={t.id} />
-                <label className="label" htmlFor="q-p">Price (£)</label><input id="q-p" name="price" type="number" min="1" step="0.01" inputMode="decimal" className="field !min-h-9" defaultValue={t.priceMinor ? (t.priceMinor / 100).toFixed(2) : ""} />
-                <label className="label" htmlFor="q-n">Note for them</label><input id="q-n" name="note" className="field !min-h-9" placeholder="Optional" />
+                <label className="label" htmlFor="q-p">Price (£)</label><input id="q-p" name="price" type="number" min="1" step="0.01" inputMode="decimal" className="field !min-h-11 sm:!min-h-9" defaultValue={t.priceMinor ? (t.priceMinor / 100).toFixed(2) : ""} />
+                <label className="label" htmlFor="q-n">Note for them</label><input id="q-n" name="note" className="field !min-h-11 sm:!min-h-9" placeholder="Optional" />
                 <div className="flex flex-wrap gap-2"><SubmitButton pendingText="Sending…">{t.chargeStatus === "quoted" ? "Send the new price" : "Send price for approval"}</SubmitButton><button name="included" value="1" formNoValidate className="btn btn-quiet">No charge</button></div>
               </form>
             )}

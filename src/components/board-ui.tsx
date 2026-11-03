@@ -26,7 +26,7 @@ export function Composer({ name }: { name: string }) {
               <textarea id="bp-body" name="body" rows={5} autoFocus required className="field" placeholder={"An update, a win, a question, a how-to…\n\nUse - for lists and # for headings."} />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <label className="flex items-center gap-2 text-sm text-muted"><span>Who can see it</span>
-                  <select name="visibility" className="field !min-h-9 w-auto !py-1 !text-sm" defaultValue="team"><option value="team">The whole team</option><option value="private">Only me</option></select></label>
+                  <select name="visibility" className="field !min-h-11 sm:!min-h-9 w-auto !py-1 !text-sm" defaultValue="team"><option value="team">The whole team</option><option value="private">Only me</option></select></label>
                 <div className="flex gap-2"><button type="button" className="btn btn-quiet" onClick={() => setOpen(false)}>Cancel</button><button className="btn" disabled={pending}>{pending ? "Posting…" : "Post"}</button></div>
               </div>
             </div>

@@ -26,7 +26,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ e
               <li key={m.id} className="row py-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
                 <div className="min-w-0"><p className="font-semibold break-words">{m.displayName}{self ? " (you)" : ""}</p><p className="text-sm text-muted break-all">{m.username ? `${m.username} · ` : ""}{m.email}</p>
                   <Status label={m.status} kind={m.status === "active" ? "good" : m.status === "pending" ? "warn" : "bad"} />
-                  <form action={setAliasAction} className="mt-2 flex flex-wrap items-center gap-2 text-sm"><input type="hidden" name="id" value={m.id} /><label htmlFor={`a-${m.id}`} className="text-muted">Customers see emails from</label><input id={`a-${m.id}`} name="alias" defaultValue={m.aliasEmail ?? ""} placeholder="name@onesimplesite.co.uk" className="field !min-h-9 w-60 !py-1 !text-sm" autoCapitalize="none" /><button className="btn btn-quiet !min-h-9">Save</button></form></div>
+                  <form action={setAliasAction} className="mt-2 flex flex-wrap items-center gap-2 text-sm"><input type="hidden" name="id" value={m.id} /><label htmlFor={`a-${m.id}`} className="text-muted">Customers see emails from</label><input id={`a-${m.id}`} name="alias" defaultValue={m.aliasEmail ?? ""} placeholder="name@onesimplesite.co.uk" className="field !min-h-11 sm:!min-h-9 w-60 !py-1 !text-sm" autoCapitalize="none" /><button className="btn btn-quiet !min-h-11 sm:!min-h-9">Save</button></form></div>
                 {!self && (
                   <div className="flex flex-wrap items-end gap-2">
                     <form action={changeRoleAction} className="flex items-end gap-2"><input type="hidden" name="id" value={m.id} />

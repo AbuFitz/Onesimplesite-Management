@@ -42,7 +42,11 @@ export async function recordContractCompletion(ctx: StaffCtx, contractId: string
   });
 }
 
+import { PROJECT_TYPES } from "@/modules/projects/service";
+
 type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
+const workTypeOf = (t?: string) => (t && PROJECT_TYPES[t] ? t : "new_site");
 
 /** Idempotent: unique(Project.contractId), unique(BillingIntent.contractId, kind), unique outbox key. */
 export async function runCompletionWorkflow(tx: Tx, contractId: string) {
@@ -51,7 +55,7 @@ export async function runCompletionWorkflow(tx: Tx, contractId: string) {
   if (!project) {
     const reference = await nextRef(tx, c.workspaceId, "project");
     project = await tx.project.create({
-      data: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, reference, name: c.title, scopeSnapshot: c.scopeSnapshot, stage: "planned" },
+      data: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, reference, name: c.title, scopeSnapshot: c.scopeSnapshot, stage: "planned", workType: workTypeOf((c.proposalVersion?.requirements as { projectType?: string } | null)?.projectType) },
     });
   }
   if (c.oneOffMinor > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "one_off" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "one_off", amountMinor: c.oneOffMinor, currency: c.currency }, update: {} });

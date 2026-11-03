@@ -17,7 +17,7 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   return (
     <>
       <RecordHeader title="Projects" meta="Every website we're building or looking after, and what to do next on each" />
-      <nav aria-label="Stage" className="mb-5 flex flex-wrap gap-1.5">{FILTERS.map(([id, l]) => <Link key={id} href={id ? `/projects?stage=${id}` : "/projects"} aria-current={(stage ?? "") === id ? "page" : undefined} className={`btn !min-h-9 ${(stage ?? "") === id ? "btn-dark" : "btn-quiet"}`}>{l}</Link>)}</nav>
+      <nav aria-label="Stage" className="mb-5 flex flex-wrap gap-1.5">{FILTERS.map(([id, l]) => <Link key={id} href={id ? `/projects?stage=${id}` : "/projects"} aria-current={(stage ?? "") === id ? "page" : undefined} className={`btn !min-h-11 sm:!min-h-9 ${(stage ?? "") === id ? "btn-dark" : "btn-quiet"}`}>{l}</Link>)}</nav>
       {rows.length === 0 ? <Empty title={stage ? "No projects at this stage" : "No projects yet"}>A project is created automatically when a customer signs their agreement.</Empty> : (
         <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{rows.map((p) => {
           const done = doneBy.get(p.id) ?? 0, total = p._count.tasks;

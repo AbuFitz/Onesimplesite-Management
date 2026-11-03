@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 /** Small, dependency-free SVG charts. Colour is never the only signal: every slice and bar has a label and a number beside it. */
-export const CHART = { green: "#18181b", teal: "#2450d6", ink: "#09090b", amber: "#d99a06", blue: "#6b7a99", lilac: "#8b8b95", rose: "#dc4c3e", grey: "#d4d4d8" } as const;
+export const CHART = { green: "#18181b", teal: "#14a06f", ink: "#09090b", amber: "#d99a06", blue: "#6b7a99", lilac: "#8b8b95", rose: "#dc4c3e", grey: "#d4d4d8" } as const;
 
 export type Slice = { label: string; value: number; color: string };
 

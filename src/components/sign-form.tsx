@@ -48,7 +48,7 @@ export function SignForm({ token, defaultName, consent, business }: { token: str
           ) : (
             <div>
               <canvas ref={canvas} aria-labelledby="sig-l" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} className="h-40 w-full rounded-[8px] border border-[#8f9993] bg-white/80" style={{ touchAction: "none" }} />
-              <div className="mt-2 flex items-center justify-between"><button type="button" className="btn btn-quiet !min-h-9" onClick={clear}>Clear</button><span className="d-small">{image ? "Signature captured" : "Sign in the box above"}</span></div>
+              <div className="mt-2 flex items-center justify-between"><button type="button" className="btn btn-quiet !min-h-11 sm:!min-h-9" onClick={clear}>Clear</button><span className="d-small">{image ? "Signature captured" : "Sign in the box above"}</span></div>
             </div>
           )}
         </div>

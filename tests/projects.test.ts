@@ -97,3 +97,21 @@ describe("flexible project flow", () => {
     for (const t of Object.values(PROJECT_TYPES)) expect(t.stages.length).toBeGreaterThan(1);
   });
 });
+
+import { runCompletionWorkflow } from "@/modules/contracts/service";
+describe("project type chosen on the quote", () => {
+  it("the project made when they sign starts as the type picked on the quote, and falls back safely", async () => {
+    const x = await world();
+    const mk = async (projectType?: string) => {
+      const prop = await db.proposal.create({ data: { workspaceId: x.w.id, customerId: x.a.id, reference: `OSS-QT-${Math.random().toString(36).slice(2, 8)}`, title: "Q", createdById: x.staff.staffId } });
+      const v = await db.proposalVersion.create({ data: { workspaceId: x.w.id, proposalId: prop.id, number: 1, scope: "s", terms: "", requirements: projectType ? { projectType } : undefined, oneOffMinor: 0, recurringMinor: 0 } });
+      const k = await db.contract.create({ data: { workspaceId: x.w.id, customerId: x.a.id, reference: `OSS-OF-${Math.random().toString(36).slice(2, 8)}`, title: "Order", status: "completed", proposalVersionId: v.id, scopeSnapshot: "s" } });
+      await db.$transaction((tx) => runCompletionWorkflow(tx, k.id));
+      return db.project.findUniqueOrThrow({ where: { contractId: k.id } });
+    };
+    expect((await mk("revamp")).workType).toBe("revamp");
+    expect((await mk("hosting_only")).workType).toBe("hosting_only");
+    expect((await mk("not-a-type")).workType).toBe("new_site");
+    expect((await mk()).workType).toBe("new_site");
+  });
+});

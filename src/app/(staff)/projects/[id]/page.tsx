@@ -42,7 +42,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const openTasks = p.tasks.filter((t) => !t.doneAt), doneTasks = p.tasks.filter((t) => t.doneAt);
   const missing = p.assetRequests.filter((a) => !a.receivedAt);
   const folders = [...new Set(files.map((f) => f.folder ?? ""))].sort((a, b) => (a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)));
-  const btn = "btn btn-quiet !min-h-8 text-[13px]";
+  const btn = "btn btn-quiet !min-h-10 sm:!min-h-8 text-[13px]";
   return (
     <>
       <LiveRefresh seconds={30} />
@@ -52,7 +52,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
 
       <ol className="mb-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${tpl.stages.length}, minmax(0, 1fr))` }} aria-label="Progress">
         {tpl.stages.map((st, i) => { const done = (idx > i) || p.stage === "completed", cur = idx === i; return (
-          <li key={st} aria-current={cur ? "step" : undefined}><div className={`h-2.5 rounded-full ${done ? "bg-[#18181b]" : cur ? "bg-[#2450d6]" : "bg-[#e4e4e7]"}`} /><p className={`mt-1.5 text-[12.5px] leading-tight ${cur ? "font-bold text-ink" : "text-ink/65"}`}>{label(st)}</p></li>); })}
+          <li key={st} aria-current={cur ? "step" : undefined}><div className={`h-2.5 rounded-full ${done ? "bg-[#18181b]" : cur ? "bg-[#0c6a49]" : "bg-[#e4e4e7]"}`} /><p className={`mt-1.5 text-[12.5px] leading-tight ${cur ? "font-bold text-ink" : "text-ink/65"}`}>{label(st)}</p></li>); })}
       </ol>
       <p className="mb-5 text-[13px] text-ink/65">{tpl.label}. {idx < 0 ? <strong className="text-ink">The project is at “{label(p.stage)}”, which isn't one of this type's usual steps. That's fine.</strong> : "Move to any stage you like, forwards, back or skipping steps."}</p>
 
@@ -149,7 +149,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
                 <label className="sr-only" htmlFor="pt">Type</label>
                 <select id="pt" name="type" className="field" defaultValue={p.workType}>{Object.entries(PROJECT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
                 <p className="text-[13px] text-ink/65">{tpl.hint} Changing it changes the steps on the progress bar and the usual tasks we suggest. Nothing is deleted.</p>
-                <button className="btn btn-quiet !min-h-9">Save type</button></form>
+                <button className="btn btn-quiet !min-h-11 sm:!min-h-9">Save type</button></form>
             </Panel>
           )}
           <Panel title="Tickets for this project" icon={Ticket} tone="rose" action={<Link className="text-sm font-semibold text-moss" href={`/tickets/new?business=${p.customerId}`}>New ticket</Link>}>
