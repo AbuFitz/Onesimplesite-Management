@@ -3,27 +3,18 @@ import { db } from "@/lib/db";
 import { documentValues } from "@/modules/settings/plans";
 import { fillVars } from "@/modules/settings/variables";
 import { LEGAL_PAGES, LEGAL_PAGES_UPDATED } from "@/modules/legal-public/content";
-import { AgreementText } from "@/components/agreement";
-import { LegalSheet } from "@/components/legal-sheet";
-import { LegalLinks } from "@/components/legal-links";
-import { PublicShell } from "@/components/public-shell";
+import { PolicyPage } from "@/components/policy-page";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; return { title: LEGAL_PAGES[slug]?.title ?? "Legal", robots: { index: false } }; }
 
-/** The portals' privacy, cookie and terms pages. Written in code; only our company details come from Settings. */
+/** The portals' privacy, cookie and terms pages: a normal readable page. Written in code; only our company details come from Settings. */
 export default async function PublicLegal({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = LEGAL_PAGES[slug];
   if (!page) notFound();
   const w = await db.workspace.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } });
   const vars = w ? await documentValues(w.id) : {};
-  return (
-    <PublicShell label="Legal">
-      <LegalSheet intro={page.intro} meta={{ title: page.title, ref: page.ref, version: page.version, status: "Current", date: LEGAL_PAGES_UPDATED, audience: "Public" }}>
-        <AgreementText text={fillVars(page.body, vars)} />
-      </LegalSheet>
-      <LegalLinks className="mt-8" />
-    </PublicShell>
-  );
+  const others = Object.values(LEGAL_PAGES).filter((p) => p.slug !== slug).map((p) => ({ href: `/legal/${p.slug}`, label: p.title.replace("Portal ", "").replace(" Notice", "").replace(" of Use", " of use") }));
+  return <PolicyPage title={page.title} intro={page.intro} version={page.version} updated={LEGAL_PAGES_UPDATED} body={fillVars(page.body, vars)} others={others} />;
 }

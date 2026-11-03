@@ -79,7 +79,7 @@ export async function setOpportunityStage(ctx: StaffCtx, id: string, stage: "new
 
 // ───────── Customer details: filled in by the team, required before an agreement can be sent ─────────
 const detailsInput = z.object({
-  kind: z.enum(["business", "individual"]).default("business"),
+  kind: z.enum(["business", "sole_trader", "individual"]).default("business"),
   legalName: z.string().trim().max(200).optional(),
   companyNumber: z.string().trim().max(40).optional(),
   vatNumber: z.string().trim().max(40).optional(),

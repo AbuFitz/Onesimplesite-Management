@@ -20,6 +20,11 @@ export type EmailData = {
   payment_notice: { to: string; event: "paid" | "plan_started" | "failed" | "cancelled"; business: string; ref: string; what: string; amount: string; link: string };
   access_request_notice: { to: string; business: string; requester: string; name: string; email: string; level: string; billing: boolean; reason: string; link: string };
   access_request_decision: { to: string; name: string; business: string; person: string; approved: boolean; note: string; link: string };
+  change_request_quote: { to: string; name: string; ref: string; title: string; price: string; note: string; link: string };
+  change_request_decision: { to: string; approved: boolean; business: string; person: string; ref: string; title: string; price: string; link: string };
+  ticket_resolved: { to: string; name: string; ref: string; title: string; link: string };
+  ticket_reminder: { to: string; name: string; ref: string; title: string; days: number; final: boolean; link: string };
+  ticket_team_reminder: { to: string; items: { ref: string; business: string; title: string; hours: number; link: string }[] };
   ticket_received: { to: string; name: string; ref: string; title: string; expect: string; link: string };
   ticket_notice: { to: string; ref: string; title: string; business: string; person: string; priority: string; excerpt: string; link: string; isReply?: boolean };
   ticket_reply: { to: string; name: string; staffName: string; ref: string; title: string; message: string; link: string };
@@ -116,6 +121,65 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `${d.approved ? `${d.person} has been invited to ${d.business}'s portal.` : `We couldn't give ${d.person} access to ${d.business}'s portal${d.note ? `: ${d.note}` : "."}`}\n\n${d.link}`,
+  }),
+  change_request_quote: (d) => ({
+    subject: `Please approve: ${d.title} (${d.price})`,
+    node: (
+      <Layout preview={`${d.title} will cost ${d.price}. Approve it to get started.`}>
+        <H>Your change is priced</H>
+        <P>Hi {d.name.split(" ")[0]}, this is outside what your plan covers, so there's a one-off cost. Nothing starts until you say yes.</P>
+        <Facts rows={[["Change", d.title], ["Cost", d.price], ["Ticket", d.ref], ...(d.note ? ([["Note", d.note]] as [string, string][]) : [])]} />
+        <Action href={d.link}>Review and approve</Action>
+        <P>You can pay securely by card once you've approved. Reply to this email if you'd like to talk it through first.</P>
+      </Layout>
+    ),
+    text: `Your change is priced\n\nHi ${d.name.split(" ")[0]}, "${d.title}" (${d.ref}) will cost ${d.price}${d.note ? `. ${d.note}` : ""}.\nNothing starts until you approve it: ${d.link}`,
+  }),
+  change_request_decision: (d) => ({
+    subject: `${d.approved ? "Approved" : "Declined"}: ${d.business} · ${d.ref}`,
+    node: (
+      <Layout preview={`${d.person} ${d.approved ? "approved" : "declined"} ${d.price}`}>
+        <H>{d.approved ? "Change approved" : "Change declined"}</H>
+        <P>{d.person} at {d.business} {d.approved ? "approved the price. You can start, and the payment is on their Billing page." : "isn't going ahead at this price. Have a look at their note."}</P>
+        <Facts rows={[["Ticket", `${d.ref} · ${d.title}`], ["Cost", d.price]]} />
+        <Action href={d.link}>Open ticket</Action>
+      </Layout>
+    ),
+    text: `${d.approved ? "Approved" : "Declined"}: ${d.person} at ${d.business}\n${d.ref} ${d.title} (${d.price})\n\nOpen: ${d.link}`,
+  }),
+  ticket_resolved: (d) => ({
+    subject: `Sorted: ${d.title} (${d.ref})`,
+    node: (
+      <Layout preview={`We've marked ${d.ref} as sorted`}>
+        <H>This one's sorted</H>
+        <P>Hi {d.name.split(" ")[0]}, we've marked “{d.title}” as done. If it still isn't right, just reply on the ticket and it comes straight back to us.</P>
+        <Action href={d.link}>See the ticket</Action>
+      </Layout>
+    ),
+    text: `Sorted: ${d.title} (${d.ref})\n\nHi ${d.name.split(" ")[0]}, we've marked this as done. If it's still not right, reply here: ${d.link}`,
+  }),
+  ticket_reminder: (d) => ({
+    subject: d.final ? `Last reminder: ${d.title} (${d.ref})` : `Still need a hand? ${d.title} (${d.ref})`,
+    node: (
+      <Layout preview={d.final ? "We'll close this soon unless we hear from you" : "We're waiting to hear from you"}>
+        <H>{d.final ? "We'll close this soon" : "We're waiting to hear from you"}</H>
+        <P>Hi {d.name.split(" ")[0]}, we replied on “{d.title}” {d.days} days ago and haven't heard back. {d.final ? "We'll mark it as sorted in a few days unless you reply. You can always reopen it by replying." : "Whenever you're ready, you can answer on the ticket."}</P>
+        <Action href={d.link}>Reply on the ticket</Action>
+      </Layout>
+    ),
+    text: `${d.final ? "We'll close this soon" : "We're waiting to hear from you"}\n\n"${d.title}" (${d.ref}) - we replied ${d.days} days ago.\nReply here: ${d.link}`,
+  }),
+  ticket_team_reminder: (d) => ({
+    subject: `${d.items.length} ticket${d.items.length === 1 ? "" : "s"} waiting on us`,
+    node: (
+      <Layout preview={`${d.items.length} customer${d.items.length === 1 ? " is" : "s are"} waiting for a reply`}>
+        <H>Waiting on us</H>
+        <P>These customers are waiting for a reply, longest first.</P>
+        <Facts rows={d.items.map((i) => [`${i.business} · ${i.ref}`, `${i.title} (waiting ${i.hours < 48 ? `${i.hours}h` : `${Math.round(i.hours / 24)} days`})`] as [string, string])} />
+        <Action href={d.items[0]?.link ?? "#"}>Open the longest wait</Action>
+      </Layout>
+    ),
+    text: `Waiting on us\n\n${d.items.map((i) => `${i.business} ${i.ref}: ${i.title} (${i.hours}h) ${i.link}`).join("\n")}`,
   }),
   ticket_received: (d) => ({
     subject: `We've got your ticket: ${d.title} (${d.ref})`,

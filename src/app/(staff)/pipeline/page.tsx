@@ -35,7 +35,7 @@ export default async function Tickets({ searchParams }: { searchParams: Promise<
         <Link className={`btn ${f ? "btn-quiet" : ""}`} href="/pipeline">All</Link>
         {FILTERS.map((x) => <Link key={x.id} className={`btn ${f?.id === x.id ? "" : "btn-quiet"}`} href={`/pipeline?stage=${x.id}`}>{x.label}</Link>)}
       </nav>
-      {rows.length === 0 ? <Empty title="No tickets here"><Link className="underline" href="?new=ticket">Create a ticket</Link></Empty> : (
+      {rows.length === 0 ? <Empty title="No tickets here"><Link className="underline" href="/tickets/new">Create a ticket</Link></Empty> : (
         <ul>
           {rows.map((o) => {
             const open = o.stage !== "won" && o.stage !== "lost";

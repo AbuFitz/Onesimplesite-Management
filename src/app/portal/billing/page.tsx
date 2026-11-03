@@ -2,7 +2,7 @@ import { CreditCard, CheckCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { clientCanAny } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
-import { clientBilling, money, KIND_LABEL, isMonthly, plainStatus } from "@/modules/billing/service";
+import { clientBilling, chargeOf, money, KIND_LABEL, isMonthly, plainStatus } from "@/modules/billing/service";
 import { payAction, manageBillingAction } from "@/app/actions/billing";
 import { fmtDate } from "@/components/ui";
 
@@ -30,7 +30,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
           <ul className="divide-y divide-line">
             {items.map((b) => { const s = plainStatus(b.kind, b.status); const canPay = b.status === "pending" || b.status === "past_due"; return (
               <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div><p className="font-bold">{b.description ?? KIND_LABEL[b.kind] ?? "Payment"}</p><p className="text-sm text-muted">{b.contract.title} · {b.contract.reference}{b.paidAt ? ` · paid ${fmtDate(b.paidAt)}` : ""}</p></div>
+                <div><p className="font-bold">{b.description ?? KIND_LABEL[b.kind] ?? "Payment"}</p><p className="text-sm text-muted">{chargeOf(b).title} · {chargeOf(b).reference}{b.paidAt ? ` · paid ${fmtDate(b.paidAt)}` : ""}</p></div>
                 <div className="flex items-center gap-3">
                   <p className="text-lg font-bold">{money(b.amountMinor, b.currency)}{isMonthly(b.kind) && <span className="text-sm font-medium text-muted"> / month</span>}</p>
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${TONE[s.tone]}`}>{s.label}</span>

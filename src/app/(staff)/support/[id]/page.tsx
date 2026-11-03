@@ -4,13 +4,16 @@ import { requireStaff } from "@/modules/identity/session";
 import { getSupportTicket, STATUSES, PRIORITIES } from "@/modules/support/service";
 import { ticketAttachments } from "@/modules/files/service";
 import { db } from "@/lib/db";
-import { supportReplyAction, supportUpdateAction } from "@/app/actions/support";
+import { supportReplyAction, supportUpdateAction, quoteChangeAction } from "@/app/actions/support";
 import { RecordHeader, Status, Avatar, ErrorSummary, fmtDateTime } from "@/components/ui";
 import { FilePicker, Files } from "@/components/file-picker";
 import { LiveRefresh } from "@/components/live-refresh";
-import { STATUS_LABEL } from "@/modules/support/options";
+import { STATUS_LABEL, CATEGORY_LABEL } from "@/modules/support/options";
+import { money } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 
 export const metadata = { title: "Support ticket" };
+const CHARGE: Record<string, string> = { quoted: "Waiting for them to approve", approved: "Approved. Payment is on their Billing page", paid: "Paid", declined: "They declined this price", none: "" };
 const PRI: Record<string, string> = { low: "Low", normal: "Normal", high: "High", urgent: "Urgent" };
 
 export default async function SupportTicket({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string; saved?: string }> }) {
@@ -23,7 +26,7 @@ export default async function SupportTicket({ params, searchParams }: { params: 
   return (
     <>
       <LiveRefresh seconds={20} />
-      <RecordHeader back={{ href: "/support", label: "Support tickets" }} title={t.title} status={<Status label={s.label} kind={s.kind} />} meta={<>{t.reference} · <Link className="underline" href={`/customers/${t.customer.id}`}>{t.customer.displayName}</Link>{t.contact ? ` · ${t.contact.name}${t.contact.position ? `, ${t.contact.position}` : ""}` : ""}{t.project ? ` · ${t.project.name}` : ""}</>} />
+      <RecordHeader back={{ href: "/support", label: "Support tickets" }} title={t.title} status={<Status label={s.label} kind={s.kind} />} meta={<><span className={`mr-2 rounded-md px-2 py-0.5 text-xs font-semibold ${CATEGORY_LABEL[t.category]?.cls ?? ""}`}>{CATEGORY_LABEL[t.category]?.label ?? "Support"}</span>{t.reference} · <Link className="underline" href={`/customers/${t.customer.id}`}>{t.customer.displayName}</Link>{t.contact ? ` · ${t.contact.name}${t.contact.position ? `, ${t.contact.position}` : ""}` : ""}{t.project ? ` · ${t.project.name}` : ""}</>} />
       <ErrorSummary message={sp.error} />
       {sp.sent && <p role="status" className="mb-3 text-sm text-moss">{sp.sent === "note" ? "Note saved. Only the team can see it." : "Reply sent."}</p>}
       {sp.saved && <p role="status" className="mb-3 text-sm text-moss">Saved.</p>}
@@ -51,6 +54,19 @@ export default async function SupportTicket({ params, searchParams }: { params: 
           </form>
         </div>
         <aside className="space-y-4">
+          <section className="space-y-3 rounded-2xl border border-line bg-white p-4" aria-label="Cost">
+            <h2 className="text-base font-bold">Cost</h2>
+            {t.chargeStatus !== "none" || t.priceMinor ? (
+              <p className="text-sm"><strong>{t.priceMinor ? money(t.priceMinor) : "Included in their plan"}</strong>{CHARGE[t.chargeStatus] ? ` · ${CHARGE[t.chargeStatus]}` : ""}{t.approvedByName ? ` (${t.approvedByName})` : ""}</p>
+            ) : <p className="text-sm text-muted">Not priced. If this is outside their plan, set a price and they approve it in the portal before you start.</p>}
+            {!["approved", "paid"].includes(t.chargeStatus) && (
+              <form action={quoteChangeAction} className="space-y-2"><input type="hidden" name="id" value={t.id} />
+                <label className="label" htmlFor="q-p">Price (£)</label><input id="q-p" name="price" type="number" min="1" step="0.01" inputMode="decimal" className="field !min-h-9" defaultValue={t.priceMinor ? (t.priceMinor / 100).toFixed(2) : ""} />
+                <label className="label" htmlFor="q-n">Note for them</label><input id="q-n" name="note" className="field !min-h-9" placeholder="Optional" />
+                <div className="flex flex-wrap gap-2"><SubmitButton pendingText="Sending…">{t.chargeStatus === "quoted" ? "Send the new price" : "Send price for approval"}</SubmitButton><button name="included" value="1" formNoValidate className="btn btn-quiet">No charge</button></div>
+              </form>
+            )}
+          </section>
           <form action={supportUpdateAction} className="space-y-3 rounded-2xl border border-line bg-white p-4">
             <input type="hidden" name="id" value={t.id} />
             <div><label className="label" htmlFor="st">Status</label><select id="st" name="status" className="field" defaultValue={t.status}>{STATUSES.map((x) => <option key={x} value={x}>{STATUS_LABEL[x]?.label ?? x}</option>)}</select></div>

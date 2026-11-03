@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { enqueue } from "@/lib/audit";
 import { manageLink } from "@/lib/env";
 import { drainOutbox } from "@/modules/outbox/drain";
+import { runTicketReminders } from "@/modules/support/reminders";
 import { lastExport, isBackupDue } from "@/modules/export/service";
 
 export const dynamic = "force-dynamic";
@@ -22,5 +23,6 @@ export async function GET(req: Request) {
       }));
     }
   }
-  return Response.json(await drainOutbox(100));
+  const reminders = await runTicketReminders();
+  return Response.json({ ...(await drainOutbox(100)), reminders });
 }

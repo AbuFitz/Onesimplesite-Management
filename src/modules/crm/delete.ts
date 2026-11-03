@@ -29,6 +29,7 @@ export async function deleteBusiness(ctx: StaffCtx, customerId: string, typedNam
     const versions = await tx.proposalVersion.findMany({ where: { proposalId: { in: proposalIds } }, select: { id: true } });
     const versionIds = versions.map((v) => v.id);
 
+    await tx.billingIntent.deleteMany({ where: { customerId } });
     await tx.attachment.deleteMany({ where: { customerId } });
     await tx.ticket.deleteMany({ where: { customerId, ...w } });          // comments go with them
     await tx.accessRequest.deleteMany({ where: { customerId } });

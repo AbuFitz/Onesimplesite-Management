@@ -38,7 +38,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         action={<>
           {primary?.phone && <a className="btn btn-quiet" href={`tel:${primary.phone}`}>Call</a>}
           {primary?.email && <a className="btn btn-quiet" href={`mailto:${primary.email}`}>Email</a>}
-          {can(ctx.role, "proposal.write") && <Link className="btn" href={`?new=ticket&customer=${c.id}`}>New ticket</Link>}
+          {can(ctx.role, "proposal.write") && <Link className="btn" href={`/tickets/new?business=${c.id}`}>New ticket</Link>}
           {can(ctx.role, "customer.write") && (
             <details className="relative">
               <summary className="btn btn-quiet cursor-pointer list-none" aria-label="More actions"><MoreHorizontal size={16} aria-hidden /> More</summary>
@@ -106,7 +106,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
 
       {tab === "agreements" && (
         <Section title="Tickets and signed agreements">
-          {c.proposals.length + c.contracts.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`?new=ticket&customer=${c.id}`}>Create the first ticket</Link></Empty> : (
+          {c.proposals.length + c.contracts.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`/tickets/new?business=${c.id}`}>Create the first ticket</Link></Empty> : (
             <ul>
               {c.proposals.map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Proposal {p.reference}</span></span><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
               {c.contracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}

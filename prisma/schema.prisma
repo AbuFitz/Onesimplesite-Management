@@ -535,8 +535,9 @@ model BillingIntent {
   id          String   @id @default(uuid()) @db.Uuid
   workspaceId String   @db.Uuid
   customerId  String   @db.Uuid
-  contractId  String   @db.Uuid
-  kind        String // deposit | balance | recurring_setup | one_off
+  contractId  String?  @db.Uuid
+  ticketId    String?  @unique @db.Uuid // a change request that is charged for
+  kind        String // deposit | balance | recurring_setup | one_off | change
   amountMinor Int
   currency    String   @default("GBP")
   status      String   @default("pending") // pending | paid (one-off) | active | past_due | cancelled (monthly)
@@ -548,7 +549,8 @@ model BillingIntent {
   stripeSubscriptionId String?
   createdAt   DateTime @default(now())
 
-  contract Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  contract Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  ticket   Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Restrict)
 
   @@unique([contractId, kind])
   @@index([stripeSubscriptionId])
@@ -791,10 +793,19 @@ model Ticket {
   kind        String    @default("issue") // issue | request | question
   title       String
   body        String
-  status      String    @default("open") // open | in_progress | waiting_customer | resolved | closed
+  category    String    @default("support") // support | change_request (onboarding lives in the sales flow and is shown alongside)
+  status      String    @default("open") // open (New) | in_progress | waiting_customer | customer_replied | resolved | closed
   priority    String    @default("normal") // low | normal | high | urgent
   source      String    @default("staff") // portal | staff
   assigneeId  String?   @db.Uuid // StaffMembership
+  priceMinor  Int? // change requests: what it costs. Empty = included in their plan
+  chargeStatus String   @default("none") // none | quoted (waiting for the customer) | approved | declined | paid
+  approvedAt  DateTime?
+  approvedByName String?
+  lastCustomerAt DateTime? // their latest message
+  lastStaffAt DateTime? // our latest reply
+  remindedAt  DateTime? // last nudge sent to the customer
+  teamRemindedAt DateTime? // last nudge to us that they're waiting
   resolvedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -803,6 +814,7 @@ model Ticket {
   contact  Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
   project  Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
   comments TicketComment[]
+  charge   BillingIntent?
 
   @@unique([workspaceId, reference])
   @@index([workspaceId, status])

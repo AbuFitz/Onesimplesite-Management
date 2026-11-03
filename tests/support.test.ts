@@ -66,7 +66,7 @@ describe("support tickets", () => {
     const seen = await clientTicket(a.client, t.id);
     expect(seen!.status).toBe("waiting_customer"); expect(seen!.comments.map((c) => c.body)).toEqual(["Found it and fixed it. Can you test?"]);
     await clientReply(a.client, t.id, "Works now, thank you!");
-    expect((await clientTicket(a.client, t.id))!.status).toBe("open");
+    expect((await clientTicket(a.client, t.id))!.status).toBe("customer_replied");
     expect(await db.outbox.count({ where: { workspaceId: w.id, topic: "email.ticket_notice" } })).toBe(2); // new ticket + reply
     await clientResolve(a.client, t.id);
     expect((await clientTicket(a.client, t.id))!.status).toBe("resolved");

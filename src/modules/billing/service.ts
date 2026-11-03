@@ -12,7 +12,7 @@ import { clientCan, customersWhere } from "@/modules/portal/access";
 export const money = (minor: number, cur = "GBP") => new Intl.NumberFormat("en-GB", { style: "currency", currency: cur }).format(minor / 100);
 
 /** What each kind of charge is called, in plain words. */
-export const KIND_LABEL: Record<string, string> = { one_off: "Website", deposit: "Deposit", balance: "Final payment", recurring_setup: "Monthly plan" };
+export const KIND_LABEL: Record<string, string> = { one_off: "Website", deposit: "Deposit", balance: "Final payment", recurring_setup: "Monthly plan", change: "Change request" };
 export const isMonthly = (kind: string) => kind === "recurring_setup";
 
 /** Status in plain words. */
@@ -25,11 +25,13 @@ export function plainStatus(kind: string, status: string): { label: string; tone
 }
 
 const clientScope = (c: ClientCtx) => ({ customerId: { in: customersWhere(c, "billing") } });
-const include = { contract: { select: { title: true, reference: true, status: true } } } as const;
+const include = { contract: { select: { title: true, reference: true, status: true } }, ticket: { select: { id: true, title: true, reference: true } } } as const;
+/** Name and reference of whatever a charge belongs to: an order, or a change request. */
+export const chargeOf = (b: { contract?: { title: string; reference: string } | null; ticket?: { title: string; reference: string } | null }) => ({ title: b.contract?.title ?? b.ticket?.title ?? "Payment", reference: b.contract?.reference ?? b.ticket?.reference ?? "" });
 
 /** Only signed-and-completed orders bill. */
 export const clientBilling = (c: ClientCtx) =>
-  db.billingIntent.findMany({ where: { ...clientScope(c), contract: { status: "completed" } }, orderBy: { createdAt: "asc" }, include });
+  db.billingIntent.findMany({ where: { ...clientScope(c), OR: [{ contract: { status: "completed" } }, { ticketId: { not: null } }] }, orderBy: { createdAt: "asc" }, include });
 
 async function stripeCustomer(customerId: string, email: string | undefined, name: string) {
   const cu = await db.customer.findUniqueOrThrow({ where: { id: customerId }, select: { stripeCustomerId: true, displayName: true, reference: true } });
@@ -42,18 +44,18 @@ async function stripeCustomer(customerId: string, email: string | undefined, nam
 /** Starts a secure Stripe checkout for one charge and returns its page address. */
 export async function startPayment(c: ClientCtx, intentId: string): Promise<string> {
   if (!stripeReady()) throw new DomainError("conflict", "Card payments aren't switched on yet. Please contact us and we'll send you the details.");
-  const b = await db.billingIntent.findFirst({ where: { id: intentId, ...clientScope(c), contract: { status: "completed" } }, include });
+  const b = await db.billingIntent.findFirst({ where: { id: intentId, ...clientScope(c), OR: [{ contract: { status: "completed" } }, { ticketId: { not: null } }] }, include });
   if (!b) throw notFound();
   if (b.status === "paid" || b.status === "active") throw new DomainError("conflict", "This one is already paid.");
   if (b.status === "cancelled") throw new DomainError("conflict", "This charge was cancelled. Please contact us.");
   const monthly = isMonthly(b.kind);
   const customer = await stripeCustomer(b.customerId, c.email || undefined, c.name ?? "");
-  const line = { quantity: 1, price_data: { currency: b.currency.toLowerCase(), unit_amount: b.amountMinor, product_data: { name: `${b.description ?? KIND_LABEL[b.kind] ?? "OneSimpleSite"} (${b.contract.reference})` }, ...(monthly ? { recurring: { interval: "month" } } : {}) } };
+  const line = { quantity: 1, price_data: { currency: b.currency.toLowerCase(), unit_amount: b.amountMinor, product_data: { name: `${b.description ?? KIND_LABEL[b.kind] ?? "OneSimpleSite"} (${chargeOf(b).reference})` }, ...(monthly ? { recurring: { interval: "month" } } : {}) } };
   const s = await stripe<{ id: string; url: string }>("/checkout/sessions", {
     mode: monthly ? "subscription" : "payment", customer, line_items: [line],
     success_url: portalLink("/billing?paid=1"), cancel_url: portalLink("/billing"),
-    client_reference_id: b.id, metadata: { intentId: b.id, contract: b.contract.reference },
-    ...(monthly ? { subscription_data: { metadata: { intentId: b.id } } } : { payment_intent_data: { metadata: { intentId: b.id }, description: `${b.contract.reference} ${KIND_LABEL[b.kind] ?? ""}` } }),
+    client_reference_id: b.id, metadata: { intentId: b.id, contract: chargeOf(b).reference },
+    ...(monthly ? { subscription_data: { metadata: { intentId: b.id } } } : { payment_intent_data: { metadata: { intentId: b.id }, description: `${chargeOf(b).reference} ${KIND_LABEL[b.kind] ?? ""}` } }),
   });
   await db.billingIntent.update({ where: { id: b.id }, data: { stripeSessionId: s.id } });
   return s.url;
@@ -70,13 +72,13 @@ export async function openBillingPortal(c: ClientCtx): Promise<string> {
 
 
 const day = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(d);
-type Mailable = { id: string; workspaceId: string; customerId: string; contractId: string; kind: string; amountMinor: number; currency: string; description: string | null };
+type Mailable = { id: string; workspaceId: string; customerId: string; contractId: string | null; ticketId?: string | null; kind: string; amountMinor: number; currency: string; description: string | null };
 
 /** Emails the customer (whoever paid, else their main contact) and tells the team. Deduped per charge and event. */
 async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "failed" | "cancelled", hint: { email?: string | null; name?: string | null } = {}, key = "") {
   const [cu, k, primary] = await Promise.all([
     tx.customer.findUniqueOrThrow({ where: { id: b.customerId }, select: { displayName: true } }),
-    tx.contract.findUniqueOrThrow({ where: { id: b.contractId }, select: { reference: true } }),
+    b.contractId ? tx.contract.findUniqueOrThrow({ where: { id: b.contractId }, select: { reference: true } }) : tx.ticket.findUniqueOrThrow({ where: { id: b.ticketId! }, select: { reference: true } }),
     tx.contact.findFirst({ where: { customerId: b.customerId, email: { not: null } }, orderBy: { isPrimary: "desc" }, select: { name: true, email: true } }),
   ]);
   const what = b.description ?? KIND_LABEL[b.kind] ?? "Payment";
@@ -89,7 +91,7 @@ async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "
     else if (event === "plan_started") await enqueue(tx, b.workspaceId, "email.plan_started", `pay.plan:${dk}`, { to, name, ref: k.reference, amount, link });
     else await enqueue(tx, b.workspaceId, "email.payment_failed", `pay.failed:${dk}`, { to, name, ref: k.reference, what, amount, link });
   }
-  await enqueue(tx, b.workspaceId, "email.payment_notice", `pay.notice:${dk}`, { to: "internal", event, business: cu.displayName, ref: k.reference, what, amount, link: manageLink(`/contracts/${b.contractId}`) });
+  await enqueue(tx, b.workspaceId, "email.payment_notice", `pay.notice:${dk}`, { to: "internal", event, business: cu.displayName, ref: k.reference, what, amount, link: manageLink(b.contractId ? `/contracts/${b.contractId}` : `/support/${b.ticketId}`) });
 }
 
 // ───────── Team side ─────────
@@ -110,6 +112,7 @@ export async function markPaidManually(ctx: StaffCtx, id: string, via: "bank" | 
   if (b.status === "paid") return;
   await db.$transaction(async (tx) => {
     await tx.billingIntent.update({ where: { id }, data: { status: "paid", paidAt: new Date(), paidVia: via } });
+    if (b.ticketId) await tx.ticket.update({ where: { id: b.ticketId }, data: { chargeStatus: "paid" } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.paid_manually", targetType: "billing_intent", targetId: id, customerId: b.customerId, detail: { via, amountMinor: b.amountMinor } });
     await payEmails(tx, b, "paid");
   });
@@ -161,6 +164,7 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
     const monthly = isMonthly(b.kind);
     if (b.status === (monthly ? "active" : "paid")) return;
     await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: stripeSubId(o) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null } });
+    if (b.ticketId) await db.ticket.update({ where: { id: b.ticketId }, data: { chargeStatus: "paid" } });
     await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid");
     return;
   }

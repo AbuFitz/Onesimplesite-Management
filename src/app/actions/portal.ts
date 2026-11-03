@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { requireClient } from "@/modules/identity/session";
 import { clientCreateTicket, clientReply, clientResolve } from "@/modules/support/service";
+import { clientApproveChange, clientDeclineChange } from "@/modules/support/change";
 import { DomainError } from "@/lib/errors";
 import { readUploads } from "@/modules/files/service";
 import { flushEmails } from "@/lib/flush-email";
@@ -32,5 +33,18 @@ export async function resolveAction(fd: FormData) {
   const c = await requireClient();
   const id = String(fd.get("id"));
   try { await clientResolve(c, id); } catch { /* not theirs, or already closed */ }
+  redirect(`/help/${id}`);
+}
+
+export async function approveChangeAction(fd: FormData) {
+  const c = await requireClient();
+  const id = String(fd.get("id"));
+  try { await clientApproveChange(c, id); flushEmails(); } catch (e) { redirect(`/help/${id}?error=${encodeURIComponent(msg(e))}`); }
+  redirect(`/help/${id}?approved=1`);
+}
+export async function declineChangeAction(fd: FormData) {
+  const c = await requireClient();
+  const id = String(fd.get("id"));
+  try { await clientDeclineChange(c, id, String(fd.get("reason") ?? "")); flushEmails(); } catch (e) { redirect(`/help/${id}?error=${encodeURIComponent(msg(e))}`); }
   redirect(`/help/${id}`);
 }

@@ -61,6 +61,11 @@ async function handle(topic: string, key: string, p: Record<string, unknown>) {
     case "email.payment_notice": return send("payment_notice", p as EmailData["payment_notice"], "noreply", internalNoticeTo());
     case "email.access_request_notice": return send("access_request_notice", p as EmailData["access_request_notice"], "noreply", internalNoticeTo());
     case "email.access_request_decision": return send("access_request_decision", p as EmailData["access_request_decision"], "support", String(p.to));
+    case "email.change_request_quote": return send("change_request_quote", p as EmailData["change_request_quote"], "support", String(p.to));
+    case "email.change_request_decision": return send("change_request_decision", p as EmailData["change_request_decision"], "noreply", internalNoticeTo());
+    case "email.ticket_resolved": return send("ticket_resolved", p as EmailData["ticket_resolved"], "support", String(p.to));
+    case "email.ticket_reminder": return send("ticket_reminder", p as EmailData["ticket_reminder"], "support", String(p.to));
+    case "email.ticket_team_reminder": return send("ticket_team_reminder", p as EmailData["ticket_team_reminder"], "noreply", internalNoticeTo());
     case "email.ticket_received": return send("ticket_received", p as EmailData["ticket_received"], "support", String(p.to));
     case "email.ticket_notice": return send("ticket_notice", p as EmailData["ticket_notice"], "noreply", internalNoticeTo());
     case "email.ticket_reply": return send("ticket_reply", p as EmailData["ticket_reply"], "support", String(p.to));

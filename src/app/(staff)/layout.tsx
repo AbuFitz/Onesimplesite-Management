@@ -2,7 +2,6 @@ import { LegalLinks } from "@/components/legal-links";
 import { getMyProfile, profileMissing } from "@/modules/identity/profile";
 import { ArrowRight } from "lucide-react";
 import { db } from "@/lib/db";
-import { NewJob } from "@/components/new-job";
 import { LiveRefresh } from "@/components/live-refresh";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +10,8 @@ import { requireStaff } from "@/modules/identity/session";
 import { can, ROLE_INFO } from "@/modules/identity/permissions";
 import { SideNav, BottomNav, type NavGroup } from "@/components/nav";
 import { NewMenu, UserMenu } from "@/components/menus";
+import { after } from "next/server";
+import { maybeRunReminders } from "@/modules/support/reminders";
 import { supportCounts } from "@/modules/support/service";
 import { signOutStaff } from "@/app/actions/auth";
 
@@ -18,12 +19,13 @@ export const dynamic = "force-dynamic";
 
 export default async function StaffLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
   const ctx = await requireStaff();
+  after(() => maybeRunReminders().catch(() => {}));
   const seeCustomers = can(ctx.role, "customer.read");
   const supportOpen = seeCustomers ? (await supportCounts(ctx.workspaceId)).open : 0;
   // Only built modules appear. Unfinished modules are hidden, not faked.
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
-    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Businesses", icon: "customers" }, { href: "/pipeline", label: "Tickets", icon: "pipeline" }, { href: "/support", label: "Support", icon: "support", badge: supportOpen }] }] : []),
+    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Businesses", icon: "customers" }, { href: "/tickets", label: "Tickets", icon: "pipeline", badge: supportOpen }] }] : []),
     { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/board", label: "Board", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
     { label: "Business", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Business settings", icon: "settings" }] : []),
@@ -32,16 +34,9 @@ export default async function StaffLayout({ children, modal }: { children: React
     ] },
     ...(can(ctx.role, "settings.write") ? [{ label: "Testing", items: [{ href: "/testing", label: "Testing", icon: "testing" }] }] : []),
   ].filter((g) => g.items.length) as NavGroup[];
-  const jobCustomers = can(ctx.role, "proposal.write")
-    ? (await db.customer.findMany({ where: { workspaceId: ctx.workspaceId }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true }, take: 300 })).map((c) => ({ id: c.id, name: c.displayName }))
-    : [];
-  const jobTeam = can(ctx.role, "proposal.write")
-    ? (await db.staffMembership.findMany({ where: { workspaceId: ctx.workspaceId, status: "active", id: { not: ctx.staffId } }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true } })).map((m) => ({ id: m.id, name: m.displayName }))
-    : [];
   const profileTodo = profileMissing(await getMyProfile(ctx));
-  const jobPlans = can(ctx.role, "proposal.write") ? (await db.servicePlan.findMany({ where: { workspaceId: ctx.workspaceId, active: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })).map((p) => ({ id: p.id, name: p.name, price: `£${(p.monthlyMinor / 100).toFixed(2)}` })) : [];
   const create = [
-    ...(can(ctx.role, "proposal.write") ? [{ href: "?new=ticket", label: "New ticket" }] : []),
+    ...(can(ctx.role, "proposal.write") ? [{ href: "/tickets/new", label: "New ticket" }, { href: "/customers/new", label: "Add a business" }] : []),
     ...(can(ctx.role, "calendar.write") ? [{ href: "/calendar/new", label: "New event" }] : []),
     ...(can(ctx.role, "notes.write") ? [{ href: "/board", label: "Post to the board" }] : []),
   ];
@@ -53,7 +48,6 @@ export default async function StaffLayout({ children, modal }: { children: React
           <span>Finish setting up your profile: add your {profileTodo.join(" and ")}.</span><ArrowRight size={15} aria-hidden />
         </Link>
       )}
-      {can(ctx.role, "proposal.write") && <NewJob customers={jobCustomers} team={jobTeam} plans={jobPlans} />}
       <header className="sticky top-0 z-30 border-b border-line bg-white shadow-[0_1px_0_rgba(14,19,17,.03)]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
           <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[11rem]">

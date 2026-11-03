@@ -15,7 +15,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   const qs = (p: number) => `?${new URLSearchParams({ ...(sp.q ? { q: sp.q } : {}), ...(sp.mine ? { mine: "1" } : {}), page: String(p) })}`;
   return (
     <>
-      <RecordHeader title="Businesses" meta={`${total} ${total === 1 ? "business" : "businesses"}`} action={can(ctx.role, "customer.write") ? <Link href="?new=ticket" className="btn">New ticket</Link> : undefined} />
+      <RecordHeader title="Businesses" meta={`${total} ${total === 1 ? "business" : "businesses"}`} action={can(ctx.role, "customer.write") ? <Link href="/customers/new" className="btn">Add a business</Link> : undefined} />
       <form className="mb-6 flex flex-wrap items-center gap-3" role="search">
         <label className="sr-only" htmlFor="q">Search businesses</label>
         <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Search by name, reference or email" className="field max-w-sm" />
@@ -23,7 +23,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
         <button className="btn btn-quiet">Search</button>
       </form>
       {rows.length === 0 ? (
-        <Empty title={sp.q || sp.mine ? "No businesses match" : "No businesses yet"}>{sp.q || sp.mine ? "Try a different search." : <Link className="underline" href="?new=ticket">Record your first enquiry</Link>}</Empty>
+        <Empty title={sp.q || sp.mine ? "No businesses match" : "No businesses yet"}>{sp.q || sp.mine ? "Try a different search." : <Link className="underline" href="/customers/new">Add your first business</Link>}</Empty>
       ) : (
         <div>
           <div className="thead hidden grid-cols-[minmax(0,2.2fr)_minmax(0,2fr)_9rem_8rem] gap-4 px-3 pb-2 md:grid"><span>Business</span><span>Primary contact</span><span>Status</span><span className="text-right">Added</span></div>
