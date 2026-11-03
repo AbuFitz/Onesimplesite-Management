@@ -1,5 +1,5 @@
 import { plainStatus, KIND_LABEL, isMonthly } from "@/modules/billing/service";
-import { markPaidAction, cancelChargeAction, splitFeeAction } from "@/app/actions/billing";
+import { markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction } from "@/app/actions/billing";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -62,10 +62,11 @@ export default async function ContractPage({ params, searchParams }: { params: P
 
           {k.billingIntents.length > 0 && (
             <div><p className="label">Payments</p>
-              <ul className="space-y-2">{k.billingIntents.map((b) => { const st = plainStatus(b.kind, b.status); return (
+              <ul className="space-y-2">{k.billingIntents.map((b) => { const st = plainStatus(b.kind, b.status, b.cancelsAt); return (
                 <li key={b.id} className="rounded-xl bg-bone p-3 text-sm">
                   <p className="font-semibold">{b.description ?? KIND_LABEL[b.kind] ?? b.kind} · {money(b.amountMinor, b.currency)}{isMonthly(b.kind) ? " / month" : ""}</p>
                   <p className="text-muted">{st.label}{b.paidAt ? ` · ${b.paidVia === "stripe" ? "by card" : "by bank or other"}` : ""}</p>
+                  {isMonthly(b.kind) && b.stripeSubscriptionId && ["active", "past_due"].includes(b.status) && !b.cancelsAt && <form action={cancelPlanAction} className="mt-2"><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className="btn btn-quiet !min-h-9" title="Stops the monthly payments after the month they've already paid for">Cancel the monthly plan</button></form>}
                   {b.status === "pending" && <div className="mt-2 flex flex-wrap gap-2">
                     {!isMonthly(b.kind) && <form action={markPaidAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className="btn btn-quiet !min-h-9">Mark paid (bank)</button></form>}
                     <form action={cancelChargeAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className="btn btn-quiet !min-h-9">Cancel</button></form>

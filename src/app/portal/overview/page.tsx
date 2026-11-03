@@ -36,7 +36,8 @@ export default async function PortalOverview() {
           {current ? (
             <>
               <ol className="mt-5 grid grid-cols-5 gap-1.5" aria-label="Progress">{STEPS.map((s, i) => <li key={s} aria-current={i === step ? "step" : undefined}><div className={`h-2.5 rounded-full ${i <= step ? "bg-ink" : "bg-white/70"}`} /><p className={`mt-1.5 text-xs sm:text-sm ${i === step ? "font-bold" : "text-ink/60"}`}>{s}</p></li>)}</ol>
-              {current.dueDate && <p className="mt-4 text-sm">Aiming for <strong>{fmtDate(current.dueDate)}</strong></p>}
+              <p className="mt-6 max-w-md rounded-xl bg-white/70 px-4 py-3 text-[15px]"><span className="block text-xs font-bold uppercase tracking-wide text-muted">Right now</span>{STAGE_COPY[current.stage] ?? "We're working on it."}</p>
+              {current.dueDate && <p className="mt-3 text-sm">Aiming for <strong>{fmtDate(current.dueDate)}</strong></p>}
             </>
           ) : <p className="mt-3">Your project will show up here as soon as it starts.</p>}
         </section>

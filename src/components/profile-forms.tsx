@@ -1,4 +1,5 @@
 "use client";
+import { PasswordInput } from "./password-input";
 import { useActionState, useState } from "react";
 import { saveProfileAction, changeEmailAction } from "@/app/actions/profile";
 import { ErrorSummary } from "./ui";
@@ -52,7 +53,7 @@ export function ChangeEmailForm({ email }: { email: string }) {
       {s?.done && <p role="status" className="text-sm text-moss">Email changed. Use it next time you sign in.</p>}
       <p className="text-sm text-muted">Signed in as <strong className="text-ink break-all">{email}</strong></p>
       <div><label className="label" htmlFor="ce-email">New email</label><input id="ce-email" name="email" type="email" inputMode="email" autoCapitalize="none" className="field" required autoComplete="off" /></div>
-      <div><label className="label" htmlFor="ce-pw">Your password</label><input id="ce-pw" name="password" type="password" className="field" required autoComplete="current-password" /><p className="hint mt-1">We ask so nobody else can change it on your behalf.</p></div>
+      <div><label className="label" htmlFor="ce-pw">Your password</label><PasswordInput id="ce-pw" autoComplete="current-password" /><p className="hint mt-1">We ask so nobody else can change it on your behalf.</p></div>
       <button className="btn" disabled={pending}>{pending ? "Changing…" : "Change email"}</button>
     </form>
   );

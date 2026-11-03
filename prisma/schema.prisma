@@ -547,6 +547,7 @@ model BillingIntent {
   stripeSessionId      String?
   stripePaymentIntent  String?
   stripeSubscriptionId String?
+  cancelsAt   DateTime? // a monthly plan that has been cancelled and ends on this date
   createdAt   DateTime @default(now())
 
   contract Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)

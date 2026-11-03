@@ -28,7 +28,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
       {items.length > 0 && (
         <section className="tile bg-white" aria-label="Payments">
           <ul className="divide-y divide-line">
-            {items.map((b) => { const s = plainStatus(b.kind, b.status); const canPay = b.status === "pending" || b.status === "past_due"; return (
+            {items.map((b) => { const s = plainStatus(b.kind, b.status, b.cancelsAt); const canPay = b.status === "pending" || b.status === "past_due"; return (
               <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
                 <div><p className="font-bold">{b.description ?? KIND_LABEL[b.kind] ?? "Payment"}</p><p className="text-sm text-muted">{chargeOf(b).title} · {chargeOf(b).reference}{b.paidAt ? ` · paid ${fmtDate(b.paidAt)}` : ""}</p></div>
                 <div className="flex items-center gap-3">

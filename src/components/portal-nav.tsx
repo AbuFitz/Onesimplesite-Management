@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, FolderKanban, FileText, LifeBuoy, UserRound, CreditCard, Users } from "lucide-react";
+import { useState } from "react";
+import { Home, FolderKanban, FileText, LifeBuoy, UserRound, CreditCard, Users, Ellipsis } from "lucide-react";
 
 const links = [["/overview", "Home", Home], ["/projects", "Projects", FolderKanban], ["/documents", "Documents", FileText], ["/billing", "Billing", CreditCard], ["/people", "People", Users], ["/help", "Get help", LifeBuoy], ["/account", "Account", UserRound]] as const;
 const pick = (show: readonly string[]) => links.filter(([h]) => !["/billing", "/people"].includes(h) || show.includes(h));
@@ -21,17 +22,29 @@ export function PortalNav({ show = [] }: { show?: readonly string[] }) {
   );
 }
 
-/** The same places as a bottom bar on a phone, like a banking app. */
+/** On a phone: four places always in reach, and everything else under More, like a banking app. */
 export function PortalTabs({ show = [] }: { show?: readonly string[] }) {
   const on = useActive();
+  const [open, setOpen] = useState(false);
   const items = pick(show);
+  const main = items.filter(([h]) => ["/overview", "/projects", "/documents", "/help"].includes(h));
+  const more = items.filter(([h]) => !["/overview", "/projects", "/documents", "/help"].includes(h));
+  const moreOn = more.some(([h]) => on(h));
+  const cell = (active: boolean) => `flex min-h-12 w-full flex-col items-center justify-center rounded-xl text-[11px] font-semibold ${active ? "bg-spring text-ink" : "text-white/80"}`;
   return (
-    <nav aria-label="Portal" className="fixed inset-x-3 bottom-3 z-30 sm:hidden" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
-      <ul style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }} className="grid rounded-2xl bg-ink p-1.5 shadow-[0_8px_30px_rgba(14,19,17,.25)]">
-        {items.map(([h, l, Icon]) => (
-          <li key={h}><Link href={h} aria-current={on(h) ? "page" : undefined} aria-label={l} className={`flex min-h-12 flex-col items-center justify-center rounded-xl text-[10.5px] font-semibold ${on(h) ? "bg-spring text-ink" : "text-white/80"}`}><Icon size={19} aria-hidden /><span>{l.replace("Get help", "Help")}</span></Link></li>
-        ))}
-      </ul>
-    </nav>
+    <>
+      {open && <button type="button" aria-label="Close menu" onClick={() => setOpen(false)} className="fixed inset-0 z-20 bg-ink/30 sm:hidden" />}
+      <nav aria-label="Portal" className="fixed inset-x-3 bottom-3 z-30 sm:hidden" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+        {open && (
+          <ul className="mb-2 overflow-hidden rounded-2xl border border-line bg-white p-1.5 shadow-[0_8px_30px_rgba(14,19,17,.2)]">
+            {more.map(([h, l, Icon]) => <li key={h}><Link href={h} onClick={() => setOpen(false)} aria-current={on(h) ? "page" : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 font-semibold ${on(h) ? "bg-bone" : ""}`}><Icon size={19} aria-hidden />{l}</Link></li>)}
+          </ul>
+        )}
+        <ul style={{ gridTemplateColumns: `repeat(${main.length + 1}, minmax(0, 1fr))` }} className="grid gap-1 rounded-2xl bg-ink p-1.5 shadow-[0_8px_30px_rgba(14,19,17,.25)]">
+          {main.map(([h, l, Icon]) => <li key={h}><Link href={h} aria-current={on(h) ? "page" : undefined} aria-label={l} className={cell(on(h))}><Icon size={20} aria-hidden /><span>{l.replace("Get help", "Help")}</span></Link></li>)}
+          <li><button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label="More" className={cell(moreOn || open)}><Ellipsis size={20} aria-hidden /><span>More</span></button></li>
+        </ul>
+      </nav>
+    </>
   );
 }

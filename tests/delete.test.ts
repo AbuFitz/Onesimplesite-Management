@@ -59,3 +59,14 @@ describe("test client and deleting a business", () => {
     await expect(deleteBusiness(ctx, id, TEST_CLIENT_NAME)).rejects.toThrow(/monthly plan running/);
   });
 });
+
+describe("demo order numbers", () => {
+  it("come from the quotation counter, so a real order can never take the same number", async () => {
+    const ctx = await staffCtx();
+    const id = await createTestClient(ctx, `n-${Math.random().toString(36).slice(2, 8)}@example.test`);
+    const k = await db.contract.findFirstOrThrow({ where: { customerId: id } });
+    expect(k.reference).toMatch(/^OSS-OF-\d{4}-\d{3}$/);
+    const next = await db.$transaction((tx) => import("@/lib/audit").then((m) => m.nextRef(tx, ctx.workspaceId, "quotation")));
+    expect(next.replace("OSS-QT-", "OSS-OF-")).not.toBe(k.reference);
+  });
+});

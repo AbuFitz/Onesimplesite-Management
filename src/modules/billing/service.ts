@@ -16,7 +16,8 @@ export const KIND_LABEL: Record<string, string> = { one_off: "Website", deposit:
 export const isMonthly = (kind: string) => kind === "recurring_setup";
 
 /** Status in plain words. */
-export function plainStatus(kind: string, status: string): { label: string; tone: "due" | "ok" | "warn" | "off" } {
+export function plainStatus(kind: string, status: string, cancelsAt?: Date | null): { label: string; tone: "due" | "ok" | "warn" | "off" } {
+  if (cancelsAt && (status === "active" || status === "past_due")) return { label: `Ends ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(cancelsAt)}`, tone: "warn" };
   if (status === "paid") return { label: "Paid", tone: "ok" };
   if (status === "active") return { label: "Active", tone: "ok" };
   if (status === "past_due") return { label: "Payment failed", tone: "warn" };
@@ -129,6 +130,22 @@ export async function cancelCharge(ctx: StaffCtx, id: string) {
   });
 }
 
+/** Customer rang to cancel: stop the monthly plan in Stripe at the end of the month they've paid for, and record it. */
+export async function cancelPlan(ctx: StaffCtx, id: string) {
+  needWrite(ctx);
+  const b = await db.billingIntent.findFirst({ where: { id, workspaceId: ctx.workspaceId } });
+  if (!b) throw notFound();
+  if (!isMonthly(b.kind) || !b.stripeSubscriptionId || !["active", "past_due"].includes(b.status)) throw new DomainError("conflict", "There's no running monthly plan to cancel here.");
+  if (b.cancelsAt) throw new DomainError("conflict", "This plan is already set to end.");
+  const sub = await stripe<{ cancel_at?: number | null; current_period_end?: number }>(`/subscriptions/${b.stripeSubscriptionId}`, { cancel_at_period_end: true });
+  const ends = new Date(((sub.cancel_at ?? sub.current_period_end) ?? Math.floor(Date.now() / 1000)) * 1000);
+  await db.$transaction(async (tx) => {
+    await tx.billingIntent.update({ where: { id }, data: { cancelsAt: ends } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.plan_cancel_requested", targetType: "billing_intent", targetId: id, customerId: b.customerId, visibility: "client", detail: { ends: ends.toISOString() } });
+  });
+  return ends;
+}
+
 /** Split the website fee into a deposit and a final payment. Only before anything is paid. */
 export async function splitWebsiteFee(ctx: StaffCtx, contractId: string, depositPercent: number) {
   needWrite(ctx);
@@ -172,6 +189,15 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
   if (!sub) return;
   const b = await db.billingIntent.findFirst({ where: { workspaceId, stripeSubscriptionId: sub } });
   if (!b) return;
+  if (type === "customer.subscription.updated") {
+    const at = (o as { cancel_at?: number | null; cancel_at_period_end?: boolean }).cancel_at;
+    const cancelling = (o as { cancel_at_period_end?: boolean }).cancel_at_period_end || !!at;
+    const when = cancelling ? new Date(((at ?? (o as { current_period_end?: number }).current_period_end ?? 0) as number) * 1000) : null;
+    if ((when?.getTime() ?? 0) !== (b.cancelsAt?.getTime() ?? 0)) {
+      await db.billingIntent.update({ where: { id: b.id }, data: { cancelsAt: when && when.getTime() > 0 ? when : null } });
+      await db.$transaction((tx) => audit(tx, { workspaceId, actor: null, action: cancelling ? "billing.plan_cancel_scheduled" : "billing.plan_cancel_withdrawn", targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { ends: when?.toISOString() } }));
+    }
+  }
   const next = type === "invoice.payment_failed" ? "past_due" : type === "invoice.paid" ? "active" : type === "customer.subscription.deleted" ? "cancelled"
     : type === "customer.subscription.updated" ? ({ active: "active", trialing: "active", past_due: "past_due", unpaid: "past_due", canceled: "cancelled" } as Record<string, string>)[o.status ?? ""] : undefined;
   if (!next || next === b.status) return;

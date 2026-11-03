@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { origins } from "@/lib/env";
 import { LegalLinks } from "./legal-links";
+import { CookieNotice } from "./cookie-notice";
 
 /**
  * One layout for every page reached from sign-in or an emailed link.
@@ -42,6 +43,7 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
         <p className="hidden text-base text-white/60 lg:block">onesimplesite.co.uk</p>
       </aside>
       <main id="main" className="flex flex-col px-5 py-8 sm:px-10 lg:justify-center lg:px-16">
+        <CookieNotice />
         <div className="card mx-auto w-full max-w-md p-7 sm:p-9 lg:max-w-lg lg:p-11">
           <h1 className="text-[1.9rem] lg:text-4xl">{title}</h1>
           {intro && <p className="mt-2 text-muted lg:text-lg">{intro}</p>}

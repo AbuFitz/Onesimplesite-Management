@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireClient, requireStaff } from "@/modules/identity/session";
-import { startPayment, openBillingPortal, markPaidManually, cancelCharge, splitWebsiteFee } from "@/modules/billing/service";
+import { startPayment, openBillingPortal, markPaidManually, cancelCharge, splitWebsiteFee, cancelPlan } from "@/modules/billing/service";
 import { DomainError } from "@/lib/errors";
 
 const why = (e: unknown) => (e instanceof DomainError ? e.message : "We couldn't start that. Please try again.");
@@ -35,4 +35,11 @@ export async function splitFeeAction(fd: FormData) {
   const ctx = await requireStaff("billing.write");
   await splitWebsiteFee(ctx, String(fd.get("contractId")), Number(fd.get("percent")));
   revalidatePath(String(fd.get("back") || "/"));
+}
+
+export async function cancelPlanAction(fd: FormData) {
+  const ctx = await requireStaff("billing.write");
+  const back = String(fd.get("back") || "/");
+  try { await cancelPlan(ctx, String(fd.get("id"))); } catch (e) { redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't cancel it in Stripe.")}`); }
+  revalidatePath(back);
 }

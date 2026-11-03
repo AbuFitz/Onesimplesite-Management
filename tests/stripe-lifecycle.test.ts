@@ -135,3 +135,32 @@ describe("Stripe lifecycle through the real webhook and the outbox", () => {
     expect(r.status).toBe(200);
   });
 });
+
+import { vi } from "vitest";
+import { cancelPlan } from "@/modules/billing/service";
+describe("cancelling a monthly plan is recorded", () => {
+  it("staff cancel stops it at the end of the paid month in Stripe, records who and when; Stripe's own cancel and an undo are recorded too", async () => {
+    const o = await order();
+    const sub = `sub_${o.tag}`;
+    await send("checkout.session.completed", { id: "cs_p", metadata: { intentId: o.plan.id }, payment_status: "paid", subscription: sub });
+    const staff = { userId: null as unknown as string, staffId: (await db.staffMembership.create({ data: { workspaceId: o.w.id, email: `s-${o.tag}@x.test`, displayName: "Abukar", role: "owner" as const, status: "active" } })).id, workspaceId: o.w.id, role: "owner" as const, name: "Abukar", email: "a@x.test" };
+    const key = process.env.STRIPE_SECRET_KEY; process.env.STRIPE_SECRET_KEY = "sk_test_x";
+    const end = Math.floor(Date.now() / 1000) + 20 * 86400;
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (u, init) => { expect(String(u)).toContain(`/subscriptions/${sub}`); expect(String((init as RequestInit).body)).toContain("cancel_at_period_end=true"); return new Response(JSON.stringify({ current_period_end: end, cancel_at: end }), { status: 200 }); });
+    try { await cancelPlan(staff, o.plan.id); await expect(cancelPlan(staff, o.plan.id)).rejects.toThrow(/already set to end/); } finally { spy.mockRestore(); if (key) process.env.STRIPE_SECRET_KEY = key; else delete process.env.STRIPE_SECRET_KEY; }
+    let b = await db.billingIntent.findUniqueOrThrow({ where: { id: o.plan.id } });
+    expect(b.status).toBe("active"); expect(b.cancelsAt?.getTime()).toBe(end * 1000);
+    expect(await db.auditEvent.count({ where: { workspaceId: o.w.id, action: "billing.plan_cancel_requested", actorLabel: "Abukar" } })).toBe(1);
+    await send("customer.subscription.updated", { id: sub, status: "active", cancel_at_period_end: false, cancel_at: null });   // they changed their mind in Stripe
+    b = await db.billingIntent.findUniqueOrThrow({ where: { id: o.plan.id } });
+    expect(b.cancelsAt).toBeNull(); expect(await db.auditEvent.count({ where: { workspaceId: o.w.id, action: "billing.plan_cancel_withdrawn" } })).toBe(1);
+    await send("customer.subscription.updated", { id: sub, status: "active", cancel_at_period_end: true, current_period_end: end });  // cancelled by the customer in Stripe's portal
+    expect((await db.billingIntent.findUniqueOrThrow({ where: { id: o.plan.id } })).cancelsAt?.getTime()).toBe(end * 1000);
+    expect(await db.auditEvent.count({ where: { workspaceId: o.w.id, action: "billing.plan_cancel_scheduled" } })).toBe(1);
+    await send("customer.subscription.deleted", { id: sub, status: "canceled" });
+    expect(await status(o.plan.id)).toBe("cancelled");
+    expect(await db.auditEvent.count({ where: { workspaceId: o.w.id, customerId: o.c.id, action: "billing.plan_cancelled" } })).toBe(1);
+    await drainOutbox(300);
+    expect(mailsFor(o.ref).some((m) => m.subject.startsWith("Monthly plan cancelled") && m.to === "hello@onesimplesite.co.uk")).toBe(true);
+  });
+});

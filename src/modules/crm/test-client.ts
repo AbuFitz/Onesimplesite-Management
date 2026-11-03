@@ -28,7 +28,7 @@ export async function createTestClient(ctx: StaffCtx, rawEmail: unknown) {
     let cu = await tx.customer.findFirst({ where: { workspaceId: ctx.workspaceId, displayName: TEST_CLIENT_NAME } });
     if (!cu) {
       cu = await tx.customer.create({ data: { workspaceId: ctx.workspaceId, reference: await nextRef(tx, ctx.workspaceId, "customer"), displayName: TEST_CLIENT_NAME, legalName: "Test Client Ltd", kind: "business", businessType: "Food and drink", town: "Bristol", lifecycle: "active", source: "demo" } });
-      const k = await tx.contract.create({ data: { workspaceId: ctx.workspaceId, customerId: cu.id, reference: await nextRef(tx, ctx.workspaceId, "order"), title: "Website for Test Client", status: "completed", scopeSnapshot: "A five-page website with a contact form. Demo order for testing.", oneOffMinor: 120000, recurringMinor: 4900, completedAt: new Date(), signingMode: "manual_record" } });
+      const k = await tx.contract.create({ data: { workspaceId: ctx.workspaceId, customerId: cu.id, reference: (await nextRef(tx, ctx.workspaceId, "quotation")).replace("OSS-QT-", "OSS-OF-"), title: "Website for Test Client", status: "completed", scopeSnapshot: "A five-page website with a contact form. Demo order for testing.", oneOffMinor: 120000, recurringMinor: 4900, completedAt: new Date(), signingMode: "manual_record" } });
       await tx.billingIntent.createMany({ data: [
         { workspaceId: ctx.workspaceId, customerId: cu.id, contractId: k.id, kind: "one_off", amountMinor: 120000, description: "Website" },
         { workspaceId: ctx.workspaceId, customerId: cu.id, contractId: k.id, kind: "recurring_setup", amountMinor: 4900, description: "Standard plan" },

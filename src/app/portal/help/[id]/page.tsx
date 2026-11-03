@@ -25,7 +25,6 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   const canApprove = c.memberships.some((m) => m.customerId === t.customerId && memberCan(m, "billing"));
   return (
     <div className="space-y-4">
-      <Link href="/help" className="text-sm font-semibold underline">Back to help</Link>
       {sp.new && <div role="status" className="tile bg-mint flex items-center gap-3 !p-5"><CheckCircle2 aria-hidden /><p className="font-semibold">Sent. We've emailed you a copy and the team will reply here.</p></div>}
       {sp.error && <div role="alert" className="tile bg-blush !p-5 font-semibold">{sp.error}</div>}
       {sp.approved && <div role="status" className="tile bg-mint !p-5 font-semibold">Thanks. We'll get started. You can pay from the Billing page.</div>}

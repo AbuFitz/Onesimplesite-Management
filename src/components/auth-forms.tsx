@@ -1,4 +1,5 @@
 "use client";
+import { PasswordInput } from "./password-input";
 import { useActionState } from "react";
 import { login, verifyMfa, acceptInvitation } from "@/app/actions/auth";
 import { ErrorSummary } from "./ui";
@@ -22,7 +23,7 @@ export function LoginForm({ staff = false }: { staff?: boolean }) {
       <div><label className="label" htmlFor="email">{staff ? "Username or email" : "Email"}</label>
         <input id="email" name="email" type={staff ? "text" : "email"} className="field" autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder={staff ? "first.surname" : undefined} required /></div>
       <div><label className="label" htmlFor="password">Password</label>
-        <input id="password" name="password" type="password" className="field" autoComplete="current-password" required /></div>
+        <PasswordInput autoComplete="current-password" /></div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm"><input type="checkbox" name="remember" defaultChecked={!staff} className="size-5 accent-[#0c6a49]" /><span>Keep me signed in on this device <span className="text-muted">({staff ? "14 days" : "30 days"})</span></span></label>
       <button className="btn w-full" disabled={pending}>{pending ? "Signing in…" : "Sign in"}</button>
     </form>
@@ -48,7 +49,7 @@ export function InviteForm({ token, email, staff }: { token: string; email: stri
         </>
       )}
       <div><label className="label" htmlFor="password">Choose a password</label>
-        <input id="password" name="password" type="password" className="field" autoComplete="new-password" minLength={12} required />
+        <PasswordInput autoComplete="new-password" minLength={12} />
         <p className="hint mt-1">At least 12 characters.</p></div>
       <button className="btn w-full" disabled={pending}>{pending ? "Creating…" : "Create account"}</button>
     </form>
