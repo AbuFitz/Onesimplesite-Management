@@ -19,7 +19,7 @@ async function shrink(f: File): Promise<File> {
 const kb = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
 
 /** Add pictures or a PDF. Works with a normal form: the files are sent as `files`. */
-export function FilePicker({ label = "Add pictures or a PDF", hint }: { label?: string; hint?: string }) {
+export function FilePicker({ label = "Add pictures or a PDF", hint, accept = "image/png,image/jpeg,image/gif,image/webp,application/pdf" }: { label?: string; hint?: string; accept?: string }) {
   const input = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [msg, setMsg] = useState("");
@@ -36,7 +36,7 @@ export function FilePicker({ label = "Add pictures or a PDF", hint }: { label?: 
     <div>
       <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[10px] border border-line bg-white px-4 font-semibold hover:bg-bone has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ink">
         <Paperclip size={17} aria-hidden /> {label}
-        <input ref={input} onChange={onPick} type="file" name="files" multiple accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" className="sr-only" />
+        <input ref={input} onChange={onPick} type="file" name="files" multiple accept={accept} className="sr-only" />
       </label>
       {hint && <p className="mt-1 text-sm text-muted">{hint}</p>}
       {msg && <p role="alert" className="mt-1 text-sm font-semibold text-[#7a2e12]">{msg}</p>}

@@ -77,3 +77,73 @@ export async function addTask(ctx: StaffCtx, projectId: string, title: string, d
   z.string().trim().min(1).max(200).parse(title);
   await db.task.create({ data: { workspaceId: ctx.workspaceId, projectId, customerId: p.customerId, title, assigneeId: p.ownerId ?? ctx.staffId, dueDate: dueDate ? new Date(dueDate) : null } });
 }
+
+// ───────── Delivery: what to do at each stage, the checklist, and files ─────────
+/** What the team does at each stage, in plain words. The suggested tasks are added with one button and never duplicated. */
+export const STAGE_GUIDE: Record<string, { label: string; now: string; tasks: string[] }> = {
+  planned: { label: "Planning", now: "Get the project ready to start: confirm what we're building and when, and ask for what we need.", tasks: ["Send the welcome email and book the kick-off call", "Confirm the domain and hosting plan", "Ask for logo, colours and photos"] },
+  awaiting_assets: { label: "Waiting for their material", now: "We can't design without their content. Chase what's missing and check it's usable.", tasks: ["Chase the outstanding material", "Check the logo and photos are good enough quality"] },
+  design: { label: "Design", now: "Design the pages and share them for feedback before building.", tasks: ["Design the homepage", "Share the design with the customer", "Make changes from their feedback"] },
+  development: { label: "Build", now: "Build the site, set up forms and email, and connect the domain.", tasks: ["Build the pages", "Set up the contact form and email", "Connect the domain and hosting", "Add privacy and cookie pages"] },
+  qa: { label: "Testing", now: "Check everything works before the customer sees it.", tasks: ["Test on a phone and a desktop", "Test every form and link", "Check page speed and basic SEO"] },
+  client_review: { label: "Customer review", now: "The customer checks the site. Collect their feedback and get a clear yes.", tasks: ["Send the review link", "Make the changes they ask for", "Get their written approval"] },
+  ready_to_launch: { label: "Ready to launch", now: "Take the final payment and put the site live.", tasks: ["Confirm the final payment is in", "Switch the domain over", "Check the live site", "Tell the customer it's live"] },
+  launched: { label: "Live", now: "It's live. Make sure it's looked after, then hand over.", tasks: ["Add it to backups and monitoring", "Hand over logins safely", "Confirm the care plan is running"] },
+};
+export const STAGE_ORDER = ["planned", "awaiting_assets", "design", "development", "qa", "client_review", "ready_to_launch", "launched"] as const;
+
+const own = async (ctx: StaffCtx, id: string) => { if (!can(ctx.role, "project.write")) throw forbidden(); const p = await db.project.findFirst({ where: { id, ...projectWhere(ctx) } }); if (!p) throw notFound(); return p; };
+
+export async function seedStageTasks(ctx: StaffCtx, projectId: string) {
+  const p = await own(ctx, projectId);
+  const guide = STAGE_GUIDE[p.stage];
+  if (!guide) return 0;
+  const have = new Set((await db.task.findMany({ where: { projectId }, select: { title: true } })).map((t) => t.title));
+  const fresh = guide.tasks.filter((t) => !have.has(t));
+  if (fresh.length) await db.task.createMany({ data: fresh.map((title) => ({ workspaceId: ctx.workspaceId, projectId, customerId: p.customerId, title, assigneeId: p.ownerId ?? ctx.staffId })) });
+  return fresh.length;
+}
+
+export async function setTaskDone(ctx: StaffCtx, taskId: string, done: boolean) {
+  if (!can(ctx.role, "project.write")) throw forbidden();
+  const t = await db.task.findFirst({ where: { id: taskId, workspaceId: ctx.workspaceId }, select: { id: true, projectId: true } });
+  if (!t?.projectId) throw notFound();
+  await own(ctx, t.projectId);
+  await db.task.update({ where: { id: taskId }, data: { doneAt: done ? new Date() : null } });
+}
+
+export async function markAssetReceived(ctx: StaffCtx, assetId: string, received: boolean) {
+  if (!can(ctx.role, "project.write")) throw forbidden();
+  const a = await db.assetRequest.findFirst({ where: { id: assetId, workspaceId: ctx.workspaceId }, select: { id: true, projectId: true } });
+  if (!a) throw notFound();
+  await own(ctx, a.projectId);
+  await db.assetRequest.update({ where: { id: assetId }, data: { receivedAt: received ? new Date() : null } });
+}
+
+/** Upload files to a project. Internal by default; tick "share" and the customer sees them in their portal. */
+export async function addProjectFiles(ctx: StaffCtx, projectId: string, files: import("@/modules/files/service").Upload[], o: { folder?: string; shared: boolean }) {
+  const p = await own(ctx, projectId);
+  if (!files.length) throw new DomainError("validation", "Choose a file first.");
+  const folder = (o.folder ?? "").trim().slice(0, 60) || null;
+  const { saveUploads } = await import("@/modules/files/service");
+  await db.$transaction(async (tx) => {
+    await saveUploads(tx, { workspaceId: ctx.workspaceId, customerId: p.customerId, projectId, folder, internal: !o.shared, by: "staff", name: ctx.name }, files);
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "project.files_added", targetType: "project", targetId: projectId, customerId: p.customerId, detail: { count: files.length, shared: o.shared, folder } });
+  });
+}
+
+export async function setProjectFileShared(ctx: StaffCtx, fileId: string, shared: boolean) {
+  if (!can(ctx.role, "project.write")) throw forbidden();
+  const f = await db.attachment.findFirst({ where: { id: fileId, workspaceId: ctx.workspaceId, projectId: { not: null } }, select: { id: true, projectId: true } });
+  if (!f?.projectId) throw notFound();
+  await own(ctx, f.projectId);
+  await db.attachment.update({ where: { id: fileId }, data: { internal: !shared } });
+}
+
+export async function deleteProjectFile(ctx: StaffCtx, fileId: string) {
+  if (!can(ctx.role, "project.write")) throw forbidden();
+  const f = await db.attachment.findFirst({ where: { id: fileId, workspaceId: ctx.workspaceId, projectId: { not: null } }, select: { id: true, projectId: true } });
+  if (!f?.projectId) throw notFound();
+  await own(ctx, f.projectId);
+  await db.attachment.delete({ where: { id: fileId } });
+}

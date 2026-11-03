@@ -10,7 +10,7 @@ export default async function More() {
   return (
     <>
       <RecordHeader title="More" />
-      <ul>{items.map(([h, l]) => <li key={h} className="row"><Link href={h} className="flex min-h-12 items-center">{l}</Link></li>)}</ul>
+      <ul className="list-card">{items.map(([h, l]) => <li key={h} className="row"><Link href={h} className="flex min-h-12 items-center">{l}</Link></li>)}</ul>
       <form action={signOutStaff} className="mt-8"><button className="btn btn-quiet">Sign out</button></form>
     </>
   );

@@ -24,8 +24,8 @@ export default async function Plans({ searchParams }: { searchParams: Promise<{ 
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved. New orders use these values. Orders already sent keep the figures the customer agreed.</p>}
       <p className="mb-8 max-w-2xl text-sm text-muted">Prices, support hours and email addresses live here, not inside the legal wording. Change one here and every document that quotes it updates the next time an order is sent.</p>
 
-      <section aria-labelledby="pl" className="mb-12">
-        <h2 id="pl" className="mb-1">Care plans</h2>
+      <section aria-labelledby="pl" className="card-section">
+        <h2 id="pl">Care plans</h2>
         <p className="mb-4 text-sm text-muted">What you sell each month. Picking a plan on a ticket adds its price and fills the plan section of the agreement.</p>
         <ul className="grid gap-4 lg:grid-cols-2">
           {plans.map((p) => (
@@ -51,7 +51,7 @@ export default async function Plans({ searchParams }: { searchParams: Promise<{ 
 
       <form action={saveSettingsAction} className="max-w-3xl space-y-10">
         {GROUPS.map(([id, title, about]) => (
-          <section key={id} aria-labelledby={`g-${id}`}>
+          <section key={id} aria-labelledby={`g-${id}`} className="card-section">
             <h2 id={`g-${id}`}>{title}</h2><p className="mb-4 mt-1 text-sm text-muted">{about}</p>
             <div className="grid gap-4 sm:grid-cols-2">
               {VARIABLES.filter((v) => v.group === id).map((v) => {

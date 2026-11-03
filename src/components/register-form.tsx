@@ -14,7 +14,7 @@ export function RegisterForm() {
   return (
     <form action={act} className="max-w-3xl space-y-10">
       <ErrorSummary message={s?.error} />
-      <section aria-labelledby="r1" className="space-y-5">
+      <section aria-labelledby="r1" className="card-section space-y-5">
         <h2 id="r1" className="text-xl">1. The business</h2>
         <fieldset>
           <legend className="label mb-2">What kind of customer is this?</legend>
@@ -37,7 +37,7 @@ export function RegisterForm() {
           <div><label className="label" htmlFor="rb-s">How did they find us?</label><select id="rb-s" name="source" className="field" defaultValue=""><option value="">Not sure</option>{SOURCES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
       </section>
-      <section aria-labelledby="r2" className="space-y-5">
+      <section aria-labelledby="r2" className="card-section space-y-5">
         <div><h2 id="r2" className="text-xl">2. Who are we talking to?</h2><p className="text-sm text-muted">The main contact. You can add more people, with their own portal access, once the business exists.</p></div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div><label className="label" htmlFor="rc-n">Name</label><input id="rc-n" name="contactName" className="field" required autoComplete="off" /></div>

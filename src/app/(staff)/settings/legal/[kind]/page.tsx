@@ -22,7 +22,7 @@ export default async function VersionList({ params, searchParams }: { params: Pr
       <ErrorSummary message={sp.error} />
       {sp.published && <p role="status" className="mb-4 text-sm text-moss">Published.{kind === "terms" ? " New agreements will use this version." : ""}</p>}
       <p className="mb-4">{current ? <>Live: <strong>version {current.number}</strong>, published {current.publishedAt && fmtDateTime(current.publishedAt)} by {current.publishedBy}.</> : <strong>Nothing is published yet.{kind === "terms" ? " Agreements can't be sent until the Terms and Conditions are published." : ""}</strong>}</p>
-      <ul>
+      <ul className="list-card">
         {versions.map((v) => (
           <li key={v.id} className="row"><Link href={`/settings/legal/${kind}/${v.id}`} className="flex min-h-12 flex-wrap items-center justify-between gap-2 px-1 py-3 hover:bg-soft">
             <span><strong>Version {v.number}</strong> · {v.title}{v.status === "draft" && placeholderCount(v.body) > 0 ? <span className="text-sm text-muted"> · {placeholderCount(v.body)} to decide</span> : null}</span>

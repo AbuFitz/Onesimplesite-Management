@@ -845,7 +845,9 @@ model Attachment {
   id           String   @id @default(uuid()) @db.Uuid
   workspaceId  String   @db.Uuid
   customerId   String   @db.Uuid
-  ticketId     String   @db.Uuid
+  ticketId     String?  @db.Uuid // a ticket file, or empty for a project file
+  projectId    String?  @db.Uuid
+  folder       String? // projects: an optional folder name
   commentId    String?  @db.Uuid // null = attached to the ticket's first message
   filename     String
   contentType  String
@@ -859,6 +861,7 @@ model Attachment {
   comment TicketComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@index([ticketId, createdAt])
+  @@index([projectId, createdAt])
 }
 
 /// A care plan the team sells (for example Standard £29, E-commerce £39). Edited in Business settings.

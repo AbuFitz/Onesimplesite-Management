@@ -26,8 +26,8 @@ export default async function Customers({ searchParams }: { searchParams: Promis
         <Empty title={sp.q || sp.mine ? "No businesses match" : "No businesses yet"}>{sp.q || sp.mine ? "Try a different search." : <Link className="underline" href="/customers/new">Add your first business</Link>}</Empty>
       ) : (
         <div>
-          <div className="thead hidden grid-cols-[minmax(0,2.2fr)_minmax(0,2fr)_9rem_8rem] gap-4 px-3 pb-2 md:grid"><span>Business</span><span>Primary contact</span><span>Status</span><span className="text-right">Added</span></div>
-          <ul>
+          <div className="thead hidden grid-cols-[minmax(0,2.2fr)_minmax(0,2fr)_9rem_8rem] gap-4 px-4 pb-2 md:grid"><span>Business</span><span>Primary contact</span><span>Status</span><span className="text-right">Added</span></div>
+          <ul className="list-card">
             {rows.map((c) => (
               <li key={c.id} className="row">
                 <Link href={`/customers/${c.id}`} className="grid min-h-16 items-center gap-x-4 gap-y-1 py-3 hover:bg-soft md:grid-cols-[minmax(0,2.2fr)_minmax(0,2fr)_9rem_8rem] md:rounded-lg md:px-3">

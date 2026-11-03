@@ -16,7 +16,7 @@ export default async function Vault({ searchParams }: { searchParams: Promise<{ 
     <>
       <RecordHeader title="Passwords" meta={`Shared team logins · ${all.length} saved`} />
       <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
-        <section>
+        <section className="card-section">
           <form className="mb-4 flex flex-wrap gap-2" role="search">
             <label htmlFor="vq" className="sr-only">Search passwords</label>
             <input id="vq" name="q" defaultValue={q} className="field min-w-0 flex-1" placeholder="Search by name, username or website" />

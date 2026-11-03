@@ -23,7 +23,7 @@ export function RecordModal({ children }: { children: React.ReactNode }) {
           <a href={path} className="btn btn-quiet !min-h-8 !px-2.5 text-[13px]"><Maximize2 size={14} aria-hidden /> Open as a page</a>
           <button type="button" onClick={close} aria-label="Close" className="btn btn-quiet !min-h-8 !w-8 !px-0"><X size={16} aria-hidden /></button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#efeee9] px-4 pb-8 pt-5 sm:px-8">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas-2)] px-4 pb-8 pt-5 sm:px-8">{children}</div>
       </div>
     </dialog>
   );

@@ -41,14 +41,14 @@ export default async function StaffLayout({ children, modal }: { children: React
     ...(can(ctx.role, "notes.write") ? [{ href: "/board", label: "Post to the board" }] : []),
   ];
   return (
-    <div className="min-h-dvh bg-white lg:bg-app">
+    <div className="staff-theme min-h-dvh bg-white lg:bg-app">
       <LiveRefresh />
       {profileTodo.length > 0 && (
         <Link href="/account" className="flex items-center justify-center gap-2 bg-[#eef7f2] px-4 py-2 text-center text-sm text-moss hover:bg-[#e3f2ea]">
           <span>Finish setting up your profile: add your {profileTodo.join(" and ")}.</span><ArrowRight size={15} aria-hidden />
         </Link>
       )}
-      <header className="sticky top-0 z-30 border-b border-line bg-white shadow-[0_1px_0_rgba(14,19,17,.03)]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <header className="sticky top-0 z-30 border-b border-line bg-white" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
           <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[11rem]">
             <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={126} height={26} priority />
@@ -56,7 +56,7 @@ export default async function StaffLayout({ children, modal }: { children: React
           <form action="/search" role="search" className="relative mx-auto hidden max-w-lg flex-1 sm:block">
             <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <label htmlFor="gs" className="sr-only">Search</label>
-            <input id="gs" name="q" type="search" placeholder="Search businesses, tickets, projects" className="field !min-h-9 !rounded-lg !bg-soft !border-transparent !pl-9 !text-sm hover:!border-line focus:!bg-white" />
+            <input id="gs" name="q" type="search" placeholder="Search businesses, tickets, projects" className="field !min-h-9 !rounded-lg !border-line !bg-soft !pl-9 !text-sm hover:!border-edge focus:!bg-white" />
           </form>
           <div className="ml-auto flex items-center gap-2">
             <span className="sm:hidden"><Link href="/search" aria-label="Search" className="btn btn-quiet !min-h-10 !px-3"><Search size={17} aria-hidden /></Link></span>
@@ -68,7 +68,7 @@ export default async function StaffLayout({ children, modal }: { children: React
         </div>
       </header>
       <div className="lg:grid lg:grid-cols-[14.5rem_1fr]">
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] overflow-y-auto p-3 lg:block"><SideNav groups={groups} /></aside>
+        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] overflow-y-auto border-r border-line bg-white p-3 pt-4 lg:block"><SideNav groups={groups} /></aside>
         <main id="main" className="page panel min-w-0">{children}<LegalLinks className="mt-12 justify-start" /></main>
       </div>
       {modal}

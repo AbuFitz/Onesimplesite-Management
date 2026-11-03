@@ -21,7 +21,7 @@ describe("ticket files", () => {
   it("takes the real type from the bytes and rejects anything that is not a picture or PDF", async () => {
     const ok = await readUploads(form([["shot.exe", PNG, "application/x-msdownload"]]));
     expect(ok[0].type).toBe("image/png"); expect(ok[0].name).toBe("shot.png");
-    await expect(readUploads(form([["evil.png", Buffer.from("<script>alert(1)</script>"), "image/png"]]))).rejects.toThrow(/isn't a picture or PDF/);
+    await expect(readUploads(form([["evil.png", Buffer.from("<script>alert(1)</script>"), "image/png"]]))).rejects.toThrow(/isn't a file we can accept/);
     await expect(readUploads(form(Array.from({ length: 5 }, (_, i) => [`${i}.png`, PNG, "image/png"] as [string, Buffer, string])))).rejects.toThrow(/up to 4/);
   });
 

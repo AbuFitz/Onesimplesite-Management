@@ -17,7 +17,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       <ErrorSummary message={sp.error} />
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
       <SettingsNav current="company" />
-      <section aria-labelledby="co" className="max-w-xl">
+      <section aria-labelledby="co" className="card-section max-w-xl">
         <h2 id="co" className="mb-1">Our company details</h2>
         <p className="hint mb-4">These appear as the “Provider” on every agreement. Nothing is filled in for you. Agreements can't be sent until the legal name and registered address are set.</p>
         {missing.length > 0 && <p className="mb-4 border-l-4 border-warn bg-wash px-3 py-2 text-sm"><strong>Still needed:</strong> {missing.join(", ")}.</p>}
