@@ -16,7 +16,7 @@ import { signOutStaff } from "@/app/actions/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function StaffLayout({ children }: { children: React.ReactNode }) {
+export default async function StaffLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
   const ctx = await requireStaff();
   const seeCustomers = can(ctx.role, "customer.read");
   const supportOpen = seeCustomers ? (await supportCounts(ctx.workspaceId)).open : 0;
@@ -77,6 +77,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] overflow-y-auto p-3 lg:block"><SideNav groups={groups} /></aside>
         <main id="main" className="page panel min-w-0">{children}<LegalLinks className="mt-12 justify-start" /></main>
       </div>
+      {modal}
       <BottomNav />
     </div>
   );

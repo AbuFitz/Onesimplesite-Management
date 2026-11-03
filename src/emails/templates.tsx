@@ -18,6 +18,8 @@ export type EmailData = {
   plan_started: { to: string; name: string; ref: string; amount: string; link: string };
   payment_failed: { to: string; name: string; ref: string; what: string; amount: string; link: string };
   payment_notice: { to: string; event: "paid" | "plan_started" | "failed" | "cancelled"; business: string; ref: string; what: string; amount: string; link: string };
+  access_request_notice: { to: string; business: string; requester: string; name: string; email: string; level: string; billing: boolean; reason: string; link: string };
+  access_request_decision: { to: string; name: string; business: string; person: string; approved: boolean; note: string; link: string };
   ticket_received: { to: string; name: string; ref: string; title: string; expect: string; link: string };
   ticket_notice: { to: string; ref: string; title: string; business: string; person: string; priority: string; excerpt: string; link: string; isReply?: boolean };
   ticket_reply: { to: string; name: string; staffName: string; ref: string; title: string; message: string; link: string };
@@ -92,6 +94,29 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       text: `${head}: ${d.business}\n${d.what} (${d.ref}) ${d.amount}\n\nOpen: ${d.link}`,
     };
   },
+  access_request_notice: (d) => ({
+    subject: `Portal access request: ${d.business}`,
+    node: (
+      <Layout preview={`${d.requester} asked for ${d.name} to get portal access`}>
+        <H>New portal access request</H>
+        <P>{d.requester} at {d.business} has asked for another person to get access to their client portal. Check it is genuine, then approve or decline.</P>
+        <Facts rows={[["Person", `${d.name} (${d.email})`], ["Access", `${d.level}${d.billing ? " + billing" : ""}`], ["Why", d.reason || "Not given"]]} />
+        <Action href={d.link}>Review request</Action>
+      </Layout>
+    ),
+    text: `Portal access request from ${d.requester} at ${d.business}\n${d.name} (${d.email})\nAccess: ${d.level}${d.billing ? " + billing" : ""}\nWhy: ${d.reason || "Not given"}\n\nReview: ${d.link}`,
+  }),
+  access_request_decision: (d) => ({
+    subject: d.approved ? `${d.person} now has portal access` : `About your request for ${d.person}`,
+    node: (
+      <Layout preview={d.approved ? `${d.person} has been invited` : `We couldn't add ${d.person} yet`}>
+        <H>{d.approved ? "They're in" : "We couldn't add them yet"}</H>
+        <P>Hi {d.name.split(" ")[0]}, {d.approved ? `we've sent ${d.person} an invitation to join ${d.business}'s portal. They'll get an email with a link to set a password.` : `we weren't able to give ${d.person} access to ${d.business}'s portal${d.note ? `: ${d.note}` : "."} If you think that's a mistake, reply to this email.`}</P>
+        <Action href={d.link}>Open your portal</Action>
+      </Layout>
+    ),
+    text: `${d.approved ? `${d.person} has been invited to ${d.business}'s portal.` : `We couldn't give ${d.person} access to ${d.business}'s portal${d.note ? `: ${d.note}` : "."}`}\n\n${d.link}`,
+  }),
   ticket_received: (d) => ({
     subject: `We've got your ticket: ${d.title} (${d.ref})`,
     node: (

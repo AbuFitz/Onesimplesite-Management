@@ -7,7 +7,7 @@ import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 
 /** Explicit, audited portal invitation for one contact. Adding a contact never grants access by itself. */
-export async function inviteClientContact(ctx: StaffCtx, customerId: string, contactId: string) {
+export async function inviteClientContact(ctx: StaffCtx, customerId: string, contactId: string, access: { role?: "admin" | "member" | "viewer"; billing?: boolean } = {}) {
   if (!can(ctx.role, "customer.write")) throw forbidden();
   await db.$transaction(async (tx) => {
     const c = await tx.contact.findFirst({ where: { id: contactId, customerId, workspaceId: ctx.workspaceId }, include: { customer: true } });
@@ -16,7 +16,7 @@ export async function inviteClientContact(ctx: StaffCtx, customerId: string, con
     await tx.invitation.updateMany({ where: { workspaceId: ctx.workspaceId, customerId, email: c.email, acceptedAt: null, revokedAt: null }, data: { revokedAt: new Date() } });
     const { token, hash } = newToken();
     const expiresAt = new Date(Date.now() + 7 * 864e5);
-    const inv = await tx.invitation.create({ data: { workspaceId: ctx.workspaceId, kind: "client", email: c.email, tokenHash: hash, customerId, clientRole: "admin", expiresAt } });
+    const inv = await tx.invitation.create({ data: { workspaceId: ctx.workspaceId, kind: "client", email: c.email, tokenHash: hash, customerId, clientRole: access.role ?? "admin", clientBilling: access.billing ?? false, expiresAt } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "client.invited", targetType: "contact", targetId: c.id, customerId });
     await enqueue(tx, ctx.workspaceId, "email.invitation", `invite:${inv.id}`, {
       to: c.email, businessName: c.customer.displayName, inviter: ctx.name, link: portalLink(`/invite/${token}`),

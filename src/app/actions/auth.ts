@@ -69,7 +69,7 @@ export async function acceptInvitation(_: unknown, fd: FormData) {
     } else if (inv.customerId) {
       await db.clientMembership.upsert({
         where: { userId_customerId: { userId: res.user.id, customerId: inv.customerId } },
-        create: { userId: res.user.id, customerId: inv.customerId, role: inv.clientRole ?? "member" }, update: { revokedAt: null },
+        create: { userId: res.user.id, customerId: inv.customerId, role: inv.clientRole ?? "member", billing: inv.clientBilling }, update: { revokedAt: null, role: inv.clientRole ?? "member", billing: inv.clientBilling },
       });
     }
   } catch {

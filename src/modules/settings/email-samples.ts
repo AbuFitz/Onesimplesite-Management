@@ -11,6 +11,8 @@ export const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "
   { id: "plan_started", label: "Monthly plan live", audience: "Customer", when: "When a customer starts their monthly plan.", sender: "support" },
   { id: "payment_failed", label: "Payment didn't go through", audience: "Customer", when: "If a monthly payment is declined.", sender: "support" },
   { id: "payment_notice", label: "Payment update for us", audience: "Team", when: "When a payment is received, a plan starts or is cancelled, or a payment fails.", sender: "noreply" },
+  { id: "access_request_decision", label: "Access request answered", audience: "Customer", when: "When we approve or decline a request to add someone to the portal.", sender: "support" },
+  { id: "access_request_notice", label: "Portal access request", audience: "Team", when: "When a customer asks for another person to get portal access.", sender: "noreply" },
   { id: "ticket_received", label: "Ticket received", audience: "Customer", when: "As soon as a customer raises a ticket in their portal.", sender: "support" },
   { id: "ticket_reply", label: "Reply to a ticket", audience: "Customer", when: "When the team replies to a customer on a ticket. Sent as the person who replied.", sender: "support" },
   { id: "signing_notice", label: "Signed notice to us", audience: "Team", when: "Sent to hello@ when a customer signs.", sender: "noreply" },
@@ -37,6 +39,8 @@ export function sampleEmail(id: TemplateName) {
     case "plan_started": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-OF-2026-047", amount: "£49.00", link: PORTAL });
     case "payment_failed": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-OF-2026-047", what: "Monthly plan", amount: "£49.00", link: PORTAL });
     case "payment_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", event: "paid", business: "Sample Café Ltd", ref: "OSS-OF-2026-047", what: "Website", amount: "£1,200.00", link: MANAGE });
+    case "access_request_decision": return renderEmail(id, { to, name: "Alex Sample", business: "Sample Café Ltd", person: "Sam Colleague", approved: true, note: "", link: PORTAL });
+    case "access_request_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", business: "Sample Café Ltd", requester: "Alex Sample", name: "Sam Colleague", email: "sam@example.com", level: "Team member", billing: false, reason: "Sam looks after our bookings.", link: MANAGE });
     case "ticket_received": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-TK-2026-0001", title: "The contact form isn't sending", expect: "We reply within one working day.", link: PORTAL });
     case "ticket_reply": return renderEmail(id, { to, name: "Alex Sample", staffName: "Abukar Sharif", ref: "OSS-TK-2026-0001", title: "The contact form isn't sending", message: "Thanks Alex. I've found the problem and fixed it. Could you send a test message and let me know it arrives?", link: PORTAL });
     case "ticket_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", ref: "OSS-TK-2026-0001", title: "The contact form isn't sending", business: "Sample Café Ltd", person: "Alex Sample", priority: "high", excerpt: "Since yesterday nothing arrives when someone fills in the contact form.", link: MANAGE });
