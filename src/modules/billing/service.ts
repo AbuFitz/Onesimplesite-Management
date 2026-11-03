@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-import { audit } from "@/lib/audit";
+import { audit, enqueue } from "@/lib/audit";
+import type { Tx } from "@/lib/db";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
-import { portalLink } from "@/lib/env";
+import { portalLink, manageLink } from "@/lib/env";
 import { stripe, stripeReady } from "@/lib/stripe";
 import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
@@ -66,6 +67,30 @@ export async function openBillingPortal(c: ClientCtx): Promise<string> {
   return s.url;
 }
 
+
+const day = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(d);
+type Mailable = { id: string; workspaceId: string; customerId: string; contractId: string; kind: string; amountMinor: number; currency: string; description: string | null };
+
+/** Emails the customer (whoever paid, else their main contact) and tells the team. Deduped per charge and event. */
+async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "failed" | "cancelled", hint: { email?: string | null; name?: string | null } = {}, key = "") {
+  const [cu, k, primary] = await Promise.all([
+    tx.customer.findUniqueOrThrow({ where: { id: b.customerId }, select: { displayName: true } }),
+    tx.contract.findUniqueOrThrow({ where: { id: b.contractId }, select: { reference: true } }),
+    tx.contact.findFirst({ where: { customerId: b.customerId, email: { not: null } }, orderBy: { isPrimary: "desc" }, select: { name: true, email: true } }),
+  ]);
+  const what = b.description ?? KIND_LABEL[b.kind] ?? "Payment";
+  const amount = money(b.amountMinor, b.currency);
+  const to = hint.email || primary?.email, name = hint.name || primary?.name || "there";
+  const dk = `${event}:${b.id}${key}`;
+  if (to && event !== "cancelled") {
+    const link = portalLink("/billing");
+    if (event === "paid") await enqueue(tx, b.workspaceId, "email.payment_received", `pay.paid:${dk}`, { to, name, ref: k.reference, what, amount, paidOn: day(new Date()), link });
+    else if (event === "plan_started") await enqueue(tx, b.workspaceId, "email.plan_started", `pay.plan:${dk}`, { to, name, ref: k.reference, amount, link });
+    else await enqueue(tx, b.workspaceId, "email.payment_failed", `pay.failed:${dk}`, { to, name, ref: k.reference, what, amount, link });
+  }
+  await enqueue(tx, b.workspaceId, "email.payment_notice", `pay.notice:${dk}`, { to: "internal", event, business: cu.displayName, ref: k.reference, what, amount, link: manageLink(`/contracts/${b.contractId}`) });
+}
+
 // ───────── Team side ─────────
 const need = (ctx: StaffCtx) => { if (!can(ctx.role, "customer.read")) throw forbidden(); };
 const needWrite = (ctx: StaffCtx) => { if (!can(ctx.role, "billing.write")) throw forbidden(); };
@@ -85,6 +110,7 @@ export async function markPaidManually(ctx: StaffCtx, id: string, via: "bank" | 
   await db.$transaction(async (tx) => {
     await tx.billingIntent.update({ where: { id }, data: { status: "paid", paidAt: new Date(), paidVia: via } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.paid_manually", targetType: "billing_intent", targetId: id, customerId: b.customerId, detail: { via, amountMinor: b.amountMinor } });
+    await payEmails(tx, b, "paid");
   });
 }
 
@@ -123,7 +149,9 @@ type Obj = Record<string, unknown> & { id?: string; metadata?: Record<string, st
 /** Applies a verified Stripe event. Safe to run twice. */
 export async function applyStripeEvent(type: string, o: Obj, workspaceId: string) {
   const intentId = o.metadata?.intentId;
-  const log = (b: { id: string; customerId: string; amountMinor: number }, action: string) => db.$transaction((tx) => audit(tx, { workspaceId, actor: null, action, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } }));
+  const who = { email: ((o as { customer_details?: { email?: string } }).customer_details?.email ?? (o as { customer_email?: string }).customer_email) || null, name: (o as { customer_details?: { name?: string } }).customer_details?.name || null };
+  const record = (b: Mailable, action: string, event: "paid" | "plan_started" | "failed" | "cancelled", hint = who, key = "") =>
+    db.$transaction(async (tx) => { await audit(tx, { workspaceId, actor: null, action, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } }); await payEmails(tx, b, event, hint, key); });
   if (type === "checkout.session.completed" && intentId) {
     const b = await db.billingIntent.findFirst({ where: { id: intentId, workspaceId } });
     if (!b) return;
@@ -132,7 +160,7 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
     const monthly = isMonthly(b.kind);
     if (b.status === (monthly ? "active" : "paid")) return;
     await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: (o.subscription as string) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null } });
-    await log(b, monthly ? "billing.plan_started" : "billing.paid");
+    await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid");
     return;
   }
   const sub = (type.startsWith("customer.subscription.") ? o.id : type.startsWith("invoice.") ? (o.subscription as string | null) : null) ?? undefined;
@@ -143,5 +171,8 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
     : type === "customer.subscription.updated" ? ({ active: "active", trialing: "active", past_due: "past_due", unpaid: "past_due", canceled: "cancelled" } as Record<string, string>)[o.status ?? ""] : undefined;
   if (!next || next === b.status) return;
   await db.billingIntent.update({ where: { id: b.id }, data: { status: next } });
-  await log(b, `billing.plan_${next}`);
+  // Each failed attempt is a new email; coming back to active after a failure is good news but Stripe's receipt covers it.
+  if (next === "past_due") await record(b, "billing.plan_past_due", "failed", who, `:${o.id ?? ""}`);
+  else if (next === "cancelled") await record(b, "billing.plan_cancelled", "cancelled");
+  else await db.$transaction((tx) => audit(tx, { workspaceId, actor: null, action: `billing.plan_${next}`, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } }));
 }

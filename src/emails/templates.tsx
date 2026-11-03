@@ -14,6 +14,10 @@ export type EmailData = {
   password_changed: { to: string; name: string; when: string };
   backup_reminder: { to: string; lastBackup: string; link: string };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
+  payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string };
+  plan_started: { to: string; name: string; ref: string; amount: string; link: string };
+  payment_failed: { to: string; name: string; ref: string; what: string; amount: string; link: string };
+  payment_notice: { to: string; event: "paid" | "plan_started" | "failed" | "cancelled"; business: string; ref: string; what: string; amount: string; link: string };
   ticket_received: { to: string; name: string; ref: string; title: string; expect: string; link: string };
   ticket_notice: { to: string; ref: string; title: string; business: string; person: string; priority: string; excerpt: string; link: string; isReply?: boolean };
   ticket_reply: { to: string; name: string; staffName: string; ref: string; title: string; message: string; link: string };
@@ -36,6 +40,58 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
     ),
     text: `Your proposal is ready\n\nPlease review "${d.title}" (${d.ref}, version ${d.version}).\nOne-off: ${d.oneOff}${d.recurring ? `\nRecurring: ${d.recurring}` : ""}\nValid until: ${d.validUntil}\n\nReview proposal: ${d.link}\n\nThe link is personal to you. If it stops working, reply to this email and we will send a new one.\n\nOneSimpleSite`,
   }),
+  payment_received: (d) => ({
+    subject: `Payment received: ${d.what} (${d.ref})`,
+    node: (
+      <Layout preview={`Thank you ${d.name.split(" ")[0]}. We've received ${d.amount}.`}>
+        <H>Payment received. Thank you!</H>
+        <P>Hi {d.name.split(" ")[0]}, we've received your payment. Nothing more to do on this one.</P>
+        <Facts rows={[["For", d.what], ["Amount", d.amount], ["Paid on", d.paidOn], ["Order", d.ref]]} />
+        <Action href={d.link}>See your payments</Action>
+        <P>Stripe may also email you a card receipt. If anything looks wrong, just reply to this email.</P>
+      </Layout>
+    ),
+    text: `Payment received. Thank you!\n\nHi ${d.name.split(" ")[0]}, we've received ${d.amount} for ${d.what} (${d.ref}) on ${d.paidOn}. Nothing more to do on this one.\n\nSee your payments: ${d.link}`,
+  }),
+  plan_started: (d) => ({
+    subject: `Your monthly plan is live (${d.ref})`,
+    node: (
+      <Layout preview={`Your plan is set up at ${d.amount} a month.`}>
+        <H>Your monthly plan is live</H>
+        <P>Hi {d.name.split(" ")[0]}, your first payment went through and your plan is now active. It renews every month and you can change your card or cancel from the Billing page.</P>
+        <Facts rows={[["Plan price", `${d.amount} a month`], ["Order", d.ref]]} />
+        <Action href={d.link}>Manage your plan</Action>
+      </Layout>
+    ),
+    text: `Your monthly plan is live\n\nHi ${d.name.split(" ")[0]}, your plan (${d.amount} a month, order ${d.ref}) is now active. Manage it any time: ${d.link}`,
+  }),
+  payment_failed: (d) => ({
+    subject: `We couldn't take your payment (${d.ref})`,
+    node: (
+      <Layout preview={`Your ${d.amount} payment didn't go through.`}>
+        <H>Your payment didn't go through</H>
+        <P>Hi {d.name.split(" ")[0]}, we tried to take {d.amount} for {d.what} but your bank or card declined it. This happens a lot and is usually quick to fix. Please update your card and Stripe will try again.</P>
+        <Action href={d.link}>Update your card</Action>
+        <P>Need a hand? Just reply to this email.</P>
+      </Layout>
+    ),
+    text: `Your payment didn't go through\n\nHi ${d.name.split(" ")[0]}, we couldn't take ${d.amount} for ${d.what} (${d.ref}). Please update your card: ${d.link}`,
+  }),
+  payment_notice: (d) => {
+    const head = { paid: "Payment received", plan_started: "Monthly plan started", failed: "Payment failed", cancelled: "Monthly plan cancelled" }[d.event];
+    return {
+      subject: `${head}: ${d.business} · ${d.ref}`,
+      node: (
+        <Layout preview={`${head}: ${d.business}, ${d.amount}`}>
+          <H>{head}</H>
+          <P>{d.business}: {d.what}.</P>
+          <Facts rows={[["Order", d.ref], ["Amount", d.amount]]} />
+          <Action href={d.link}>Open order</Action>
+        </Layout>
+      ),
+      text: `${head}: ${d.business}\n${d.what} (${d.ref}) ${d.amount}\n\nOpen: ${d.link}`,
+    };
+  },
   ticket_received: (d) => ({
     subject: `We've got your ticket: ${d.title} (${d.ref})`,
     node: (

@@ -32,6 +32,23 @@ describe("billing", () => {
     expect(await db.auditEvent.count({ where: { workspaceId: w.id, action: "billing.paid" } })).toBe(1);
   });
 
+  it("emails: customer gets one receipt and the team one notice, even if Stripe repeats the event; failures email again per attempt", async () => {
+    const { w, one, mon } = await world();
+    await db.contact.create({ data: { workspaceId: w.id, customerId: one!.customerId, name: "Hana Baker", email: "hana@client.test", isPrimary: true } });
+    const ev = { id: "cs_9", metadata: { intentId: one!.id }, payment_status: "paid", customer_details: { email: "payer@client.test", name: "Pat Payer" } };
+    await applyStripeEvent("checkout.session.completed", ev, w.id); await applyStripeEvent("checkout.session.completed", ev, w.id);
+    const out = async () => (await db.outbox.findMany({ where: { workspaceId: w.id } })).map((o) => [o.topic, (o.payload as { to: string }).to]);
+    expect(await out()).toEqual(expect.arrayContaining([["email.payment_received", "payer@client.test"], ["email.payment_notice", "internal"]]));
+    expect((await out()).filter(([t]) => t === "email.payment_received")).toHaveLength(1);
+    await applyStripeEvent("checkout.session.completed", { id: "cs_10", metadata: { intentId: mon!.id }, payment_status: "paid", subscription: "sub_9" }, w.id);
+    await applyStripeEvent("invoice.payment_failed", { id: "in_a", subscription: "sub_9" }, w.id);
+    await applyStripeEvent("invoice.paid", { id: "in_b", subscription: "sub_9" }, w.id);
+    await applyStripeEvent("invoice.payment_failed", { id: "in_c", subscription: "sub_9" }, w.id);
+    const o = await out();
+    expect(o).toEqual(expect.arrayContaining([["email.plan_started", "hana@client.test"]]));
+    expect(o.filter(([t]) => t === "email.payment_failed")).toHaveLength(2);
+  });
+
   it("an unpaid checkout (e.g. delayed method) changes nothing yet", async () => {
     const { w, one } = await world();
     await applyStripeEvent("checkout.session.completed", { id: "cs_2", metadata: { intentId: one!.id }, payment_status: "unpaid" }, w.id);
@@ -83,5 +100,25 @@ describe("billing", () => {
     expect(after.find((r) => r.kind === "balance")!.status).toBe("cancelled");
     await expect(cancelCharge(staff, after.find((r) => r.kind === "deposit")!.id)).rejects.toThrow(/paid/);
     expect(one).toBeTruthy(); expect(w.id).toBeTruthy();
+  });
+});
+
+import { createTestClient, TEST_CLIENT_NAME } from "@/modules/crm/test-client";
+describe("test client", () => {
+  it("creates a demo business with a completed order to pay, invites the email, and is safe to run twice", async () => {
+    const { w, staff } = await world();
+    const email = `demo-${Math.random().toString(36).slice(2, 8)}@example.test`;
+    const id = await createTestClient(staff, email);
+    await createTestClient(staff, email);
+    const cu = await db.customer.findMany({ where: { workspaceId: w.id, displayName: TEST_CLIENT_NAME } });
+    expect(cu).toHaveLength(1); expect(cu[0].id).toBe(id);
+    expect((await db.billingIntent.findMany({ where: { customerId: id } })).map((b) => b.kind).sort()).toEqual(["one_off", "recurring_setup"]);
+    expect(await db.project.count({ where: { customerId: id } })).toBe(1);
+    expect(await db.outbox.count({ where: { workspaceId: w.id, topic: "email.invitation" } })).toBeGreaterThanOrEqual(1);
+  });
+  it("refuses an email that already belongs to a real customer", async () => {
+    const { w, staff, c } = await world();
+    await db.contact.create({ data: { workspaceId: w.id, customerId: c.id, name: "Real Person", email: "real@client.test", isPrimary: true } });
+    await expect(createTestClient(staff, "real@client.test")).rejects.toThrow(/already belongs/);
   });
 });

@@ -52,6 +52,10 @@ async function handle(topic: string, key: string, p: Record<string, unknown>) {
     case "email.backup_reminder": return send("backup_reminder", p as EmailData["backup_reminder"], "noreply", internalNoticeTo());
     case "email.staff_invitation": return send("staff_invitation", p as EmailData["staff_invitation"], "noreply", String(p.to));
     case "email.invitation": return send("invitation", p as EmailData["invitation"], "noreply", String(p.to));
+    case "email.payment_received": return send("payment_received", p as EmailData["payment_received"], "support", String(p.to));
+    case "email.plan_started": return send("plan_started", p as EmailData["plan_started"], "support", String(p.to));
+    case "email.payment_failed": return send("payment_failed", p as EmailData["payment_failed"], "support", String(p.to));
+    case "email.payment_notice": return send("payment_notice", p as EmailData["payment_notice"], "noreply", internalNoticeTo());
     case "email.ticket_received": return send("ticket_received", p as EmailData["ticket_received"], "support", String(p.to));
     case "email.ticket_notice": return send("ticket_notice", p as EmailData["ticket_notice"], "noreply", internalNoticeTo());
     case "email.ticket_reply": return send("ticket_reply", p as EmailData["ticket_reply"], "support", String(p.to));

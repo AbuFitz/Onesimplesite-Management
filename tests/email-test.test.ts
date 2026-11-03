@@ -16,9 +16,9 @@ describe("test emails", () => {
     const before = new Set(readdirSync(".mail-sink").filter((f) => f.endsWith(".json")));
     const results = await sendTestEmails(c);
     expect(results.every((r) => r.ok)).toBe(true);
-    expect(results).toHaveLength(11);
+    expect(results).toHaveLength(15);
     const mails = readdirSync(".mail-sink").filter((f) => f.endsWith(".json") && !before.has(f)).map((f) => JSON.parse(readFileSync(`.mail-sink/${f}`, "utf8")));
-    expect(mails).toHaveLength(11);
+    expect(mails).toHaveLength(15);
     expect(new Set(mails.map((m) => m.to))).toEqual(new Set(["hello@onesimplesite.co.uk"]));
     expect(mails.every((m) => m.subject.startsWith("[TEST] "))).toBe(true);
     expect(mails.filter((m) => m.attachments?.length).length).toBe(2);

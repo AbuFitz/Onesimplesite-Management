@@ -1,4 +1,5 @@
 "use server";
+import { createTestClient } from "@/modules/crm/test-client";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { requireStaff } from "@/modules/identity/session";
@@ -150,4 +151,10 @@ export async function publishLegalAction(fd: FormData) {
   const id = String(fd.get("id")), kind = String(fd.get("kind") ?? "terms");
   try { await publishTerms(ctx, id); } catch (e) { return back(`/settings/legal/${kind}/${id}`, e); }
   redirect(`/settings/legal/${kind}?published=1`);
+}
+
+export async function createTestClientAction(fd: FormData) {
+  const ctx = await requireStaff("settings.write");
+  try { await createTestClient(ctx, fd.get("email")); } catch (e) { return back("/settings", e); }
+  redirect("/settings?demo=1");
 }
