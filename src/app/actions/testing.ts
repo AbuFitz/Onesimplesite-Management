@@ -28,3 +28,12 @@ export async function checkStripeAction(): Promise<StripeCheck> {
   if (!stripeReady()) return { ok: false, mode, detail: "STRIPE_SECRET_KEY isn't set on this deployment." };
   try { await stripe("/balance"); return { ok: true, mode, detail: "Stripe accepted the key." }; } catch (e) { return { ok: false, mode, detail: e instanceof Error ? e.message : "Stripe didn't answer." }; }
 }
+
+/** Sends anything waiting in the email queue right now, and retries anything that failed. */
+export async function sendQueuedEmailsAction() {
+  const ctx = await requireStaff("settings.write");
+  const { drainOutbox, retryFailed } = await import("@/modules/outbox/drain");
+  await retryFailed(ctx.workspaceId);
+  const r = await drainOutbox(100);
+  redirect(`/testing?queue=${encodeURIComponent("done" in r ? `${r.done} sent, ${r.failed} failed` : "email isn't configured")}`);
+}

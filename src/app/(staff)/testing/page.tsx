@@ -2,22 +2,23 @@ import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
 import { EMAILS } from "@/modules/settings/email-samples";
 import { testClientStatus, TEST_CLIENT_NAME } from "@/modules/crm/test-client";
-import { createTestClientAction, resetTestClientAction } from "@/app/actions/testing";
+import { createTestClientAction, resetTestClientAction, sendQueuedEmailsAction } from "@/app/actions/testing";
 import { SubmitButton } from "@/components/submit-button";
 import { EmailTestButton } from "@/components/email-test-button";
 import { StripeCheckButton } from "@/components/stripe-check";
 import { RecordHeader, ErrorSummary, Section, fmtDateTime } from "@/components/ui";
 import { mailConfigured } from "@/lib/mail";
+import { queueStatus } from "@/modules/outbox/drain";
 import { origins } from "@/lib/env";
 import { db } from "@/lib/db";
 
 export const metadata = { title: "Testing" };
 const CARDS = [["4242 4242 4242 4242", "Payment works"], ["4000 0000 0000 9995", "Card is declined (not enough money)"], ["4000 0025 0000 3155", "Asks for extra bank approval"]];
 
-export default async function Testing({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; reset?: string }> }) {
+export default async function Testing({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; reset?: string; queue?: string }> }) {
   const ctx = await requireStaff("settings.write");
   const sp = await searchParams;
-  const [demo, events] = await Promise.all([testClientStatus(ctx), db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, action: { startsWith: "stripe." } }, orderBy: { createdAt: "desc" }, take: 8 })]);
+  const [demo, events, queue] = await Promise.all([testClientStatus(ctx), db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, action: { startsWith: "stripe." } }, orderBy: { createdAt: "desc" }, take: 8 }), queueStatus(ctx.workspaceId)]);
   const key = process.env.STRIPE_SECRET_KEY ?? "";
   const mode = /^(sk|rk)_test_/.test(key) ? "Test mode" : /^(sk|rk)_live_/.test(key) ? "LIVE mode" : key ? "Unknown" : "Not set";
   const hook = `${origins().manage}/api/stripe/webhook`;
@@ -35,6 +36,13 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
           <EmailTestButton label="Send every email" />
           <details className="mt-4"><summary className="min-h-10 cursor-pointer text-sm font-semibold">Or send just one</summary>
             <ul className="mt-2 space-y-1">{EMAILS.map((e) => <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2 text-sm"><span><strong>{e.label}</strong> <span className="text-muted">· {e.audience}</span></span><EmailTestButton only={e.id} label="Send" /></li>)}</ul></details>
+          <div className="mt-5 rounded-xl bg-bone p-4 text-sm">
+            <p className="font-semibold">Email queue</p>
+            <p className="text-muted">{queue.pending} waiting to send · {queue.failed} failed · email is {queue.configured ? "switched on" : "not configured"}</p>
+            {queue.recent.length > 0 && <ul className="mt-2 space-y-1 text-[13px] text-[#7a2e12]">{queue.recent.slice(0, 3).map((r) => <li key={r.id}>{r.lastError}</li>)}</ul>}
+            <form action={sendQueuedEmailsAction} className="mt-3"><SubmitButton className="btn btn-quiet" pendingText="Sending…">Send waiting emails now</SubmitButton></form>
+            {sp.queue && <p role="status" className="mt-2 text-moss">{sp.queue}</p>}
+          </div>
           <p className="mt-3 text-sm"><Link className="underline" href="/settings/emails">Preview how each one looks</Link></p>
         </Section>
 

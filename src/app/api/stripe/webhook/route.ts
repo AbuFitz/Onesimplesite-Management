@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { applyStripeEvent } from "@/modules/billing/service";
 import { stripeSubId } from "@/lib/stripe";
+import { flushEmails } from "@/lib/flush-email";
 import { verifyStripeSignature } from "@/lib/stripe-signature";
 
 export const dynamic = "force-dynamic";
@@ -29,5 +30,7 @@ export async function POST(req: Request) {
   }
   try { if (ev.data?.object) await applyStripeEvent(ev.type, ev.data.object as never, w.id); }
   catch (e) { console.error("stripe event failed", ev.id, e); return new Response("Could not apply.", { status: 500 }); } // Stripe retries
+  // Send the receipt now instead of waiting for the daily job.
+  try { flushEmails(); } catch { /* not inside a request (tests): the outbox is drained elsewhere */ }
   return new Response("ok");
 }
