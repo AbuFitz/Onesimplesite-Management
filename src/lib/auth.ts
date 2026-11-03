@@ -45,7 +45,8 @@ function make(ns: "staff" | "portal", allowSignUp: boolean) {
       },
     },
     advanced: { cookiePrefix: `oss-${ns}`, useSecureCookies: e.APP_ENV === "production" },
-    session: { expiresIn: 60 * 60 * 12, updateAge: 60 * 30 },
+    // "Keep me signed in" ticked: the full length below. Not ticked: a one-day session that ends when the browser closes.
+    session: { expiresIn: 60 * 60 * 24 * (ns === "staff" ? 14 : 30), updateAge: 60 * 60 * 24 },
     plugins: [...(ns === "staff" ? [twoFactor({ issuer: "OneSimpleSite Manage" })] : []), nextCookies()],
   });
 }

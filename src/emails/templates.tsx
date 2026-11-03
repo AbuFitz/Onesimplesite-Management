@@ -1,4 +1,4 @@
-import { render } from "@react-email/components";
+import { render, Text } from "@react-email/components";
 import type { ReactNode } from "react";
 import { Layout, H, P, Action, Facts } from "./layout";
 
@@ -14,6 +14,9 @@ export type EmailData = {
   password_changed: { to: string; name: string; when: string };
   backup_reminder: { to: string; lastBackup: string; link: string };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
+  ticket_received: { to: string; name: string; ref: string; title: string; expect: string; link: string };
+  ticket_notice: { to: string; ref: string; title: string; business: string; person: string; priority: string; excerpt: string; link: string; isReply?: boolean };
+  ticket_reply: { to: string; name: string; staffName: string; ref: string; title: string; message: string; link: string };
 };
 export type TemplateName = keyof EmailData;
 
@@ -32,6 +35,44 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Your proposal is ready\n\nPlease review "${d.title}" (${d.ref}, version ${d.version}).\nOne-off: ${d.oneOff}${d.recurring ? `\nRecurring: ${d.recurring}` : ""}\nValid until: ${d.validUntil}\n\nReview proposal: ${d.link}\n\nThe link is personal to you. If it stops working, reply to this email and we will send a new one.\n\nOneSimpleSite`,
+  }),
+  ticket_received: (d) => ({
+    subject: `We've got your ticket: ${d.title} (${d.ref})`,
+    node: (
+      <Layout preview={`Thanks ${d.name.split(" ")[0]}, we're on it. ${d.ref}`}>
+        <H>We've got it, {d.name.split(" ")[0]}</H>
+        <P>Thanks for letting us know. Your ticket is in and someone on the team will pick it up. {d.expect}</P>
+        <Facts rows={[["Ticket", d.ref], ["About", d.title]]} />
+        <Action href={d.link}>See your ticket</Action>
+        <P>You can add more details there at any time, and you'll see our replies in the same place.</P>
+      </Layout>
+    ),
+    text: `We've got it, ${d.name.split(" ")[0]}\n\nYour ticket ${d.ref} ("${d.title}") is in. ${d.expect}\n\nSee your ticket: ${d.link}`,
+  }),
+  ticket_notice: (d) => ({
+    subject: `${d.isReply ? "Customer reply" : "New ticket"}: ${d.business} · ${d.ref}${d.priority === "urgent" ? " · URGENT" : ""}`,
+    node: (
+      <Layout preview={`${d.person} at ${d.business}: ${d.title}`}>
+        <H>{d.isReply ? "Customer replied" : "New support ticket"}</H>
+        <P>{d.person} at {d.business} {d.isReply ? "replied on" : "raised"} “{d.title}”.</P>
+        <Facts rows={[["Ticket", d.ref], ["Priority", d.priority], ["Message", d.excerpt]]} />
+        <Action href={d.link}>Open ticket</Action>
+      </Layout>
+    ),
+    text: `${d.isReply ? "Customer reply" : "New ticket"} ${d.ref} from ${d.person} at ${d.business}\nPriority: ${d.priority}\n\n${d.excerpt}\n\nOpen: ${d.link}`,
+  }),
+  ticket_reply: (d) => ({
+    subject: `Re: ${d.title} (${d.ref})`,
+    node: (
+      <Layout preview={`${d.staffName} replied to your ticket`}>
+        <H>{d.staffName.split(" ")[0]} replied</H>
+        <P>Hi {d.name.split(" ")[0]},</P>
+        <Text style={{ fontSize: 16, lineHeight: "24px", margin: "0 0 14px", whiteSpace: "pre-wrap", backgroundColor: "#EAF7F1", borderRadius: 12, padding: "14px 16px" }}>{d.message}</Text>
+        <Action href={d.link}>Reply in your portal</Action>
+        <P>Ticket {d.ref}. You can also just reply to this email.</P>
+      </Layout>
+    ),
+    text: `Hi ${d.name.split(" ")[0]},\n\n${d.message}\n\nReply in your portal: ${d.link}\nTicket ${d.ref}. You can also just reply to this email.`,
   }),
   contract_request: (d) => ({
     subject: `Please review and sign: ${d.title}`,

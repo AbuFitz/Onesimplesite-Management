@@ -201,7 +201,9 @@ model Customer {
   reference     String
   displayName   String
   legalName     String?
-  kind          String    @default("business") // business | individual
+  kind          String    @default("business") // business (a company) | sole_trader | individual
+  businessType  String? // what kind of business: Food and drink, Trades...
+  town          String?
   lifecycle     Lifecycle @default(prospect)
   atRisk        Boolean   @default(false)
   ownerId       String?   @db.Uuid // StaffMembership
@@ -468,6 +470,7 @@ model Project {
   customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   contract Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
   tasks    Task[]
+  tickets  Ticket[]
   updates  ProjectUpdate[]
   assetRequests AssetRequest[]
 
@@ -771,6 +774,7 @@ model Ticket {
   workspaceId String    @db.Uuid
   customerId  String    @db.Uuid
   contactId   String?   @db.Uuid
+  projectId   String?   @db.Uuid
   reference   String
   kind        String    @default("issue") // issue | request | question
   title       String
@@ -785,6 +789,7 @@ model Ticket {
 
   customer Customer        @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   contact  Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  project  Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
   comments TicketComment[]
 
   @@unique([workspaceId, reference])

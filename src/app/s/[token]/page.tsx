@@ -67,7 +67,7 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
         <DocBody text={r.contentText} hideSign={(l) => l.startsWith("Accepted by")} />
       </DocSheet>
       <div className="sticky bottom-0 z-10 -mx-3 mt-6 border-t border-line bg-white/95 px-3 py-3 backdrop-blur sm:hidden" style={{ paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" }}>
-        <a href="#sign" className="btn w-full !bg-moss !border-moss">Continue to sign</a>
+        <a href="#sign" className="btn w-full">Continue to sign</a>
       </div>
       <div id="sign" className="mx-auto mt-6 max-w-[794px] scroll-mt-4"><SignForm token={token} defaultName={r.signerName} consent={CONSENT_TEXT} business={r.business} /></div>
       <div className="mx-auto max-w-[794px]"><DeclineForm token={token} /></div>

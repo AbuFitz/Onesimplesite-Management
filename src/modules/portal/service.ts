@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { forbidden } from "@/lib/errors";
 
-export type ClientCtx = { userId: string; memberships: { customerId: string; role: string; customer: { id: string; displayName: string; workspaceId: string } }[] };
+export type ClientCtx = { userId: string; name?: string; email?: string; memberships: { customerId: string; role: string; customer: { id: string; displayName: string; workspaceId: string } }[] };
 
 /** Resolve the active account from explicit membership only; never from an unvalidated id. */
 export function activeAccount(c: ClientCtx, requested?: string) {

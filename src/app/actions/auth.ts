@@ -31,7 +31,8 @@ export async function login(_: unknown, fd: FormData) {
   }
   const auth = portal ? portalAuth() : staffAuth();
   try {
-    const r = (await auth.api.signInEmail({ body: { email, password }, headers: await headers() })) as { twoFactorRedirect?: boolean };
+    const remember = fd.get("remember") === "on";
+    const r = (await auth.api.signInEmail({ body: { email, password, rememberMe: remember }, headers: await headers() })) as { twoFactorRedirect?: boolean };
     if (r?.twoFactorRedirect) return { mfa: true as const, error: undefined };
   } catch {
     return { error: portal ? "Email or password is incorrect." : "Username, email or password is incorrect." }; // same message for unknown user and bad password

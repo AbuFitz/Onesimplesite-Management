@@ -23,6 +23,7 @@ export function LoginForm({ staff = false }: { staff?: boolean }) {
         <input id="email" name="email" type={staff ? "text" : "email"} className="field" autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder={staff ? "first.surname" : undefined} required /></div>
       <div><label className="label" htmlFor="password">Password</label>
         <input id="password" name="password" type="password" className="field" autoComplete="current-password" required /></div>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm"><input type="checkbox" name="remember" defaultChecked={!staff} className="size-5 accent-[#0c6a49]" /><span>Keep me signed in on this device <span className="text-muted">({staff ? "14 days" : "30 days"})</span></span></label>
       <button className="btn w-full" disabled={pending}>{pending ? "Signing in…" : "Sign in"}</button>
     </form>
   );

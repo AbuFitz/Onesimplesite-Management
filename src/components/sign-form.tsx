@@ -57,7 +57,7 @@ export function SignForm({ token, defaultName, consent, business }: { token: str
         <div className="d-row"><span className="lb">Date</span><div className="ln">{today}</div></div>
       </div>
       <label className="mt-6 flex items-start gap-3 text-sm"><input className="mt-1 size-5 shrink-0 accent-[#0c6a49]" type="checkbox" name="consent" required /><span>{consent}</span></label>
-      <button className="btn mt-5 w-full !bg-moss !border-moss hover:!bg-[#0a5a3e] sm:w-auto sm:px-10" disabled={pending || (method === "drawn" && !image)}>{pending ? "Signing…" : "Sign and submit"}</button>
+      <button className="btn mt-5 w-full sm:w-auto sm:px-10" disabled={pending || (method === "drawn" && !image)}>{pending ? "Signing…" : "Sign and submit"}</button>
     </form>
   );
 }

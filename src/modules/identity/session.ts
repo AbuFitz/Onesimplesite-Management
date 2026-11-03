@@ -26,7 +26,7 @@ export async function getClient() {
   if (!s) return null;
   const ms = await db.clientMembership.findMany({ where: { userId: s.user.id, revokedAt: null }, include: { customer: true } });
   if (!ms.length) return null;
-  return { userId: s.user.id, name: s.user.name, memberships: ms };
+  return { userId: s.user.id, name: s.user.name, email: s.user.email, memberships: ms };
 }
 
 export async function requireClient() {
