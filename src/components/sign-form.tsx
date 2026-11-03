@@ -28,12 +28,12 @@ export function SignForm({ token, defaultName, consent, business }: { token: str
 
   const today = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(new Date());
   return (
-    <form action={act} className="d-sheet !overflow-visible px-[var(--g)] py-8" aria-labelledby="sign-h">
+    <form action={act} className="sign-panel" aria-labelledby="sign-h">
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="method" value={method} />
       <input type="hidden" name="image" value={method === "drawn" ? image : ""} />
       <div className="d-sig !max-w-none">
-        <span className="d-pill" id="sign-h">{business ? `Accepted by ${business}` : "Sign this order"}</span>
+        <h2 id="sign-h" className="text-xl font-bold">Sign this order</h2>{business && <p className="mb-1 text-sm text-muted">Accepted on behalf of {business}</p>}
         <p className="d-small mb-4">Draw your signature with your finger or mouse, or type your name. Then confirm and submit.</p>
         <ErrorSummary message={state?.error} />
         <div className="d-row">
@@ -47,7 +47,7 @@ export function SignForm({ token, defaultName, consent, business }: { token: str
             <div aria-live="polite" aria-labelledby="sig-l" className="ln tall typed break-words">{name || <span className="text-base not-italic text-muted">Your typed name appears here</span>}</div>
           ) : (
             <div>
-              <canvas ref={canvas} aria-labelledby="sig-l" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} className="h-44 w-full rounded-[8px] border border-[#8f9993] bg-white/80" style={{ touchAction: "none" }} />
+              <canvas ref={canvas} aria-labelledby="sig-l" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} className="h-40 w-full rounded-[8px] border border-[#8f9993] bg-white/80" style={{ touchAction: "none" }} />
               <div className="mt-2 flex items-center justify-between"><button type="button" className="btn btn-quiet !min-h-9" onClick={clear}>Clear</button><span className="d-small">{image ? "Signature captured" : "Sign in the box above"}</span></div>
             </div>
           )}
@@ -64,7 +64,7 @@ export function SignForm({ token, defaultName, consent, business }: { token: str
 
 export function DeclineForm({ token }: { token: string }) {
   return (
-    <details className="mt-8 text-sm">
+    <details className="mt-6 border-t border-line pt-3 text-sm">
       <summary className="cursor-pointer min-h-11 flex items-center text-muted">Not ready to sign?</summary>
       <form action={declineAction} className="mt-2 space-y-2 max-w-md">
         <input type="hidden" name="token" value={token} />

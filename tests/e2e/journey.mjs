@@ -58,6 +58,7 @@ ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar qu
   const sp = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   await sp.goto(`${P}/s/sample`); await sp.waitForLoadState("networkidle");
   ok((await sp.locator("body").innerText()).includes("This is a sample"), "sample signing page explains it is a sample");
+  await sp.click("button:has-text('Sign this order')");
   await sp.locator("canvas").scrollIntoViewIfNeeded();
   const box = await sp.locator("canvas").boundingBox();
   await sp.mouse.move(box.x + 30, box.y + 80); await sp.mouse.down(); await sp.mouse.move(box.x + 120, box.y + 40, { steps: 8 }); await sp.mouse.move(box.x + 200, box.y + 90, { steps: 8 }); await sp.mouse.up();
@@ -138,6 +139,7 @@ if (process.env.SHOTS) {
   const dk = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage(); await dk.goto(link);
   await dk.screenshot({ path: `${process.env.SHOTS}/agree-desktop.png`, fullPage: true });
 }
+await phone.click("button:has-text('Sign this order')");
 ok(await phone.locator("button[role=radio]").first().innerText() === "Draw", "Draw is the first signature option");
 ok(await phone.locator("button[role=radio][aria-checked=true]").innerText() === "Draw", "Draw is selected by default");
 ok(await phone.locator("button:has-text('Sign and submit')").isDisabled(), "cannot submit until something is drawn");

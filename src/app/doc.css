@@ -88,3 +88,12 @@
   .d-sheet { box-shadow: none; max-width: none; }
   .d-sheet, .d-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Signing panel: sits beside the document (desktop) or in a sheet (phone). Reuses the document's field styling. */
+.sign-panel { --d-ink: #0e1311; --d-moss: #0c6a49; --d-mono: "JetBrains Mono Variable", ui-monospace, monospace; }
+.sign-panel .d-sig { max-width: none; }
+.sign-panel .d-row { margin-top: 1rem; }
+.sign-panel .lb { display: block; font-family: var(--d-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--d-moss); font-weight: 600; }
+.sign-panel .ln { border-bottom: 1px solid var(--d-ink); min-height: 2.25rem; padding: .35rem 0; }
+.sign-panel .ln.typed { font-style: italic; font-size: 1.5rem; }
+.sign-panel .d-small { font-size: 13px; color: #5b6560; }

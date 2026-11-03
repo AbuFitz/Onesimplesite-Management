@@ -2,6 +2,7 @@ import { viewSigning, CONSENT_TEXT } from "@/modules/signing/service";
 import { SignForm, DeclineForm } from "@/components/sign-form";
 import { DocSheet, DocBody } from "@/components/doc";
 import { SignShell } from "@/components/public-shell";
+import { SignWorkspace } from "@/components/sign-workspace";
 import { fmtDate } from "@/components/ui";
 import { db } from "@/lib/db";
 import { getCompany } from "@/modules/settings/service";
@@ -30,10 +31,9 @@ async function SamplePage() {
   return (
     <SignShell>
       <div role="note" className="mx-auto mb-5 max-w-[794px] rounded-2xl bg-[#fbf3d5] px-4 py-3 text-sm text-[#5c4700]"><strong>This is a sample.</strong> It shows exactly what a customer sees. You can try signing; nothing is recorded and no one is emailed.</div>
-      <DocSheet meta={{ title: "Website for Sample Café", ref: "OSS-OF-2026-047", date: day(new Date()), version: "1.0", status: "Sample", mark: "Prepared for Sample Café Ltd" }}>
-        <DocBody text={text} hideSign={(l) => l.startsWith("Accepted by")} />
-      </DocSheet>
-      <div id="sign" className="mx-auto mt-6 max-w-[794px] scroll-mt-4"><SignForm token="sample" defaultName="Alex Sample" consent={CONSENT_TEXT} business="Sample Café Ltd" /></div>
+      <SignWorkspace title="Website for Sample Café" reference="OSS-OF-2026-047"
+        doc={<DocSheet meta={{ title: "Website for Sample Café", ref: "OSS-OF-2026-047", date: day(new Date()), version: "1.0", status: "Sample", mark: "Prepared for Sample Café Ltd" }}><DocBody text={text} hideSign={(l) => l.startsWith("Accepted by")} /></DocSheet>}
+        panel={<SignForm token="sample" defaultName="Alex Sample" consent={CONSENT_TEXT} business="Sample Café Ltd" />} />
     </SignShell>
   );
 }
@@ -56,21 +56,13 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
   const first = r.signerName.split(" ")[0];
   return (
     <SignShell>
-      <section className="mx-auto mb-6 max-w-[794px]" aria-labelledby="hi">
-        <h1 id="hi" className="text-[1.7rem] font-semibold leading-tight">Hi {first}, your order is ready to review</h1>
-        <p className="mt-1 text-[15px] text-muted">Read it through, then sign at the bottom. It takes about two minutes, and you have until {fmtDate(r.expiresAt)}.</p>
-        <ol className="mt-4 grid grid-cols-3 gap-2 text-sm" aria-label="Steps">
-          {[["1", "Read it", "bg-[#dff5ea]"], ["2", "Sign", "bg-[#fbf3d5]"], ["3", "Done", "bg-[#fde6dc]"]].map(([n, t, c]) => <li key={n} className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 ${c}`}><span className="grid size-6 place-items-center rounded-full bg-white text-xs font-semibold text-moss">{n}</span>{t}</li>)}
-        </ol>
+      <section className="mb-4" aria-labelledby="hi">
+        <h1 id="hi" className="text-2xl font-semibold leading-tight sm:text-[1.7rem]">Hi {first}, your order is ready to review</h1>
+        <p className="mt-1 text-[15px] text-muted">Read it through, then sign. It takes about two minutes, and you have until {fmtDate(r.expiresAt)}.</p>
       </section>
-      <DocSheet meta={{ title: r.title, ref: r.reference, date: day(r.sentAt), version: "1.0", status: "Issued", mark: `Prepared for ${r.business}` }}>
-        <DocBody text={r.contentText} hideSign={(l) => l.startsWith("Accepted by")} />
-      </DocSheet>
-      <div className="sticky bottom-0 z-10 -mx-3 mt-6 border-t border-line bg-white/95 px-3 py-3 backdrop-blur sm:hidden" style={{ paddingBottom: "max(.75rem, env(safe-area-inset-bottom))" }}>
-        <a href="#sign" className="btn w-full">Continue to sign</a>
-      </div>
-      <div id="sign" className="mx-auto mt-6 max-w-[794px] scroll-mt-4"><SignForm token={token} defaultName={r.signerName} consent={CONSENT_TEXT} business={r.business} /></div>
-      <div className="mx-auto max-w-[794px]"><DeclineForm token={token} /></div>
+      <SignWorkspace title={r.title} reference={r.reference} pdfHref={`/s/${token}/pdf`}
+        doc={<DocSheet meta={{ title: r.title, ref: r.reference, date: day(r.sentAt), version: "1.0", status: "Issued", mark: `Prepared for ${r.business}` }}><DocBody text={r.contentText} hideSign={(l) => l.startsWith("Accepted by")} /></DocSheet>}
+        panel={<><SignForm token={token} defaultName={r.signerName} consent={CONSENT_TEXT} business={r.business} /><DeclineForm token={token} /></>} />
     </SignShell>
   );
 }

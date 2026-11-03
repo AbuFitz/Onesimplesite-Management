@@ -37,6 +37,8 @@ export type SignedPdfInput = {
   signerName: string; signerPosition?: string; signerEmail: string; method: "typed" | "drawn"; signatureImage?: Buffer;
   signedAtLondon: string; signedAtUtc: string; consentText: string; consentVersion: string;
   draftWording?: boolean;
+  /** A review copy sent before signing: blank signature block, no signing record. */
+  unsigned?: boolean;
   /** Shown top right of the first page, e.g. the customer business. */
   preparedFor?: string;
 };
@@ -79,7 +81,7 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
         page.drawText(txt, { x: tx, y: ty, size, font: bold, color: wd[1] ? SPRING : BONE_T }); tx += bold.widthOfTextAtSize(txt, size);
       }
       let mx = M; const my = H - 118;
-      for (const [k, v] of [["REF", i.reference], ["DATE", day.toUpperCase()], ["VERSION", "1.0"], ["STATUS", i.draftWording ? "DRAFT" : "SIGNED"]]) {
+      for (const [k, v] of [["REF", i.reference], ["DATE", day.toUpperCase()], ["VERSION", "1.0"], ["STATUS", i.unsigned ? "FOR SIGNATURE" : i.draftWording ? "DRAFT" : "SIGNED"]]) {
         page.drawText(`${k} `, { x: mx, y: my, size: 6.6, font: mono, color: rgb(0.62, 0.62, 0.6) }); mx += mono.widthOfTextAtSize(`${k} `, 6.6);
         page.drawText(v, { x: mx, y: my, size: 6.6, font: monoB, color: BONE_T }); mx += monoB.widthOfTextAtSize(v, 6.6) + 22;
       }
@@ -179,11 +181,12 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
         const field = (label: string, yy: number) => { page.drawText(label, { x, y: yy, size: 6.2, font: mono, color: MOSS }); page.drawLine({ start: { x, y: yy - 30 }, end: { x: x + colW, y: yy - 30 }, thickness: 0.8, color: INK }); };
         field("SIGNATURE", y - 28); field("NAME", y - 76); field("POSITION", y - 112); field("DATE", y - 148);
         const sigTop = y - 40;
-        if (client && i.method === "drawn" && i.signatureImage) { const img = await pdf.embedPng(i.signatureImage); const sc = Math.min((colW - 6) / img.width, 36 / img.height); page.drawImage(img, { x: x + 2, y: sigTop - img.height * sc + 8, width: img.width * sc, height: img.height * sc }); }
+        if (client && i.unsigned) { /* left blank for the signer */ }
+        else if (client && i.method === "drawn" && i.signatureImage) { const img = await pdf.embedPng(i.signatureImage); const sc = Math.min((colW - 6) / img.width, 36 / img.height); page.drawImage(img, { x: x + 2, y: sigTop - img.height * sc + 8, width: img.width * sc, height: img.height * sc }); }
         else if (client) page.drawText(safe(i.signerName), { x: x + 2, y: sigTop - 14, size: 17, font: ital, color: INK, maxWidth: colW - 6 });
         else if (g.typed) page.drawText(safe(g.typed), { x: x + 2, y: sigTop - 14, size: 17, font: ital, color: INK, maxWidth: colW - 6 });
         const fill = (t: string | undefined, yy: number) => t && page.drawText(safe(t), { x: x + 2, y: yy - 18, size: 9.5, font: reg, color: INK, maxWidth: colW - 6 });
-        fill(client ? i.signerName : g.name, y - 76); fill(client ? i.signerPosition : g.position, y - 112); fill(client ? day : g.date, y - 148);
+        if (!(client && i.unsigned)) { fill(client ? i.signerName : g.name, y - 76); fill(client ? i.signerPosition : g.position, y - 112); fill(client ? day : g.date, y - 148); }
       }
       y -= H0 + 6;
     } else if (b.t === "p") { if (firstPara) { line(b.text, bold, 10.5, INK, M, W, 1.5); y -= 8; firstPara = false; } else line(b.text, reg, 9.5); }
@@ -194,10 +197,13 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
   // Evidence, kept together at the end.
   y -= 6; ensure(66);
   page.drawLine({ start: { x: M, y }, end: { x: M + W, y }, thickness: 0.5, color: HAIR }); y -= 12;
+  if (i.unsigned) { line("Review copy. This has not been signed yet. The signed copy is emailed to you once you sign.", bold, 8, INK, M, W, 1.5); line(`Agreement text SHA-256: ${i.contentSha256}`, mono, 6.8, GREY, M, W, 1.5); }
+  else {
   line(`Signed electronically by ${i.signerName} (${i.signerEmail}) on ${i.signedAtLondon} (Europe/London). Method: ${i.method === "drawn" ? "drawn signature" : "typed name"}.`, bold, 8, INK, M, W, 1.5);
   line(`Consent given (wording ${i.consentVersion}): ${i.consentText}`, reg, 7.5, GREY, M, W, 1.5);
   line(`Agreement text SHA-256: ${i.contentSha256}`, mono, 6.8, GREY, M, W, 1.5);
   line(`Recorded ${i.signedAtUtc} UTC. This is an electronic signature capture and does not verify the signer's identity beyond control of the emailed link.`, reg, 7, GREY, M, W, 1.5);
+  }
 
   // Footers once the page count is known.
   const pages = pdf.getPages();

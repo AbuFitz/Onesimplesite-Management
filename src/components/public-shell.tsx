@@ -21,12 +21,12 @@ export function SignShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-[#f4f3ee] bg-[radial-gradient(60rem_30rem_at_90%_-5%,#dff5ea,transparent),radial-gradient(40rem_26rem_at_-5%_20%,#fbf3d5,transparent)]">
       <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
+        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5">
           <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={132} height={27} priority />
           <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm text-muted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>Secure signing</span>
         </div>
       </header>
-      <main id="main" className="mx-auto max-w-3xl px-3 pb-24 pt-4 sm:px-5">{children}</main>
+      <main id="main" className="mx-auto max-w-[1280px] px-3 pb-24 pt-2 sm:px-5 lg:pb-8">{children}</main>
     </div>
   );
 }
