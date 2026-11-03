@@ -11,7 +11,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<{
   return (
     <>
       <RecordHeader title="Search" />
-      <form role="search" className="mb-8 max-w-xl"><label htmlFor="q" className="sr-only">Search</label><input id="q" name="q" defaultValue={q} autoFocus type="search" placeholder="Customer, contact, agreement, project or note" className="field" /></form>
+      <form role="search" className="mb-8 max-w-xl"><label htmlFor="q" className="sr-only">Search</label><input id="q" name="q" defaultValue={q} autoFocus type="search" placeholder="Bustomer, contact, agreement, project or note" className="field" /></form>
       {r.q.length < 2 ? <p className="text-muted">Type at least two characters.</p> : r.groups.length === 0 ? <Empty title={`No results for “${r.q}”`}>Check the spelling, or search by reference number. You only see records you have access to.</Empty> : (
         r.groups.map((g) => (
           <section key={g.title} className="mb-8 max-w-2xl"><h2 className="mb-1">{g.title}</h2>

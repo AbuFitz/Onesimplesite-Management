@@ -23,7 +23,7 @@ export default async function NewEvent({ searchParams }: { searchParams: Promise
         </div>
         <p className="hint">Times are in your browser’s timezone; display is Europe/London.</p>
         <div><label className="label" htmlFor="location">Location or meeting link</label><input id="location" name="location" className="field" /></div>
-        <div><label className="label" htmlFor="customerId">Customer (optional)</label><select id="customerId" name="customerId" className="field"><option value="">None</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}</select></div>
+        <div><label className="label" htmlFor="customerId">Business (optional)</label><select id="customerId" name="customerId" className="field"><option value="">None</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}</select></div>
         <fieldset><legend className="label">Internal attendees</legend>{staff.filter((s) => s.id !== ctx.staffId).map((s) => <label key={s.id} className="flex items-center gap-2 min-h-11"><input type="checkbox" name="attendee" value={s.id} /> {s.displayName}</label>)}</fieldset>
         <div><label className="label" htmlFor="description">Description</label><textarea id="description" name="description" className="field" /></div>
         <p className="hint">Saving does not send invitations. Use “Add to calendar” to download an ICS file.</p>

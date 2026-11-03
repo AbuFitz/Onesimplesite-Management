@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
 import { flushEmails } from "@/lib/flush-email";
+import { deleteBusiness } from "@/modules/crm/delete";
 import { createLead, setOpportunityStage } from "@/modules/crm/service";
 import { createProposal, saveDraft, sendProposal, reviseProposal } from "@/modules/sales/service";
 import { markContractSent, recordContractCompletion } from "@/modules/contracts/service";
@@ -126,4 +127,11 @@ export async function sendAgreementAction(fd: FormData) {
   const id = String(fd.get("id"));
   try { await sendAgreement(ctx, id, { name: fd.get("name"), email: fd.get("email") }); flushEmails(); } catch (e) { return back(`/proposals/${id}`, e); }
   redirect(`/proposals/${id}?sent=1`);
+}
+
+export async function deleteBusinessAction(fd: FormData) {
+  const ctx = await requireStaff("customer.write");
+  const id = String(fd.get("id"));
+  try { await deleteBusiness(ctx, id, String(fd.get("typed") ?? "")); } catch (e) { redirect(`/customers/${id}?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't delete it.")}`); }
+  redirect("/customers?deleted=1");
 }

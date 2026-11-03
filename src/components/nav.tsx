@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, Home, FolderKanban, MessagesSquare, FileText, Handshake, ScrollText, Menu, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy } from "lucide-react";
+import { CalendarDays, Users, Home, FolderKanban, MessagesSquare, FileText, TicketCheck, ScrollText, Menu, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: string; badge?: number };
 export type NavGroup = { label?: string; items: NavItem[] };
-const icons = { today: Home, customers: Users, pipeline: Handshake, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy } as const;
+const icons = { today: Home, customers: Users, pipeline: TicketCheck, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy, testing: FlaskConical } as const;
 const active = (p: string, href: string) => (href === "/" ? p === "/" : p === href || p.startsWith(href + "/"));
 
 export function SideNav({ groups }: { groups: NavGroup[] }) {
@@ -38,7 +38,7 @@ export function SideNav({ groups }: { groups: NavGroup[] }) {
 export function BottomNav() {
   const p = usePathname();
   const tabs = [
-    { href: "/", label: "Today", Icon: Home }, { href: "/customers", label: "Customers", Icon: Users }, { href: "/projects", label: "Projects", Icon: FolderKanban },
+    { href: "/", label: "Today", Icon: Home }, { href: "/customers", label: "Businesses", Icon: Users }, { href: "/projects", label: "Projects", Icon: FolderKanban },
     { href: "/calendar", label: "Calendar", Icon: CalendarDays }, { href: "/more", label: "More", Icon: Menu },
   ];
   return (

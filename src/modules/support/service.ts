@@ -7,6 +7,7 @@ import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
 import { personFrom } from "@/lib/sender-identities";
+import { memberCan } from "@/modules/portal/access";
 import { saveUploads, type Upload } from "@/modules/files/service";
 
 import { TICKET_KINDS, URGENCY } from "./options";
@@ -39,6 +40,7 @@ async function contactFor(tx: Pick<typeof db, "contact">, workspaceId: string, c
 export async function clientCreateTicket(c: ClientCtx, customerId: string | undefined, raw: unknown, files: Upload[] = []) {
   const m = c.memberships.find((x) => x.customerId === (customerId ?? c.memberships[0]?.customerId));
   if (!m || !c.email) throw forbidden();
+  if (!memberCan(m, "tickets")) throw new DomainError("forbidden", "Your access is view only. Ask the business owner to raise this, or to change your access.");
   const i = createInput.parse(raw);
   const urgency = URGENCY.find((u) => u.id === i.urgency)!;
   return db.$transaction(async (tx) => {
@@ -72,6 +74,7 @@ export async function clientReply(c: ClientCtx, id: string, body: unknown, files
   const text = z.string().trim().min(1, "Write a message first.").max(8000).parse(body);
   const t = await db.ticket.findFirst({ where: { id, ...clientScope(c) }, include: { customer: { select: { displayName: true } }, contact: { select: { name: true } } } });
   if (!t) throw notFound();
+  if (!c.memberships.some((m) => m.customerId === t.customerId && memberCan(m, "tickets"))) throw new DomainError("forbidden", "Your access is view only, so you can't reply.");
   if (t.status === "closed") throw new DomainError("conflict", "This ticket is closed. Please raise a new one.");
   const name = c.name || t.contact?.name || "Customer";
   await db.$transaction(async (tx) => {

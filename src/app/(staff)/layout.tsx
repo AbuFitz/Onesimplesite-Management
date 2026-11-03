@@ -23,13 +23,14 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   // Only built modules appear. Unfinished modules are hidden, not faked.
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
-    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Onboarding tickets", icon: "pipeline" }, { href: "/support", label: "Support tickets", icon: "support", badge: supportOpen }] }] : []),
+    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Businesses", icon: "customers" }, { href: "/pipeline", label: "Tickets", icon: "pipeline" }, { href: "/support", label: "Support", icon: "support", badge: supportOpen }] }] : []),
     { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/board", label: "Board", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
     { label: "Business", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Business settings", icon: "settings" }] : []),
       ...(can(ctx.role, "data.export") ? [{ href: "/backup", label: "Backup", icon: "backup" }] : []),
       ...(can(ctx.role, "staff.manage") ? [{ href: "/team", label: "Team", icon: "team" }] : []),
     ] },
+    ...(can(ctx.role, "settings.write") ? [{ label: "Testing", items: [{ href: "/testing", label: "Testing", icon: "testing" }] }] : []),
   ].filter((g) => g.items.length) as NavGroup[];
   const jobCustomers = can(ctx.role, "proposal.write")
     ? (await db.customer.findMany({ where: { workspaceId: ctx.workspaceId }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true }, take: 300 })).map((c) => ({ id: c.id, name: c.displayName }))
@@ -61,7 +62,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           <form action="/search" role="search" className="relative mx-auto hidden max-w-lg flex-1 sm:block">
             <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <label htmlFor="gs" className="sr-only">Search</label>
-            <input id="gs" name="q" type="search" placeholder="Search customers, tickets, projects" className="field !min-h-9 !rounded-lg !bg-soft !border-transparent !pl-9 !text-sm hover:!border-line focus:!bg-white" />
+            <input id="gs" name="q" type="search" placeholder="Search businesses, tickets, projects" className="field !min-h-9 !rounded-lg !bg-soft !border-transparent !pl-9 !text-sm hover:!border-line focus:!bg-white" />
           </form>
           <div className="ml-auto flex items-center gap-2">
             <span className="sm:hidden"><Link href="/search" aria-label="Search" className="btn btn-quiet !min-h-10 !px-3"><Search size={17} aria-hidden /></Link></span>

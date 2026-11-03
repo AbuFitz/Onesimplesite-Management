@@ -4,11 +4,11 @@ import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { getCustomer, customerDetailsMissing } from "@/modules/crm/service";
 import { createNoteAction } from "@/app/actions/work";
-import { inviteClientAction } from "@/app/actions/crm";
+import { inviteClientAction, deleteBusinessAction } from "@/app/actions/crm";
 import { db } from "@/lib/db";
 import { RecordHeader, Status, Empty, ErrorSummary, Section, Stat, Tabs, money, fmtDateTime, timeAgo } from "@/components/ui";
 
-export const metadata = { title: "Customer" };
+export const metadata = { title: "Business" };
 const TABS = ["overview", "agreements", "projects", "notes", "activity"] as const;
 
 export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string; error?: string; tab?: string; details?: string }> }) {
@@ -28,7 +28,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   const href = (t: string) => `/customers/${c.id}${t === "overview" ? "" : `?tab=${t}`}`;
   return (
     <>
-      <RecordHeader avatar back={{ href: "/customers", label: "Customers" }} title={c.displayName}
+      <RecordHeader avatar back={{ href: "/customers", label: "Businesses" }} title={c.displayName}
         status={<><Status label={c.lifecycle} kind={c.lifecycle === "active" ? "good" : "neutral"} />{c.atRisk && <Status label="at risk" kind="bad" />}</>}
         meta={<span>{c.reference}</span>}
         action={<>
@@ -100,6 +100,19 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           {notes.length === 0 ? <p className="text-sm text-muted">No notes linked to this customer. Internal only.</p> : <ul>{notes.map((n) => <li key={n.id} className="row"><Link className="flex min-h-12 items-center justify-between py-3" href={`/notes/${n.id}`}>{n.title}<span className="text-sm text-muted">{timeAgo(n.updatedAt)}</span></Link></li>)}</ul>}
           {can(ctx.role, "notes.write") && <form action={createNoteAction} className="mt-4 flex max-w-lg flex-wrap gap-2"><input type="hidden" name="customerId" value={c.id} /><label className="sr-only" htmlFor="nn">Note title</label><input id="nn" name="title" className="field flex-1" placeholder="New note title" required /><button className="btn btn-quiet">Add note</button></form>}
         </Section>
+      )}
+
+      {can(ctx.role, "customer.write") && tab === "overview" && (
+        <details className="mt-12 max-w-xl rounded-xl border border-line p-4">
+          <summary className="min-h-10 cursor-pointer text-sm font-semibold text-[#7a2e12]">Delete this business</summary>
+          <form action={deleteBusinessAction} className="mt-3 space-y-3 text-sm">
+            <input type="hidden" name="id" value={c.id} />
+            <p>This permanently deletes {c.displayName} and everything under it: people and their portal logins, tickets and files, orders and signed agreements, projects, notes and calendar entries. It can't be undone and nothing is kept.</p>
+            <label className="label" htmlFor="typed">Type the business name to confirm</label>
+            <input id="typed" name="typed" className="field" autoComplete="off" required placeholder={c.displayName} />
+            <button className="btn !bg-[#b3261e] !border-[#b3261e] !text-white">Delete for good</button>
+          </form>
+        </details>
       )}
 
       {tab === "activity" && (

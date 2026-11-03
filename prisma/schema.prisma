@@ -158,6 +158,7 @@ model Invitation {
   staffRole   StaffRole?
   customerId  String?   @db.Uuid
   clientRole  ClientRole?
+  clientBilling Boolean   @default(false)
   expiresAt   DateTime
   acceptedAt  DateTime?
   revokedAt   DateTime?
@@ -167,8 +168,9 @@ model Invitation {
 }
 
 enum ClientRole {
-  admin
-  member
+  admin // Owner: everything, including who has access
+  member // Team member: projects, documents and tickets
+  viewer // View only
 }
 
 model ClientMembership {
@@ -864,4 +866,29 @@ model ServicePlan {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 
   @@unique([workspaceId, key])
+}
+
+/// A client asks for a new person to get portal access. The team checks who they are, then approves or declines.
+model AccessRequest {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceId      String    @db.Uuid
+  customerId       String    @db.Uuid
+  requestedByUserId String
+  requestedByName  String
+  requestedByEmail String
+  name             String
+  email            String
+  phone            String?
+  position         String?
+  role             String // admin | member | viewer
+  billing          Boolean   @default(false)
+  reason           String?
+  status           String    @default("pending") // pending | approved | declined
+  decidedByName    String?
+  decidedAt        DateTime?
+  declineReason    String?
+  createdAt        DateTime  @default(now())
+
+  @@index([workspaceId, status])
+  @@index([customerId, status])
 }

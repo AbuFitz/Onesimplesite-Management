@@ -35,7 +35,7 @@ export default async function Today() {
         {seeCustomers && <Stat label="Waiting to sign" value={awaitingSig} href="/pipeline?stage=contract_pending" />}
         {seeCustomers && <Stat label="Open tickets" value={sentProposals} href="/pipeline?stage=open" />}
         <Stat label="Projects in progress" value={activeProjects} href="/projects" hint={assets ? `${assets} waiting on client assets` : undefined} />
-        {seeCustomers && <Stat label="Active customers" value={activeCustomers} href="/customers" />}
+        {seeCustomers && <Stat label="Active businesses" value={activeCustomers} href="/customers" />}
       </div>
       <div className="grid gap-x-12 lg:grid-cols-2">
         <Section title="My tasks">

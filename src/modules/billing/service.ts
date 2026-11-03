@@ -7,6 +7,7 @@ import { stripe, stripeReady, stripeSubId } from "@/lib/stripe";
 import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
+import { clientCan, customersWhere } from "@/modules/portal/access";
 
 export const money = (minor: number, cur = "GBP") => new Intl.NumberFormat("en-GB", { style: "currency", currency: cur }).format(minor / 100);
 
@@ -23,7 +24,7 @@ export function plainStatus(kind: string, status: string): { label: string; tone
   return { label: isMonthly(kind) ? "Not started" : "Due", tone: "due" };
 }
 
-const clientScope = (c: ClientCtx) => ({ customerId: { in: c.memberships.map((m) => m.customerId) } });
+const clientScope = (c: ClientCtx) => ({ customerId: { in: customersWhere(c, "billing") } });
 const include = { contract: { select: { title: true, reference: true, status: true } } } as const;
 
 /** Only signed-and-completed orders bill. */
@@ -61,7 +62,7 @@ export async function startPayment(c: ClientCtx, intentId: string): Promise<stri
 /** Stripe's own page where a customer updates their card or cancels the monthly plan. */
 export async function openBillingPortal(c: ClientCtx): Promise<string> {
   if (!stripeReady()) throw new DomainError("conflict", "Card payments aren't switched on yet.");
-  const cu = await db.customer.findFirst({ where: { id: { in: c.memberships.map((m) => m.customerId) }, stripeCustomerId: { not: null } }, select: { stripeCustomerId: true } });
+  const cu = await db.customer.findFirst({ where: { id: { in: customersWhere(c, "billing") }, stripeCustomerId: { not: null } }, select: { stripeCustomerId: true } });
   if (!cu?.stripeCustomerId) throw new DomainError("conflict", "There's nothing to manage yet. It appears after your first payment.");
   const s = await stripe<{ url: string }>("/billing_portal/sessions", { customer: cu.stripeCustomerId, return_url: portalLink("/billing") });
   return s.url;
