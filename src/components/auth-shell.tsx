@@ -32,6 +32,7 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
 
   return (
     <div className="grid min-h-dvh bg-bone lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <CookieNotice />
       <aside className="relative isolate overflow-hidden bg-ink px-6 pb-12 pt-8 text-white lg:flex lg:flex-col lg:justify-between lg:px-16 lg:py-14" style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}>
         <div className="absolute inset-0 -z-10 bg-[url(/brand/doc/mast-bg.webp)] bg-cover bg-center opacity-90" aria-hidden />
         <div className="absolute -bottom-24 -right-24 -z-10 size-80 rounded-full bg-spring/25 blur-3xl" aria-hidden />
@@ -43,7 +44,6 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
         <p className="hidden text-base text-white/60 lg:block">onesimplesite.co.uk</p>
       </aside>
       <main id="main" className="flex flex-col px-5 py-8 sm:px-10 lg:justify-center lg:px-16">
-        <CookieNotice />
         <div className="card mx-auto w-full max-w-md p-7 sm:p-9 lg:max-w-lg lg:p-11">
           <h1 className="text-[1.9rem] lg:text-4xl">{title}</h1>
           {intro && <p className="mt-2 text-muted lg:text-lg">{intro}</p>}

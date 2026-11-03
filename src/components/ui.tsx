@@ -60,8 +60,9 @@ export function RecordHeader({ back, title, status, meta, action, avatar }: { ba
 }
 
 export function Stat({ label, value, href, hint }: { label: string; value: ReactNode; href?: string; hint?: string }) {
-  const body = (<><p className="text-[13px] text-muted">{label}</p><p className="mt-0.5 text-[28px] font-semibold leading-none tracking-tight tabular-nums">{value}</p>{hint && <p className="mt-1 text-xs text-muted">{hint}</p>}</>);
-  return href ? <Link href={href} className="block rounded-lg py-2 hover:bg-soft sm:-mx-3 sm:px-3">{body}</Link> : <div className="py-2">{body}</div>;
+  const body = (<><p className="text-[13px] font-semibold text-ink/70">{label}</p><p className="mt-1 text-[26px] font-bold leading-none tracking-tight tabular-nums">{value}</p>{hint && <p className="mt-1 text-xs text-ink/60">{hint}</p>}</>);
+  const box = "block rounded-2xl border border-black/5 bg-[#f1f0eb] px-4 py-3";
+  return href ? <Link href={href} className={`${box} hover:bg-[#e9e8e1]`}>{body}</Link> : <div className={box}>{body}</div>;
 }
 
 export function Tabs({ tabs, current }: { tabs: { id: string; label: string; href: string; count?: number }[]; current: string }) {
@@ -91,9 +92,9 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
 
 export function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <section className="mb-10">
-      <div className="mb-2 flex items-center justify-between gap-3"><h2>{title}</h2>{action}</div>
-      {children}
+    <section className="mb-5 overflow-hidden rounded-2xl border border-[#cfd5d0] bg-white shadow-[0_1px_2px_rgba(14,19,17,.06)]">
+      <header className="flex items-center justify-between gap-3 border-b border-[#e3e7e3] bg-[#fafaf8] px-4 py-3"><h2 className="text-[15px] font-bold leading-none">{title}</h2>{action}</header>
+      <div className="p-4">{children}</div>
     </section>
   );
 }

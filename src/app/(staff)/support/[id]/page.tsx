@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { supportReplyAction, supportUpdateAction, quoteChangeAction } from "@/app/actions/support";
 import { RecordHeader, Status, Avatar, ErrorSummary, fmtDateTime } from "@/components/ui";
 import { FilePicker, Files } from "@/components/file-picker";
+import { Panel } from "@/components/panel";
+import { PoundSterling, ListChecks, UserRound, MessageSquare } from "lucide-react";
 import { LiveRefresh } from "@/components/live-refresh";
 import { STATUS_LABEL, CATEGORY_LABEL } from "@/modules/support/options";
 import { money } from "@/components/ui";
@@ -40,9 +42,9 @@ export default async function SupportTicket({ params, searchParams }: { params: 
               <Files base="/api/files" items={files.filter((f) => f.commentId === m.id)} />
             </article>
           ))}
-          <form action={supportReplyAction} className="space-y-3 rounded-2xl border border-line bg-white p-4">
+          <Panel title="Reply" icon={MessageSquare} tone="green"><form action={supportReplyAction} className="space-y-3">
             <input type="hidden" name="id" value={t.id} />
-            <label className="label" htmlFor="body">Write a reply</label>
+            <label className="label" htmlFor="body">Message</label>
             <textarea id="body" name="body" rows={5} className="field" required />
             <FilePicker label="Add pictures or a PDF" />
             <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="filesInternal" className="mt-1 size-4 accent-[#0c6a49]" /><span>Only the team can see the files <span className="text-muted">(the message itself is still sent to the customer)</span></span></label>
@@ -51,11 +53,10 @@ export default async function SupportTicket({ params, searchParams }: { params: 
               <button name="mode" value="note" className="btn btn-quiet">Save as team note</button>
             </div>
             <p className="hint">Replies go out from your own address (for example “Abukar at OneSimpleSite”) and appear in the customer's portal. Team notes and their files are never shown to the customer.</p>
-          </form>
+          </form></Panel>
         </div>
         <aside className="space-y-4">
-          <section className="space-y-3 rounded-2xl border border-line bg-white p-4" aria-label="Cost">
-            <h2 className="text-base font-bold">Cost</h2>
+          <Panel title="Cost" icon={PoundSterling} tone="amber">
             {t.chargeStatus !== "none" || t.priceMinor ? (
               <p className="text-sm"><strong>{t.priceMinor ? money(t.priceMinor) : "Included in their plan"}</strong>{CHARGE[t.chargeStatus] ? ` · ${CHARGE[t.chargeStatus]}` : ""}{t.approvedByName ? ` (${t.approvedByName})` : ""}</p>
             ) : <p className="text-sm text-muted">Not priced. If this is outside their plan, set a price and they approve it in the portal before you start.</p>}
@@ -66,15 +67,15 @@ export default async function SupportTicket({ params, searchParams }: { params: 
                 <div className="flex flex-wrap gap-2"><SubmitButton pendingText="Sending…">{t.chargeStatus === "quoted" ? "Send the new price" : "Send price for approval"}</SubmitButton><button name="included" value="1" formNoValidate className="btn btn-quiet">No charge</button></div>
               </form>
             )}
-          </section>
-          <form action={supportUpdateAction} className="space-y-3 rounded-2xl border border-line bg-white p-4">
+          </Panel>
+          <Panel title="Status and owner" icon={ListChecks} tone="blue"><form action={supportUpdateAction} className="space-y-3">
             <input type="hidden" name="id" value={t.id} />
             <div><label className="label" htmlFor="st">Status</label><select id="st" name="status" className="field" defaultValue={t.status}>{STATUSES.map((x) => <option key={x} value={x}>{STATUS_LABEL[x]?.label ?? x}</option>)}</select></div>
             <div><label className="label" htmlFor="pr">Priority</label><select id="pr" name="priority" className="field" defaultValue={t.priority}>{PRIORITIES.map((x) => <option key={x} value={x}>{PRI[x]}</option>)}</select></div>
             <div><label className="label" htmlFor="as">Owner</label><select id="as" name="assigneeId" className="field" defaultValue={t.assigneeId ?? ""}><option value="">Nobody yet</option>{team.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}</select></div>
             <button className="btn btn-quiet w-full">Save</button>
-          </form>
-          {t.contact && <div className="rounded-2xl border border-line bg-white p-4 text-sm"><p className="label">Raised by</p><p className="font-semibold">{t.contact.name}</p>{t.contact.position && <p className="text-muted">{t.contact.position}</p>}{t.contact.email && <p><a className="underline" href={`mailto:${t.contact.email}`}>{t.contact.email}</a></p>}{t.contact.phone && <p>{t.contact.phone}</p>}</div>}
+          </form></Panel>
+          {t.contact && <Panel title="Raised by" icon={UserRound}><div className="text-[15px]"><p className="font-semibold">{t.contact.name}</p>{t.contact.position && <p className="text-muted">{t.contact.position}</p>}{t.contact.email && <p><a className="underline" href={`mailto:${t.contact.email}`}>{t.contact.email}</a></p>}{t.contact.phone && <p>{t.contact.phone}</p>}</div></Panel>}
         </aside>
       </div>
     </>

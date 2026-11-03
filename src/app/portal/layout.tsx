@@ -28,7 +28,8 @@ export default async function PortalLayout({ children }: { children: React.React
         </div>
         <div className="mx-auto max-w-5xl px-4 pb-2 sm:px-6"><PortalNav show={show} /></div>
       </header>
-      <main id="main" className="mx-auto max-w-5xl px-4 pt-4 sm:px-6"><CookieNotice />{children}</main>
+      <main id="main" className="mx-auto max-w-5xl px-4 pt-4 sm:px-6">{children}</main>
+      <CookieNotice aboveTabs />
       <footer className="mx-auto max-w-5xl px-4 pb-28 pt-10 sm:px-6 sm:pb-10"><LegalLinks /></footer>
       <PortalTabs show={show} />
     </div>
