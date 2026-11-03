@@ -1,4 +1,6 @@
 import { CreditCard, CheckCircle2 } from "lucide-react";
+import { redirect } from "next/navigation";
+import { clientCanAny } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
 import { clientBilling, money, KIND_LABEL, isMonthly, plainStatus } from "@/modules/billing/service";
 import { payAction, manageBillingAction } from "@/app/actions/billing";
@@ -9,6 +11,7 @@ const TONE = { due: "bg-butter text-[#5c4700]", ok: "bg-mint text-[#0a5a3d]", wa
 
 export default async function Billing({ searchParams }: { searchParams: Promise<{ paid?: string; error?: string }> }) {
   const c = await requireClient();
+  if (!clientCanAny(c, "billing")) redirect("/overview");
   const sp = await searchParams;
   const items = await clientBilling(c);
   const due = items.filter((b) => !isMonthly(b.kind) && b.status === "pending");

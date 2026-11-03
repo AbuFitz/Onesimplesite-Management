@@ -32,7 +32,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
       <section className="space-y-3" aria-label="Conversation">
         {t.comments.map((m) => (
           <div key={m.id} className={`tile !p-5 ${m.authorKind === "client" ? "bg-sky/60" : "bg-white"}`}>
-            <div className="mb-2 flex items-center gap-3"><Avatar name={m.authorName} size={32} /><div><p className="font-bold leading-tight">{m.authorKind === "client" ? "You" : m.authorName}</p><p className="text-xs text-muted">{fmtDateTime(m.createdAt)}</p></div></div>
+            <div className="mb-2 flex items-center gap-3"><Avatar name={m.authorName} size={32} staffId={m.authorKind === "staff" ? m.authorStaffId : null} base="/avatar" /><div><p className="font-bold leading-tight">{m.authorKind === "client" ? "You" : m.authorName}</p><p className="text-xs text-muted">{fmtDateTime(m.createdAt)}</p></div></div>
             <p className="whitespace-pre-wrap">{m.body}</p>
             <Files base="/files" items={files.filter((f) => f.commentId === m.id)} />
           </div>

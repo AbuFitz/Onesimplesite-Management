@@ -170,7 +170,7 @@ await staff.goto(`${M}/projects`);
 ok(await staff.locator(`text=${title}`).count() === 1, "exactly one project created");
 
 // 7. Portal invitation -> signed document visible only to that customer
-await staff.goto(customerUrl); await staff.click("button:has-text('Invite to portal')"); drain();
+await staff.goto(`${customerUrl}?tab=people`); await staff.click("summary:has-text('Manage')"); await staff.click("button:has-text('Invite to the client portal')"); await staff.waitForSelector("text=Invitation sent."); drain();
 const inv = sink().find((m) => m.to === email && m.subject.includes("invited you"));
 const cl = await (await browser.newContext()).newPage();
 await cl.goto(inv.text.match(/https?:\/\/\S+\/invite\/\S+/)[0]);

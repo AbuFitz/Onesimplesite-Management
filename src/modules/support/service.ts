@@ -66,7 +66,7 @@ export const clientTickets = (c: ClientCtx) =>
 
 /** A ticket and its public conversation. Internal notes never leave the building. */
 export async function clientTicket(c: ClientCtx, id: string) {
-  const t = await db.ticket.findFirst({ where: { id, ...clientScope(c) }, include: { project: { select: { name: true } }, contact: { select: { name: true } }, comments: { where: { internal: false }, orderBy: { createdAt: "asc" }, select: { id: true, authorKind: true, authorName: true, body: true, createdAt: true } } } });
+  const t = await db.ticket.findFirst({ where: { id, ...clientScope(c) }, include: { project: { select: { name: true } }, contact: { select: { name: true } }, comments: { where: { internal: false }, orderBy: { createdAt: "asc" }, select: { id: true, authorKind: true, authorName: true, authorStaffId: true, body: true, createdAt: true } } } });
   return t;
 }
 

@@ -1,23 +1,27 @@
 import Link from "next/link";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { getCustomer, customerDetailsMissing } from "@/modules/crm/service";
 import { createNoteAction } from "@/app/actions/work";
-import { inviteClientAction, deleteBusinessAction } from "@/app/actions/crm";
+import { deleteBusinessAction } from "@/app/actions/crm";
 import { db } from "@/lib/db";
+import { PeoplePanel } from "@/components/people-panel";
+import { listPeople, pendingRequests } from "@/modules/people/service";
 import { RecordHeader, Status, Empty, ErrorSummary, Section, Stat, Tabs, money, fmtDateTime, timeAgo } from "@/components/ui";
 
 export const metadata = { title: "Business" };
-const TABS = ["overview", "agreements", "projects", "notes", "activity"] as const;
+const TABS = ["overview", "people", "agreements", "projects", "notes", "activity"] as const;
 
-export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string; error?: string; tab?: string; details?: string }> }) {
+export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string; error?: string; tab?: string; details?: string; done?: string; delete?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const { id } = await params;
   const sp = await searchParams;
   const tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as (typeof TABS)[number]) : "overview";
   const c = await getCustomer(ctx, id);
   if (!c) notFound();
+  const [people, requests] = tab === "people" || tab === "overview" ? await Promise.all([listPeople(ctx, id), pendingRequests(ctx, id)]) : [[], []];
   const [activity, notes] = await Promise.all([
     tab === "activity" ? db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id }, orderBy: { createdAt: "desc" }, take: 40 }) : [],
     db.note.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id, archivedAt: null, OR: [{ visibility: "team" }, { ownerId: ctx.staffId }] }, orderBy: { updatedAt: "desc" }, take: 20 }),
@@ -35,12 +39,33 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           {primary?.phone && <a className="btn btn-quiet" href={`tel:${primary.phone}`}>Call</a>}
           {primary?.email && <a className="btn btn-quiet" href={`mailto:${primary.email}`}>Email</a>}
           {can(ctx.role, "proposal.write") && <Link className="btn" href={`?new=ticket&customer=${c.id}`}>New ticket</Link>}
+          {can(ctx.role, "customer.write") && (
+            <details className="relative">
+              <summary className="btn btn-quiet cursor-pointer list-none" aria-label="More actions"><MoreHorizontal size={16} aria-hidden /> More</summary>
+              <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-line bg-white p-1 shadow-[0_8px_30px_rgba(14,19,17,.12)]">
+                <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm hover:bg-bone" href={`/customers/${c.id}/details`}><Pencil size={15} aria-hidden /> Edit business details</Link>
+                <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-[#b3261e] hover:bg-[#fde6dc]" href={`/customers/${c.id}?delete=1`}><Trash2 size={15} aria-hidden /> Delete this business</Link>
+              </div>
+            </details>
+          )}
         </>} />
+      {sp.delete && can(ctx.role, "customer.write") && (
+        <form action={deleteBusinessAction} className="mb-6 max-w-2xl space-y-3 rounded-2xl border border-[#e8b4ad] bg-[#fdf1ef] p-5 text-sm">
+          <input type="hidden" name="id" value={c.id} />
+          <p className="text-base font-semibold text-[#7a2e12]">Delete {c.displayName}?</p>
+          <p>This permanently deletes the business and everything under it: people and their portal logins, tickets and files, orders and signed agreements, projects, notes and calendar entries. It can't be undone and nothing is kept.</p>
+          <div><label className="label" htmlFor="typed">Type <strong>{c.displayName}</strong> to confirm</label><input id="typed" name="typed" className="field" autoComplete="off" required /></div>
+          <div className="flex gap-2"><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Delete for good</button><Link className="btn btn-quiet" href={`/customers/${c.id}`}>Cancel</Link></div>
+        </form>
+      )}
       <ErrorSummary message={sp.error} />
       {sp.invited && <p role="status" className="mb-6 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Invitation sent.</p>}
+      {sp.done && <p role="status" className="mb-6 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">{sp.done}</p>}
+      {requests.length > 0 && tab !== "people" && <p role="status" className="mb-6 rounded-lg bg-[#fbf3d5] px-4 py-3 text-sm text-[#5c4700]">{requests.length} request{requests.length === 1 ? "" : "s"} to add someone to the portal. <Link className="font-semibold underline" href={href("people")}>Review</Link></p>}
       {sp.details && <p role="status" className="mb-6 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Details saved.</p>}
       <Tabs current={tab} tabs={[
         { id: "overview", label: "Overview", href: href("overview") },
+        { id: "people", label: "People", href: href("people"), count: requests.length || c.contacts.length },
         { id: "agreements", label: "Tickets", href: href("agreements"), count: c.proposals.length + c.contracts.length },
         { id: "projects", label: "Projects", href: href("projects"), count: c.projects.length },
         { id: "notes", label: "Notes", href: href("notes"), count: notes.length },
@@ -56,12 +81,11 @@ export default async function CustomerPage({ params, searchParams }: { params: P
             <Stat label="Projects" value={c.projects.length} href={href("projects")} />
           </div>
           <div className="grid gap-x-16 gap-y-2 lg:grid-cols-2">
-            <Section title="Contact" action={primary?.email && can(ctx.role, "customer.write") ? (
-              <form action={inviteClientAction}><input type="hidden" name="customerId" value={c.id} /><input type="hidden" name="contactId" value={primary.id} /><button className="text-sm text-muted hover:text-ink">Invite to portal</button></form>
-            ) : undefined}>
-              {c.contacts.length === 0 ? <p className="text-sm text-muted">No contacts yet.</p> : c.contacts.map((p) => (
-                <div key={p.id} className="row py-3"><p className="font-medium">{p.name}{p.isPrimary && <span className="ml-2 text-xs font-normal text-muted">primary</span>}</p>
-                  <p className="text-sm text-muted break-all">{[p.email, p.phone].filter(Boolean).join(" · ") || "No details"}</p></div>
+            <Section title="People" action={<Link className="text-sm text-muted hover:text-ink" href={href("people")}>Manage</Link>}>
+              {people.length === 0 ? <p className="text-sm text-muted">Nobody added yet. <Link className="underline" href={href("people")}>Add the first person</Link>.</p> : people.slice(0, 5).map((p) => (
+                <div key={p.id} className="row flex items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="font-medium">{p.name}{p.isPrimary && <span className="ml-2 text-xs font-normal text-muted">main contact</span>}</p>
+                  <p className="text-sm text-muted break-all">{[p.position, p.email, p.phone].filter(Boolean).join(" · ") || "No details"}</p></div>
+                  <span className="shrink-0 text-xs text-muted">{p.access === "active" ? "Has portal access" : p.access === "invited" ? "Invited" : p.access === "revoked" ? "Access removed" : "No portal access"}</span></div>
               ))}
             </Section>
             <Section title="Agreement details" action={can(ctx.role, "customer.write") ? <Link className="text-sm text-muted hover:text-ink" href={`/customers/${c.id}/details`}>{missing.length ? "Add details" : "Edit"}</Link> : undefined}>
@@ -77,6 +101,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           </Section>
         </>
       )}
+
+      {tab === "people" && <PeoplePanel customerId={c.id} people={people} requests={requests} canEdit={can(ctx.role, "customer.write")} />}
 
       {tab === "agreements" && (
         <Section title="Tickets and signed agreements">
@@ -100,19 +126,6 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           {notes.length === 0 ? <p className="text-sm text-muted">No notes linked to this customer. Internal only.</p> : <ul>{notes.map((n) => <li key={n.id} className="row"><Link className="flex min-h-12 items-center justify-between py-3" href={`/notes/${n.id}`}>{n.title}<span className="text-sm text-muted">{timeAgo(n.updatedAt)}</span></Link></li>)}</ul>}
           {can(ctx.role, "notes.write") && <form action={createNoteAction} className="mt-4 flex max-w-lg flex-wrap gap-2"><input type="hidden" name="customerId" value={c.id} /><label className="sr-only" htmlFor="nn">Note title</label><input id="nn" name="title" className="field flex-1" placeholder="New note title" required /><button className="btn btn-quiet">Add note</button></form>}
         </Section>
-      )}
-
-      {can(ctx.role, "customer.write") && tab === "overview" && (
-        <details className="mt-12 max-w-xl rounded-xl border border-line p-4">
-          <summary className="min-h-10 cursor-pointer text-sm font-semibold text-[#7a2e12]">Delete this business</summary>
-          <form action={deleteBusinessAction} className="mt-3 space-y-3 text-sm">
-            <input type="hidden" name="id" value={c.id} />
-            <p>This permanently deletes {c.displayName} and everything under it: people and their portal logins, tickets and files, orders and signed agreements, projects, notes and calendar entries. It can't be undone and nothing is kept.</p>
-            <label className="label" htmlFor="typed">Type the business name to confirm</label>
-            <input id="typed" name="typed" className="field" autoComplete="off" required placeholder={c.displayName} />
-            <button className="btn !bg-[#b3261e] !border-[#b3261e] !text-white">Delete for good</button>
-          </form>
-        </details>
       )}
 
       {tab === "activity" && (

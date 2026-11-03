@@ -67,7 +67,7 @@ export default async function StaffLayout({ children, modal }: { children: React
           <div className="ml-auto flex items-center gap-2">
             <span className="sm:hidden"><Link href="/search" aria-label="Search" className="btn btn-quiet !min-h-10 !px-3"><Search size={17} aria-hidden /></Link></span>
             <NewMenu links={create} />
-            <UserMenu name={ctx.name} role={ROLE_INFO[ctx.role].label.replace(" (recommended)", "")}>
+            <UserMenu staffId={ctx.staffId} name={ctx.name} role={ROLE_INFO[ctx.role].label.replace(" (recommended)", "")}>
               <form action={signOutStaff}><button role="menuitem" className="flex min-h-10 w-full items-center rounded-lg px-3 text-left text-sm text-ink hover:bg-soft">Sign out</button></form>
             </UserMenu>
           </div>

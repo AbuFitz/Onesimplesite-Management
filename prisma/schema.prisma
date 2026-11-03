@@ -138,6 +138,8 @@ model StaffMembership {
   status      MembershipStatus @default(pending)
   createdAt   DateTime         @default(now())
   deactivatedAt DateTime?
+  photo       Bytes?
+  photoType   String?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)

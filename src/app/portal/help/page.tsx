@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LifeBuoy, Plus } from "lucide-react";
+import { clientCanAny } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
 import { clientTickets } from "@/modules/support/service";
 import { ClientStatus } from "@/components/portal-bits";
@@ -17,7 +18,7 @@ export default async function Help() {
       <section className="tile bg-blush !p-7 sm:!p-10">
         <h1 className="text-4xl sm:text-5xl">Help</h1>
         <p className="mt-3 max-w-xl text-lg font-medium">Something not right, or want a change? Tell us here and we'll reply by email and on this page.</p>
-        <Link href="/help/new" className="btn btn-dark mt-6 inline-flex"><Plus size={18} aria-hidden /> Raise a ticket</Link>
+        {clientCanAny(c, "tickets") ? <Link href="/help/new" className="btn btn-dark mt-6 inline-flex"><Plus size={18} aria-hidden /> Raise a ticket</Link> : <p className="mt-4 text-sm font-semibold">You have view-only access. Ask the business owner if you need to raise something.</p>}
       </section>
       {tickets.length === 0 ? (
         <section className="tile bg-white text-center !py-14"><LifeBuoy className="mx-auto mb-3" size={36} aria-hidden /><h2 className="text-2xl">No tickets yet</h2><p className="mx-auto mt-2 max-w-md text-muted">When you raise one it will show up here, with our replies.</p></section>

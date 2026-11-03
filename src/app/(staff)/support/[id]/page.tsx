@@ -32,7 +32,7 @@ export default async function SupportTicket({ params, searchParams }: { params: 
           <article className="rounded-2xl border border-line bg-white p-4"><p className="mb-1 text-sm text-muted">Raised {fmtDateTime(t.createdAt)}{t.source === "portal" ? " from the portal" : " by the team"}</p><p className="whitespace-pre-wrap">{t.body}</p><Files base="/api/files" items={files.filter((f) => !f.commentId)} /></article>
           {t.comments.map((m) => (
             <article key={m.id} className={`rounded-2xl border p-4 ${m.internal ? "border-[#e5d58a] bg-[#fbf3d5]" : m.authorKind === "staff" ? "border-line bg-white" : "border-line bg-[#eaf4fb]"}`}>
-              <div className="mb-1 flex items-center gap-2"><Avatar name={m.authorName} size={28} /><p className="font-semibold">{m.authorName}</p><p className="text-sm text-muted">{fmtDateTime(m.createdAt)}</p>{m.internal && <span className="ml-auto rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white">Only the team sees this</span>}</div>
+              <div className="mb-1 flex items-center gap-2"><Avatar name={m.authorName} size={28} staffId={m.authorStaffId} /><p className="font-semibold">{m.authorName}</p><p className="text-sm text-muted">{fmtDateTime(m.createdAt)}</p>{m.internal && <span className="ml-auto rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white">Only the team sees this</span>}</div>
               <p className="whitespace-pre-wrap">{m.body}</p>
               <Files base="/api/files" items={files.filter((f) => f.commentId === m.id)} />
             </article>

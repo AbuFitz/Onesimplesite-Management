@@ -30,9 +30,15 @@ export function Status({ label, kind }: { label: string; kind?: keyof typeof kin
   return <span className={`pill ${kinds[k]}`}>{text}</span>;
 }
 
-export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
+/** Initials, with the person's picture on top when they have one (team members only). A missing picture just leaves the initials. */
+export function Avatar({ name, size = 36, staffId, base = "/api/avatar" }: { name: string; size?: number; staffId?: string | null; base?: string }) {
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
-  return <span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-full bg-soft font-semibold text-ink" style={{ width: size, height: size, fontSize: size * 0.38 }}>{initials || "?"}</span>;
+  return (
+    <span aria-hidden className="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-soft font-semibold text-ink" style={{ width: size, height: size, fontSize: size * 0.38 }}>
+      {initials || "?"}
+      {staffId && <span className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${base}/${staffId})` }} />}
+    </span>
+  );
 }
 
 export function RecordHeader({ back, title, status, meta, action, avatar }: { back?: { href: string; label: string }; title: string; status?: ReactNode; meta?: ReactNode; action?: ReactNode; avatar?: boolean }) {

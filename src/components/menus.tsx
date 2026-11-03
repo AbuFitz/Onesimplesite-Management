@@ -34,11 +34,11 @@ export function NewMenu({ links }: { links: { href: string; label: string }[] })
   );
 }
 
-export function UserMenu({ name, role, children }: { name: string; role: string; children: ReactNode }) {
+export function UserMenu({ name, role, staffId, children }: { name: string; role: string; staffId?: string; children: ReactNode }) {
   const { open, setOpen, ref } = usePopover();
   return (
     <div className="relative" ref={ref}>
-      <button type="button" aria-expanded={open} aria-haspopup="menu" aria-label={`Account menu for ${name}`} onClick={() => setOpen(!open)} className="rounded-full focus-visible:outline-offset-2"><Avatar name={name} size={36} /></button>
+      <button type="button" aria-expanded={open} aria-haspopup="menu" aria-label={`Account menu for ${name}`} onClick={() => setOpen(!open)} className="rounded-full focus-visible:outline-offset-2"><Avatar name={name} size={36} staffId={staffId} /></button>
       {open && (
         <div role="menu" className={panel}>
           <div className="px-3 py-2"><p className="text-sm font-semibold">{name}</p><p className="text-xs text-muted">{role}</p></div>

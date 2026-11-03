@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { clientCanAny, memberCan } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
 import { clientOverview } from "@/modules/portal/service";
 import { db } from "@/lib/db";
@@ -8,7 +10,8 @@ export const metadata = { title: "Raise a ticket" };
 
 export default async function NewTicket() {
   const c = await requireClient();
-  const ids = c.memberships.map((m) => m.customerId);
+  if (!clientCanAny(c, "tickets")) redirect("/help");
+  const ids = c.memberships.filter((m) => memberCan(m, "tickets")).map((m) => m.customerId);
   const [o, accounts] = await Promise.all([clientOverview(c), db.customer.findMany({ where: { id: { in: ids } }, select: { id: true, displayName: true } })]);
   const cust = new Map(accounts.map((a) => [a.id, a.displayName]));
   return (

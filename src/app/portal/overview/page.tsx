@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, FileText, LifeBuoy, ListChecks } from "lucide-react";
+import { clientCanAny } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
 import { clientOverview, STAGE_COPY } from "@/modules/portal/service";
 import { clientTickets } from "@/modules/support/service";
@@ -26,7 +27,7 @@ export default async function PortalOverview() {
         <div className="absolute -right-10 -top-10 size-48 rounded-full bg-white/30" aria-hidden /><div className="absolute -bottom-16 right-16 size-40 rounded-full bg-ink/10" aria-hidden />
         <h1 id="hi" className="relative text-[2.4rem] leading-none sm:text-6xl">Hi {first}</h1>
         <p className="relative mt-3 max-w-xl text-lg font-medium sm:text-xl">{needsYou.length ? `We replied on ${needsYou.length === 1 ? "a ticket" : `${needsYou.length} tickets`}. Have a look when you can.` : current ? STAGE_COPY[current.stage] : "Everything is up to date. Nice."}</p>
-        <div className="relative mt-6 flex flex-wrap gap-3"><Link href="/help/new" className="btn btn-dark">Raise a ticket</Link><Link href="/documents" className="btn btn-quiet">Your documents</Link></div>
+        <div className="relative mt-6 flex flex-wrap gap-3">{clientCanAny(c, "tickets") && <Link href="/help/new" className="btn btn-dark">Raise a ticket</Link>}<Link href="/documents" className="btn btn-quiet">Your documents</Link></div>
       </section>
 
       <div className="grid gap-4 md:grid-cols-3">
