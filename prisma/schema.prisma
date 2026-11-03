@@ -203,6 +203,7 @@ model Customer {
   legalName     String?
   kind          String    @default("business") // business (a company) | sole_trader | individual
   businessType  String? // what kind of business: Food and drink, Trades...
+  stripeCustomerId String?
   town          String?
   lifecycle     Lifecycle @default(prospect)
   atRisk        Boolean   @default(false)
@@ -534,12 +535,19 @@ model BillingIntent {
   kind        String // deposit | balance | recurring_setup | one_off
   amountMinor Int
   currency    String   @default("GBP")
-  status      String   @default("pending") // pending | invoiced | cancelled
+  status      String   @default("pending") // pending | paid (one-off) | active | past_due | cancelled (monthly)
+  description String?
+  paidAt      DateTime?
+  paidVia     String? // stripe | bank | other
+  stripeSessionId      String?
+  stripePaymentIntent  String?
+  stripeSubscriptionId String?
   createdAt   DateTime @default(now())
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
 
   @@unique([contractId, kind])
+  @@index([stripeSubscriptionId])
 }
 
 // ───────── Calendar & Notes ─────────

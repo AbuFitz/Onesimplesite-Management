@@ -1,3 +1,5 @@
+import { plainStatus, KIND_LABEL, isMonthly } from "@/modules/billing/service";
+import { markPaidAction, cancelChargeAction, splitFeeAction } from "@/app/actions/billing";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -58,7 +60,23 @@ export default async function ContractPage({ params, searchParams }: { params: P
                 <p className="hint">Records “completion recorded by {ctx.name}”. The app does not verify this signature.</p></form></details>
           )}
 
-          {k.billingIntents.length > 0 && <div><p className="label">Billing intentions (not invoices)</p>{k.billingIntents.map((b) => <p key={b.id} className="text-sm">{b.kind.replace("_", " ")} · {money(b.amountMinor, b.currency)} · {b.status}</p>)}</div>}
+          {k.billingIntents.length > 0 && (
+            <div><p className="label">Payments</p>
+              <ul className="space-y-2">{k.billingIntents.map((b) => { const st = plainStatus(b.kind, b.status); return (
+                <li key={b.id} className="rounded-xl bg-bone p-3 text-sm">
+                  <p className="font-semibold">{b.description ?? KIND_LABEL[b.kind] ?? b.kind} · {money(b.amountMinor, b.currency)}{isMonthly(b.kind) ? " / month" : ""}</p>
+                  <p className="text-muted">{st.label}{b.paidAt ? ` · ${b.paidVia === "stripe" ? "by card" : "by bank or other"}` : ""}</p>
+                  {b.status === "pending" && <div className="mt-2 flex flex-wrap gap-2">
+                    {!isMonthly(b.kind) && <form action={markPaidAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className="btn btn-quiet !min-h-9">Mark paid (bank)</button></form>}
+                    <form action={cancelChargeAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className="btn btn-quiet !min-h-9">Cancel</button></form>
+                  </div>}
+                </li>); })}</ul>
+              {k.billingIntents.some((b) => b.kind === "one_off" && b.status === "pending") && (
+                <form action={splitFeeAction} className="mt-3 flex flex-wrap items-end gap-2"><input type="hidden" name="contractId" value={k.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} />
+                  <div><label className="label" htmlFor="pct">Take a deposit of</label><select id="pct" name="percent" className="field" defaultValue="50">{[25, 30, 40, 50, 60].map((n) => <option key={n} value={n}>{n}% up front</option>)}</select></div>
+                  <button className="btn btn-quiet">Split website fee</button></form>)}
+              <p className="hint mt-2">The customer pays by card from their portal. A website-only job simply has no monthly plan.</p>
+            </div>)}
         </aside>
       </div>
     </>
