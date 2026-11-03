@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { LegalLinks } from "./legal-links";
 
 /** Frame for pages customers reach from an email link: calm, white, one clear task. */
 export function PublicShell({ label, children, narrow = false }: { label?: string; children: ReactNode; narrow?: boolean }) {
@@ -26,7 +27,7 @@ export function SignShell({ children }: { children: ReactNode }) {
           <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm text-muted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>Secure signing</span>
         </div>
       </header>
-      <main id="main" className="mx-auto max-w-[1280px] px-3 pb-24 pt-2 sm:px-5 lg:pb-8">{children}</main>
+      <main id="main" className="mx-auto max-w-[1280px] px-3 pb-24 pt-2 sm:px-5 lg:pb-8">{children}<LegalLinks className="mt-8 max-lg:hidden" /></main>
     </div>
   );
 }

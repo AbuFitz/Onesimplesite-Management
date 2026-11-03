@@ -4,6 +4,7 @@ import { Bug, Pencil, HelpCircle, CreditCard } from "lucide-react";
 import { createTicketAction } from "@/app/actions/portal";
 import { TICKET_KINDS, URGENCY } from "@/modules/support/options";
 import { ErrorSummary } from "./ui";
+import { FilePicker } from "./file-picker";
 
 const ICONS = { issue: Bug, request: Pencil, question: HelpCircle, billing: CreditCard } as const;
 const card = "flex cursor-pointer gap-3 rounded-2xl border-2 border-transparent bg-white p-4 text-left transition-colors has-[:checked]:border-ink has-[:checked]:bg-mint has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ink";
@@ -35,6 +36,7 @@ export function TicketForm({ accounts, projects }: { accounts: { id: string; nam
         <p className="mb-3 text-sm text-muted">What were you doing, what did you expect, and what happened instead? Add the page address if you can.</p>
         <textarea id="tk-body" name="body" rows={6} className="field" required />
       </div>
+      <FilePicker hint="A screenshot helps a lot. Photos are shrunk for you." />
       {projects.length > 0 && (
         <div><label className="label" htmlFor="tk-proj">Is it about one of your websites? <span className="font-normal text-muted">(optional)</span></label>
           <select id="tk-proj" name="projectId" className="field" defaultValue=""><option value="">Not sure, or not a specific one</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>

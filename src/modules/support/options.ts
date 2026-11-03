@@ -15,3 +15,5 @@ export const URGENCY = [
   { id: "low", priority: "low", label: "No rush", expect: "We reply within three working days." },
 ] as const;
 
+/** Ticket status in the team's words. */
+export const STATUS_LABEL: Record<string, { label: string; kind: "good" | "warn" | "bad" | "neutral" }> = { open: { label: "New", kind: "warn" }, in_progress: { label: "In progress", kind: "neutral" }, waiting_customer: { label: "Waiting for customer", kind: "neutral" }, resolved: { label: "Resolved", kind: "good" }, closed: { label: "Closed", kind: "neutral" } };

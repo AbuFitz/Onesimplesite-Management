@@ -1,33 +1,54 @@
 import Image from "next/image";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
+import { origins } from "@/lib/env";
+import { LegalLinks } from "./legal-links";
 
 /**
- * One layout for every page reached from sign-in or an emailed link. A bold brand panel on the left
- * (on top on a phone), the form on a clean card beside it.
+ * One layout for every page reached from sign-in or an emailed link.
+ * Customers (portal host) get the bold brand panel. The team (manage host) gets a plain, quick sign-in with no marketing.
  */
-export function AuthShell({ title, intro, children, footer, kicker = "Welcome back" }: { title: string; intro?: string; children: ReactNode; footer?: ReactNode; kicker?: string }) {
+export async function AuthShell({ title, intro, children, footer }: { title: string; intro?: string; children: ReactNode; footer?: ReactNode }) {
+  const portal = (await headers()).get("host") === new URL(origins().portal).host;
+  const foot = footer ?? (portal ? <>Need a hand? <a className="font-semibold text-ink underline" href="mailto:support@onesimplesite.co.uk">support@onesimplesite.co.uk</a></> : null);
+
+  if (!portal) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-bone px-5 py-10">
+        <main id="main" className="w-full max-w-sm">
+          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={190} height={39} priority className="mx-auto mb-8" />
+          <div className="card p-7">
+            <h1 className="text-2xl">{title}</h1>
+            {intro && <p className="mt-1.5 text-muted">{intro}</p>}
+            <div className="mt-6">{children}</div>
+          </div>
+          {foot && <div className="mt-5 text-center text-sm text-muted">{foot}</div>}
+          <LegalLinks className="mt-4" />
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid min-h-dvh bg-bone lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-      <aside className="relative isolate overflow-hidden bg-ink px-6 pb-10 pt-8 text-white lg:flex lg:flex-col lg:justify-between lg:px-14 lg:py-12" style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}>
+    <div className="grid min-h-dvh bg-bone lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <aside className="relative isolate overflow-hidden bg-ink px-6 pb-12 pt-8 text-white lg:flex lg:flex-col lg:justify-between lg:px-16 lg:py-14" style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}>
         <div className="absolute inset-0 -z-10 bg-[url(/brand/doc/mast-bg.webp)] bg-cover bg-center opacity-90" aria-hidden />
-        <div className="absolute -bottom-24 -right-24 -z-10 size-72 rounded-full bg-spring/25 blur-3xl" aria-hidden />
-        <Image src="/brand/wordmark-reversed-colour.svg" alt="OneSimpleSite" width={170} height={34} priority />
-        <div className="mt-10 lg:mt-0">
-          <p className="mb-3 inline-block rounded-full bg-spring px-3 py-1 text-sm font-bold text-ink">{kicker}</p>
-          <p className="max-w-md font-[family-name:var(--font-display)] text-[2.1rem] font-bold leading-[1.05] tracking-tight sm:text-5xl">Your website, <span className="text-spring">sorted.</span></p>
-          <p className="mt-4 hidden max-w-sm text-lg text-white/75 lg:block">Everything about your site in one friendly place: updates, documents and help when you need it.</p>
+        <div className="absolute -bottom-24 -right-24 -z-10 size-80 rounded-full bg-spring/25 blur-3xl" aria-hidden />
+        <Image src="/brand/wordmark-reversed-colour.svg" alt="OneSimpleSite" width={230} height={47} priority className="h-auto w-48 lg:w-64" />
+        <div className="mt-12 lg:mt-0">
+          <p className="max-w-lg font-[family-name:var(--font-display)] text-[2.4rem] font-bold leading-[1.04] tracking-tight sm:text-5xl lg:text-[4.25rem]">Your website, all in <span className="text-spring">one place.</span></p>
+          <p className="mt-5 hidden max-w-md text-xl leading-snug text-white/80 lg:block lg:text-2xl">Follow your project, find your documents, pay online and get help from a real person.</p>
         </div>
-        <p className="hidden text-sm text-white/55 lg:block">onesimplesite.co.uk</p>
+        <p className="hidden text-base text-white/60 lg:block">onesimplesite.co.uk</p>
       </aside>
       <main id="main" className="flex flex-col px-5 py-8 sm:px-10 lg:justify-center lg:px-16">
-        <div className="card mx-auto w-full max-w-md p-7 sm:p-9">
-          <h1 className="text-[1.75rem]">{title}</h1>
-          {intro && <p className="mt-2 text-muted">{intro}</p>}
-          <div className="mt-7">{children}</div>
+        <div className="card mx-auto w-full max-w-md p-7 sm:p-9 lg:max-w-lg lg:p-11">
+          <h1 className="text-[1.9rem] lg:text-4xl">{title}</h1>
+          {intro && <p className="mt-2 text-muted lg:text-lg">{intro}</p>}
+          <div className="mt-7 lg:text-lg">{children}</div>
         </div>
-        <div className="mx-auto mt-6 max-w-md text-center text-sm text-muted">
-          {footer ?? <>Need a hand? <a className="font-semibold text-ink underline" href="mailto:support@onesimplesite.co.uk">support@onesimplesite.co.uk</a></>}
-        </div>
+        {foot && <div className="mx-auto mt-6 max-w-md text-center text-sm text-muted lg:text-base">{foot}</div>}
+        <LegalLinks className="mt-4" />
       </main>
     </div>
   );

@@ -122,3 +122,42 @@ describe("test client", () => {
     await expect(createTestClient(staff, "real@client.test")).rejects.toThrow(/already belongs/);
   });
 });
+
+import { vi } from "vitest";
+describe("checkout requests sent to Stripe", () => {
+  it("builds the right Checkout Session for a one-off fee and a monthly plan, reuses the Stripe customer, and never trusts the browser for amounts", async () => {
+    const { client, one, mon, c } = await world();
+    const calls: { url: string; body: URLSearchParams }[] = [];
+    const key = process.env.STRIPE_SECRET_KEY; process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (u, init) => {
+      const url = String(u); calls.push({ url, body: new URLSearchParams(String((init as RequestInit).body ?? "")) });
+      const id = url.endsWith("/customers") ? { id: "cus_123" } : { id: "cs_abc", url: "https://checkout.stripe.test/pay/cs_abc" };
+      return new Response(JSON.stringify(id), { status: 200 });
+    });
+    try {
+      expect(await startPayment(client, one!.id)).toBe("https://checkout.stripe.test/pay/cs_abc");
+      expect(await startPayment(client, mon!.id)).toBe("https://checkout.stripe.test/pay/cs_abc");
+      expect(calls.filter((x) => x.url.endsWith("/customers"))).toHaveLength(1);                        // created once, then reused
+      expect((await db.customer.findUniqueOrThrow({ where: { id: c.id } })).stripeCustomerId).toBe("cus_123");
+      const [site, plan] = calls.filter((x) => x.url.endsWith("/checkout/sessions")).map((x) => x.body);
+      expect(site.get("mode")).toBe("payment"); expect(site.get("customer")).toBe("cus_123");
+      expect(site.get("line_items[0][price_data][unit_amount]")).toBe("120000"); expect(site.get("line_items[0][price_data][currency]")).toBe("gbp");
+      expect(site.get("line_items[0][price_data][recurring][interval]")).toBeNull();
+      expect(site.get("metadata[intentId]")).toBe(one!.id); expect(site.get("payment_intent_data[metadata][intentId]")).toBe(one!.id);
+      expect(site.get("success_url")).toMatch(/\/billing\?paid=1$/); expect(site.get("cancel_url")).toMatch(/\/billing$/);
+      expect(plan.get("mode")).toBe("subscription"); expect(plan.get("line_items[0][price_data][unit_amount]")).toBe("4900");
+      expect(plan.get("line_items[0][price_data][recurring][interval]")).toBe("month"); expect(plan.get("subscription_data[metadata][intentId]")).toBe(mon!.id);
+      expect((await db.billingIntent.findUniqueOrThrow({ where: { id: one!.id } })).stripeSessionId).toBe("cs_abc");
+      // once paid it can't be paid again
+      await db.billingIntent.update({ where: { id: one!.id }, data: { status: "paid" } });
+      await expect(startPayment(client, one!.id)).rejects.toThrow(/already paid/);
+    } finally { spy.mockRestore(); if (key) process.env.STRIPE_SECRET_KEY = key; else delete process.env.STRIPE_SECRET_KEY; }
+  });
+
+  it("surfaces a Stripe error as a plain failure, not a crash", async () => {
+    const { client, one } = await world();
+    const key = process.env.STRIPE_SECRET_KEY; process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ error: { message: "Your card was declined." } }), { status: 402 }));
+    try { await expect(startPayment(client, one!.id)).rejects.toThrow(/declined/); } finally { spy.mockRestore(); if (key) process.env.STRIPE_SECRET_KEY = key; else delete process.env.STRIPE_SECRET_KEY; }
+  });
+});

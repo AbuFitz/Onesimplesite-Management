@@ -9,7 +9,7 @@ export const metadata = { title: "Sign in" };
 export default async function Login() {
   const portal = (await headers()).get("host") === new URL(origins().portal).host;
   return (
-    <AuthShell kicker={portal ? "Client portal" : "Team"} title={portal ? "Welcome back" : "Sign in to Manage"} intro={portal ? "Sign in to see your projects, documents and help. Your invitation email has your details." : "Use your username or email. Access is by invitation."}>
+    <AuthShell title={portal ? "Welcome back" : "Sign in"} intro={portal ? "Sign in to see your projects, documents and payments. Your invitation email has your details." : undefined}>
       <LoginForm staff={!portal} />
       <p className="mt-5 text-sm"><a className="underline" href="/forgot-password">Forgot your password?</a></p>
     </AuthShell>

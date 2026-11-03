@@ -3,7 +3,7 @@ import { audit, enqueue } from "@/lib/audit";
 import type { Tx } from "@/lib/db";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { portalLink, manageLink } from "@/lib/env";
-import { stripe, stripeReady } from "@/lib/stripe";
+import { stripe, stripeReady, stripeSubId } from "@/lib/stripe";
 import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
@@ -155,15 +155,15 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
   if (type === "checkout.session.completed" && intentId) {
     const b = await db.billingIntent.findFirst({ where: { id: intentId, workspaceId } });
     if (!b) return;
-    const paid = (o as { payment_status?: string }).payment_status === "paid" || !!o.subscription;
+    const paid = (o as { payment_status?: string }).payment_status === "paid" || !!stripeSubId(o);
     if (!paid) return; // delayed payment methods report later
     const monthly = isMonthly(b.kind);
     if (b.status === (monthly ? "active" : "paid")) return;
-    await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: (o.subscription as string) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null } });
+    await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: stripeSubId(o) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null } });
     await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid");
     return;
   }
-  const sub = (type.startsWith("customer.subscription.") ? o.id : type.startsWith("invoice.") ? (o.subscription as string | null) : null) ?? undefined;
+  const sub = type.startsWith("customer.subscription.") ? o.id : type.startsWith("invoice.") ? stripeSubId(o) : undefined;
   if (!sub) return;
   const b = await db.billingIntent.findFirst({ where: { workspaceId, stripeSubscriptionId: sub } });
   if (!b) return;

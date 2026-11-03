@@ -1,3 +1,4 @@
+import { LegalLinks } from "@/components/legal-links";
 import { getMyProfile, profileMissing } from "@/modules/identity/profile";
 import { ArrowRight } from "lucide-react";
 import { db } from "@/lib/db";
@@ -10,6 +11,7 @@ import { requireStaff } from "@/modules/identity/session";
 import { can, ROLE_INFO } from "@/modules/identity/permissions";
 import { SideNav, BottomNav, type NavGroup } from "@/components/nav";
 import { NewMenu, UserMenu } from "@/components/menus";
+import { supportCounts } from "@/modules/support/service";
 import { signOutStaff } from "@/app/actions/auth";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +19,11 @@ export const dynamic = "force-dynamic";
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireStaff();
   const seeCustomers = can(ctx.role, "customer.read");
+  const supportOpen = seeCustomers ? (await supportCounts(ctx.workspaceId)).open : 0;
   // Only built modules appear. Unfinished modules are hidden, not faked.
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
-    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Tickets", icon: "pipeline" }] }] : []),
+    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Customers", icon: "customers" }, { href: "/pipeline", label: "Onboarding tickets", icon: "pipeline" }, { href: "/support", label: "Support tickets", icon: "support", badge: supportOpen }] }] : []),
     { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/board", label: "Board", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
     { label: "Business", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Business settings", icon: "settings" }] : []),
@@ -71,7 +74,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       </header>
       <div className="lg:grid lg:grid-cols-[14.5rem_1fr]">
         <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] overflow-y-auto p-3 lg:block"><SideNav groups={groups} /></aside>
-        <main id="main" className="page panel min-w-0">{children}</main>
+        <main id="main" className="page panel min-w-0">{children}<LegalLinks className="mt-12 justify-start" /></main>
       </div>
       <BottomNav />
     </div>

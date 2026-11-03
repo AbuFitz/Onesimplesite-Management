@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, Home, FolderKanban, MessagesSquare, FileText, Handshake, ScrollText, Menu, UserCog, DatabaseBackup, Settings2, KeyRound } from "lucide-react";
+import { CalendarDays, Users, Home, FolderKanban, MessagesSquare, FileText, Handshake, ScrollText, Menu, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy } from "lucide-react";
 
-export type NavItem = { href: string; label: string; icon: string };
+export type NavItem = { href: string; label: string; icon: string; badge?: number };
 export type NavGroup = { label?: string; items: NavItem[] };
-const icons = { today: Home, customers: Users, pipeline: Handshake, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound } as const;
+const icons = { today: Home, customers: Users, pipeline: Handshake, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy } as const;
 const active = (p: string, href: string) => (href === "/" ? p === "/" : p === href || p.startsWith(href + "/"));
 
 export function SideNav({ groups }: { groups: NavGroup[] }) {
@@ -22,7 +22,7 @@ export function SideNav({ groups }: { groups: NavGroup[] }) {
               return (
                 <li key={i.href}>
                   <Link href={i.href} aria-current={on ? "page" : undefined} className={`relative flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm ${on ? "bg-white font-semibold text-ink shadow-[0_1px_2px_rgba(14,19,17,.1)] ring-1 ring-line before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-moss" : "text-[#2f3833] hover:bg-white/70"}`}>
-                    <Icon size={17} strokeWidth={on ? 2.2 : 1.8} aria-hidden /> {i.label}
+                    <Icon size={17} strokeWidth={on ? 2.2 : 1.8} aria-hidden /> {i.label}{!!i.badge && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-ink px-1.5 text-xs font-semibold text-white" aria-label={`${i.badge} waiting`}>{i.badge}</span>}
                   </Link>
                 </li>
               );

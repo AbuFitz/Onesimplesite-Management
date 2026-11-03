@@ -7,6 +7,7 @@ import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
 import { personFrom } from "@/lib/sender-identities";
+import { saveUploads, type Upload } from "@/modules/files/service";
 
 import { TICKET_KINDS, URGENCY } from "./options";
 export { TICKET_KINDS, URGENCY };
@@ -35,7 +36,7 @@ async function contactFor(tx: Pick<typeof db, "contact">, workspaceId: string, c
 }
 
 // ───────── Client side (the portal) ─────────
-export async function clientCreateTicket(c: ClientCtx, customerId: string | undefined, raw: unknown) {
+export async function clientCreateTicket(c: ClientCtx, customerId: string | undefined, raw: unknown, files: Upload[] = []) {
   const m = c.memberships.find((x) => x.customerId === (customerId ?? c.memberships[0]?.customerId));
   if (!m || !c.email) throw forbidden();
   const i = createInput.parse(raw);
@@ -48,7 +49,8 @@ export async function clientCreateTicket(c: ClientCtx, customerId: string | unde
     if (i.projectId && !(await tx.project.findFirst({ where: { id: i.projectId, customerId: m.customerId, workspaceId: ws }, select: { id: true } }))) throw new DomainError("validation", "Pick one of your own projects, or leave it blank.");
     const reference = await nextRef(tx, ws, "ticket");
     const t = await tx.ticket.create({ data: { workspaceId: ws, customerId: m.customerId, contactId: person.id, projectId: i.projectId, reference, kind: i.kind, title: i.title, body: clean(i.body), priority: urgency.priority, source: "portal" } });
-    await audit(tx, { workspaceId: ws, actor: { userId: c.userId, label: person.name }, action: "ticket.created", targetType: "ticket", targetId: t.id, customerId: m.customerId, detail: { source: "portal", priority: urgency.priority } });
+    await saveUploads(tx, { workspaceId: ws, customerId: m.customerId, ticketId: t.id, internal: false, by: "client", name: person.name }, files);
+    await audit(tx, { workspaceId: ws, actor: { userId: c.userId, label: person.name }, action: "ticket.created", targetType: "ticket", targetId: t.id, customerId: m.customerId, detail: { source: "portal", priority: urgency.priority, files: files.length } });
     await enqueue(tx, ws, "email.ticket_received", `ticket.received:${t.id}`, { to: person.email, name: person.name, ref: reference, title: i.title, expect: urgency.expect, link: portalLink(`/help/${t.id}`) });
     await enqueue(tx, ws, "email.ticket_notice", `ticket.notice:${t.id}`, { to: "internal", ref: reference, title: i.title, business: m.customer.displayName, person: person.name, priority: urgency.priority, excerpt: excerpt(clean(i.body)), link: manageLink(`/support/${t.id}`) });
     return t;
@@ -66,14 +68,15 @@ export async function clientTicket(c: ClientCtx, id: string) {
   return t;
 }
 
-export async function clientReply(c: ClientCtx, id: string, body: unknown) {
+export async function clientReply(c: ClientCtx, id: string, body: unknown, files: Upload[] = []) {
   const text = z.string().trim().min(1, "Write a message first.").max(8000).parse(body);
   const t = await db.ticket.findFirst({ where: { id, ...clientScope(c) }, include: { customer: { select: { displayName: true } }, contact: { select: { name: true } } } });
   if (!t) throw notFound();
   if (t.status === "closed") throw new DomainError("conflict", "This ticket is closed. Please raise a new one.");
   const name = c.name || t.contact?.name || "Customer";
   await db.$transaction(async (tx) => {
-    await tx.ticketComment.create({ data: { workspaceId: t.workspaceId, ticketId: t.id, authorKind: "client", authorName: name, authorUserId: c.userId, body: clean(text) } });
+    const cm = await tx.ticketComment.create({ data: { workspaceId: t.workspaceId, ticketId: t.id, authorKind: "client", authorName: name, authorUserId: c.userId, body: clean(text) } });
+    await saveUploads(tx, { workspaceId: t.workspaceId, customerId: t.customerId, ticketId: t.id, commentId: cm.id, internal: false, by: "client", name }, files);
     // A reply brings a resolved or waiting ticket back to the team.
     await tx.ticket.update({ where: { id: t.id }, data: { status: "open", resolvedAt: null } });
     await enqueue(tx, t.workspaceId, "email.ticket_notice", `ticket.reply:${t.id}:${Date.now()}`, { to: "internal", ref: t.reference, title: t.title, business: t.customer.displayName, person: name, priority: t.priority, excerpt: excerpt(clean(text)), link: manageLink(`/support/${t.id}`), isReply: true });
@@ -140,17 +143,18 @@ export async function getSupportTicket(ctx: StaffCtx, id: string) {
   return { ...t, assignee };
 }
 
-const replyInput = z.object({ body: z.string().trim().min(1, "Write a reply first.").max(8000), internal: z.boolean().default(false) });
+const replyInput = z.object({ body: z.string().trim().min(1, "Write a reply first.").max(8000), internal: z.boolean().default(false), filesInternal: z.boolean().default(false) });
 
 /** Reply as the person at the keyboard. Customers see "Abukar at OneSimpleSite" from abukar@, never a login address. */
-export async function staffReply(ctx: StaffCtx, id: string, raw: unknown) {
+export async function staffReply(ctx: StaffCtx, id: string, raw: unknown, files: Upload[] = []) {
   need(ctx);
   const i = replyInput.parse(raw);
   const t = await db.ticket.findFirst({ where: { id, workspaceId: ctx.workspaceId }, include: { contact: true } });
   if (!t) throw notFound();
   const me = await db.staffMembership.findUniqueOrThrow({ where: { id: ctx.staffId }, select: { displayName: true, aliasEmail: true } });
   await db.$transaction(async (tx) => {
-    await tx.ticketComment.create({ data: { workspaceId: ctx.workspaceId, ticketId: t.id, authorKind: "staff", authorName: me.displayName, authorStaffId: ctx.staffId, body: clean(i.body), internal: i.internal } });
+    const cm = await tx.ticketComment.create({ data: { workspaceId: ctx.workspaceId, ticketId: t.id, authorKind: "staff", authorName: me.displayName, authorStaffId: ctx.staffId, body: clean(i.body), internal: i.internal } });
+    await saveUploads(tx, { workspaceId: ctx.workspaceId, customerId: t.customerId, ticketId: t.id, commentId: cm.id, internal: i.internal || i.filesInternal, by: "staff", name: me.displayName }, files);
     if (i.internal) { await tx.ticket.update({ where: { id: t.id }, data: { updatedAt: new Date() } }); return; }
     await tx.ticket.update({ where: { id: t.id }, data: { status: t.status === "resolved" || t.status === "closed" ? t.status : "waiting_customer", assigneeId: t.assigneeId ?? ctx.staffId } });
     if (t.contact?.email) {

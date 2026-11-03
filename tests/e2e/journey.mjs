@@ -89,7 +89,7 @@ ok(await staff.locator("text=Live: ").count() > 0, "terms published");
 
 // 3. Enquiry -> customer details -> proposal with requirements
 await staff.goto(`${M}/settings/legal`);
-ok((await staff.locator("main li h3").allInnerTexts()).join("|") === ["Services Agreement", "Service Level Agreement", "Hosting and Care Plan Terms", "Data Processing Agreement", "Change Request"].join("|"), "the five customer legal documents are listed");
+ok((await staff.locator("main li h3").allInnerTexts()).join("|") === ["Services Agreement", "Service Level Agreement", "Hosting and Care Plan Terms", "Data Processing Agreement", "Change Request", "Privacy Notice", "Cookie Notice", "Portal Terms of Use"].join("|"), "all legal documents are listed, including the three shown on the portals");
 await staff.goto(`${M}/settings/legal/dpa`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/legal\/dpa\/[0-9a-f-]{36}/);
 ok((await staff.locator("article").first().innerText()).toLowerCase().includes("data processing agreement"), "data processing agreement preview renders in the document layout");
 ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "data processing agreement can't be published while decisions are open");

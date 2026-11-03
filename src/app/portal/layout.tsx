@@ -1,3 +1,4 @@
+import { LegalLinks } from "@/components/legal-links";
 import { LiveRefresh } from "@/components/live-refresh";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,6 +26,7 @@ export default async function PortalLayout({ children }: { children: React.React
         <div className="mx-auto max-w-5xl px-4 pb-2 sm:px-6"><PortalNav /></div>
       </header>
       <main id="main" className="mx-auto max-w-5xl px-4 pt-4 sm:px-6">{children}</main>
+      <footer className="mx-auto max-w-5xl px-4 pb-28 pt-10 sm:px-6 sm:pb-10"><LegalLinks /></footer>
       <PortalTabs />
     </div>
   );

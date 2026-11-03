@@ -818,6 +818,28 @@ model TicketComment {
   createdAt     DateTime @default(now())
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([ticketId, createdAt])
+}
+
+/// A file (screenshot, PDF) on a ticket. Stored in the database; `internal` files are never shown to the customer.
+model Attachment {
+  id           String   @id @default(uuid()) @db.Uuid
+  workspaceId  String   @db.Uuid
+  customerId   String   @db.Uuid
+  ticketId     String   @db.Uuid
+  commentId    String?  @db.Uuid // null = attached to the ticket's first message
+  filename     String
+  contentType  String
+  sizeBytes    Int
+  bytes        Bytes
+  internal     Boolean  @default(false)
+  uploadedBy   String // staff | client
+  uploadedName String
+  createdAt    DateTime @default(now())
+
+  comment TicketComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@index([ticketId, createdAt])
 }

@@ -2,6 +2,7 @@
 import { useActionState, useRef, useEffect } from "react";
 import { replyAction } from "@/app/actions/portal";
 import { ErrorSummary } from "./ui";
+import { FilePicker } from "./file-picker";
 
 export function ReplyForm({ id }: { id: string }) {
   const [s, act, pending] = useActionState(replyAction, undefined as { error?: string; done?: boolean } | undefined);
@@ -13,6 +14,7 @@ export function ReplyForm({ id }: { id: string }) {
       <input type="hidden" name="id" value={id} />
       <label className="label" htmlFor="rp-body">Reply</label>
       <textarea id="rp-body" name="body" rows={4} className="field" required />
+      <FilePicker />
       <button className="btn btn-dark" disabled={pending}>{pending ? "Sending…" : "Send reply"}</button>
     </form>
   );

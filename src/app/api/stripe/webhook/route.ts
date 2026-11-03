@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { applyStripeEvent } from "@/modules/billing/service";
+import { stripeSubId } from "@/lib/stripe";
 import { verifyStripeSignature } from "@/lib/stripe-signature";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,12 @@ export async function POST(req: Request) {
   let ev: { id?: string; type?: string; livemode?: boolean; data?: { object?: Record<string, unknown> & { id?: string; amount_total?: number; amount_paid?: number; currency?: string } } };
   try { ev = JSON.parse(body); } catch { return new Response("Bad payload.", { status: 400 }); }
   if (!ev.id || !ev.type) return new Response("Bad payload.", { status: 400 });
-  const w = await db.workspace.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } });
+  // Find the business this event belongs to from our own records, so it is right even with several workspaces.
+  const o0 = ev.data?.object as Record<string, unknown> | undefined;
+  const intentId = (o0?.metadata as Record<string, string> | undefined)?.intentId;
+  const subId = String(ev.type).startsWith("customer.subscription.") ? (o0?.id as string | undefined) : stripeSubId(o0);
+  const owner = intentId ? await db.billingIntent.findFirst({ where: { id: intentId }, select: { workspaceId: true } }) : subId ? await db.billingIntent.findFirst({ where: { stripeSubscriptionId: subId }, select: { workspaceId: true } }) : null;
+  const w = owner ? { id: owner.workspaceId } : await db.workspace.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } });
   if (!w) return new Response("ok");
   const seen = await db.auditEvent.findFirst({ where: { workspaceId: w.id, targetType: "stripe_event", targetId: ev.id }, select: { id: true } });
   if (!seen) {

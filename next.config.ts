@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   poweredByHeader: false,
+  experimental: { serverActions: { bodySizeLimit: "5mb" } },
   serverExternalPackages: ["pg", "pg-boss"],
   async headers() {
     return [

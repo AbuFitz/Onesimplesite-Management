@@ -6,7 +6,7 @@ export type SheetMeta = { title: string; ref: string; version: string; status: s
 /** A legal document as issued: the same sheet as every other OneSimpleSite document. */
 export function LegalSheet({ meta, intro, children }: { meta: SheetMeta; intro?: string; children: ReactNode }) {
   return (
-    <DocSheet meta={{ title: meta.title, ref: meta.ref, date: meta.date, version: meta.version, status: meta.status, mark: meta.audience, footMark: meta.audience === "Private & confidential" ? "Private & confidential" : "Customer-facing" }}>
+    <DocSheet meta={{ title: meta.title, ref: meta.ref, date: meta.date, version: meta.version, status: meta.status, mark: meta.audience, footMark: meta.audience === "Private & confidential" ? "Private & confidential" : meta.audience === "Shown on the portals" ? "Public" : "Customer-facing" }}>
       {intro && <p className="d-lead">{intro}</p>}
       {children}
     </DocSheet>

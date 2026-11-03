@@ -29,3 +29,13 @@ export async function stripe<T = Record<string, unknown>>(path: string, params?:
   if (!res.ok) throw new Error(json.error?.message ?? `Stripe error ${res.status}`);
   return json;
 }
+
+/** The subscription an object belongs to. Stripe moved this field on invoices in newer API versions, so read both places. */
+export function stripeSubId(o: Record<string, unknown> | undefined | null): string | undefined {
+  if (!o) return undefined;
+  const direct = o.subscription;
+  if (typeof direct === "string") return direct;
+  if (direct && typeof direct === "object" && typeof (direct as { id?: unknown }).id === "string") return (direct as { id: string }).id;
+  const nested = ((o.parent as { subscription_details?: { subscription?: unknown } } | undefined)?.subscription_details?.subscription);
+  return typeof nested === "string" ? nested : undefined;
+}
