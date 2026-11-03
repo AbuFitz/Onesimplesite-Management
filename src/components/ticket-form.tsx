@@ -48,7 +48,7 @@ export function TicketForm({ accounts, projects }: { accounts: { id: string; nam
         <p className="mb-5 mt-1 text-muted">Pick the closest one. You can explain in a moment.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {TICKET_KINDS.map((x) => { const Icon = ICONS[x.id]; const on = kind === x.id; return (
-            <button type="button" key={x.id} aria-pressed={on} onClick={() => { setKind(x.id); go(1); }} className={`${tile} items-start ${on ? "border-ink " + TONES[x.id] : "border-transparent bg-white hover:border-line"}`}>
+            <button type="button" key={x.id} aria-pressed={on} onClick={() => { setKind(x.id); go(1); }} className={`${tile} items-start ${on ? "border-ink " + TONES[x.id] : "border-[#d3d9d5] bg-white hover:bg-bone"}`}>
               <span className={`mt-0.5 grid size-11 shrink-0 place-items-center rounded-xl ${TONES[x.id]}`}><Icon size={22} aria-hidden /></span>
               <span><span className="block text-lg font-bold">{x.label}</span><span className="block text-sm text-muted">{x.hint}</span></span>
             </button>); })}
@@ -70,7 +70,7 @@ export function TicketForm({ accounts, projects }: { accounts: { id: string; nam
         <p className="mb-5 mt-1 text-muted">This just tells us what to look at first.</p>
         <div className="grid gap-3">
           {URGENCY.map((x) => (
-            <button type="button" key={x.id} aria-pressed={urgency === x.id} onClick={() => setUrgency(x.id)} className={`${tile} items-center ${urgency === x.id ? "border-ink bg-mint" : "border-transparent bg-white hover:border-line"}`}>
+            <button type="button" key={x.id} aria-pressed={urgency === x.id} onClick={() => setUrgency(x.id)} className={`${tile} items-center ${urgency === x.id ? "border-ink bg-mint" : "border-[#d3d9d5] bg-white hover:bg-bone"}`}>
               <span className={`grid size-6 shrink-0 place-items-center rounded-full border-2 ${urgency === x.id ? "border-ink bg-ink text-white" : "border-line"}`}>{urgency === x.id && <Check size={14} aria-hidden />}</span>
               <span><span className="block font-bold">{x.label}</span><span className="block text-sm text-muted">{x.expect}</span></span>
             </button>

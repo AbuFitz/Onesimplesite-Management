@@ -15,7 +15,7 @@ export default async function NewTicket() {
   const cust = new Map(accounts.map((a) => [a.id, a.displayName]));
   return (
     <div className="space-y-2">
-      <div><TicketForm accounts={ids.map((id) => ({ id, name: cust.get(id) ?? "Your business" }))} projects={o.projects.map((p) => ({ id: p.id, name: p.name, customerId: "" }))} /></div>
+      <section className="tile bg-white !p-4 sm:!p-9"><TicketForm accounts={ids.map((id) => ({ id, name: cust.get(id) ?? "Your business" }))} projects={o.projects.map((p) => ({ id: p.id, name: p.name, customerId: "" }))} /></section>
     </div>
   );
 }
