@@ -106,3 +106,20 @@ describe("clients asking for another person", () => {
     await expect(setAccess(x.staff, y.owner.contact.id, { role: "viewer" })).rejects.toMatchObject({ code: "not_found" });
   });
 });
+
+import { drainOutbox } from "@/modules/outbox/drain";
+import { readdirSync, readFileSync } from "node:fs";
+describe("one press is one email", () => {
+  it("pressing invite twice quickly sends one invitation; two drains at once send each queued email once", async () => {
+    const x = await world();
+    const p = await addPerson(x.staff, x.c.id, { name: "Dana Double", email: `dana-${Math.random().toString(36).slice(2, 8)}@client.test` });
+    await Promise.all([invitePerson(x.staff, p.id, { role: "member" }), invitePerson(x.staff, p.id, { role: "member" }), invitePerson(x.staff, p.id, { role: "member" })]);
+    await invitePerson(x.staff, p.id, { role: "member" });
+    expect(await db.invitation.count({ where: { customerId: x.c.id, email: p.email!, revokedAt: null } })).toBe(1);   // four presses (three at once) = one invitation
+    const rows = await db.outbox.count({ where: { workspaceId: x.w.id, topic: "email.invitation" } });
+    expect(rows).toBe(1);
+    await Promise.all([drainOutbox(100), drainOutbox(100), drainOutbox(100)]);
+    const sent = readdirSync(".mail-sink").filter((f) => f.endsWith(".json")).map((f) => JSON.parse(readFileSync(`.mail-sink/${f}`, "utf8"))).filter((m: { to: string }) => m.to === p.email);
+    expect(sent.length).toBe(rows);   // each queued email went out exactly once, however many drains ran
+  });
+});

@@ -13,6 +13,10 @@ export async function inviteClientContact(ctx: StaffCtx, customerId: string, con
     const c = await tx.contact.findFirst({ where: { id: contactId, customerId, workspaceId: ctx.workspaceId }, include: { customer: true } });
     if (!c) throw notFound("Contact not found.");
     if (!c.email) throw new DomainError("validation", "This contact has no email address.");
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`invite:${customerId}:${c.email.toLowerCase()}`}))`;   // presses that arrive together queue up here
+    // A second press within a minute (double-click, slow connection) must not send a second email.
+    const recent = await tx.invitation.findFirst({ where: { workspaceId: ctx.workspaceId, customerId, email: { equals: c.email, mode: "insensitive" }, acceptedAt: null, revokedAt: null, createdAt: { gt: new Date(Date.now() - 60_000) } }, select: { id: true } });
+    if (recent) return;
     await tx.invitation.updateMany({ where: { workspaceId: ctx.workspaceId, customerId, email: c.email, acceptedAt: null, revokedAt: null }, data: { revokedAt: new Date() } });
     const { token, hash } = newToken();
     const expiresAt = new Date(Date.now() + 7 * 864e5);

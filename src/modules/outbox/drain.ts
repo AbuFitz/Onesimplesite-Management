@@ -5,7 +5,7 @@ import { internalNoticeTo } from "@/lib/env";
 import { renderEmail, type EmailData, type TemplateName } from "@/emails/templates";
 
 /**
- * Leases pending outbox rows (FOR UPDATE SKIP LOCKED), performs the external effect
+ * Leases pending outbox rows (marked "sending" as they are claimed), performs the external effect
  * outside the claiming transaction, then marks done. A crash after provider acceptance
  * but before marking done causes a retry; the provider idempotency key (dedupeKey)
  * makes that retry safe with Resend. Failures back off via attempts and surface as "failed".
@@ -13,8 +13,11 @@ import { renderEmail, type EmailData, type TemplateName } from "@/emails/templat
 export async function drainOutbox(limit = 20) {
   // Not configured yet: leave everything queued (no attempts consumed) rather than failing.
   if (!mailConfigured()) return { claimed: 0, done: 0, failed: 0, skipped: "mail not configured" as const };
+  // A row that has been "sending" for ten minutes was lost with a crashed worker: put it back in the queue.
+  await db.$executeRaw`UPDATE "Outbox" SET "status" = 'pending' WHERE "status" = 'sending' AND "processedAt" < now() - interval '10 minutes'`;
+  // Claiming marks the row "sending" in the same statement, so two drains running at once can never both take it (that is what caused double emails).
   const claimed = await db.$queryRaw<{ id: string }[]>`
-    UPDATE "Outbox" SET "attempts" = "attempts" + 1
+    UPDATE "Outbox" SET "status" = 'sending', "processedAt" = now(), "attempts" = "attempts" + 1
     WHERE "id" IN (SELECT "id" FROM "Outbox" WHERE "status" = 'pending' AND "attempts" < 5 ORDER BY "createdAt" LIMIT ${limit} FOR UPDATE SKIP LOCKED)
     RETURNING "id"`;
   let done = 0, failed = 0;

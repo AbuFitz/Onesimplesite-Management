@@ -2,6 +2,7 @@ import { addPersonAction, updatePersonAction, invitePersonAction, setAccessActio
 import { ACCESS_LEVELS, levelLabel } from "@/modules/portal/access";
 import type { Person } from "@/modules/people/service";
 import { timeAgo } from "./ui";
+import { SubmitButton } from "./submit-button";
 
 type Req = { id: string; name: string; email: string; position: string | null; role: string; billing: boolean; reason: string | null; requestedByName: string; createdAt: Date };
 
@@ -35,7 +36,7 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                 <p className="text-muted">Asked by {r.requestedByName} {timeAgo(r.createdAt)}. {r.reason ? `Why: ${r.reason}` : ""}</p>
                 {canEdit && (
                   <div className="mt-3 flex flex-wrap items-start gap-6">
-                    <form action={approveRequestAction} className="space-y-2"><Hidden customerId={customerId} /><input type="hidden" name="requestId" value={r.id} /><Level id={`q-${r.id}`} role={r.role} billing={r.billing} /><button className="btn">Approve and invite</button></form>
+                    <form action={approveRequestAction} className="space-y-2"><Hidden customerId={customerId} /><input type="hidden" name="requestId" value={r.id} /><Level id={`q-${r.id}`} role={r.role} billing={r.billing} /><SubmitButton>Approve and invite</SubmitButton></form>
                     <form action={declineRequestAction} className="space-y-2"><Hidden customerId={customerId} /><input type="hidden" name="requestId" value={r.id} /><label className="label" htmlFor={`d-${r.id}`}>Reason (shown to them)</label><input id={`d-${r.id}`} name="reason" className="field !min-h-9" placeholder="Optional" /><button className="btn btn-quiet">Decline</button></form>
                   </div>
                 )}
@@ -68,20 +69,20 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                     <summary className="min-h-9 cursor-pointer text-sm font-semibold">Manage</summary>
                     <div className="mt-3 space-y-5 rounded-xl bg-bone/60 p-4 text-sm">
                       {(p.access === "none" || p.access === "invited") && p.email && (
-                        <form action={invitePersonAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`i-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><button className="btn">{p.access === "invited" ? "Send the invitation again" : "Invite to the client portal"}</button></form>
+                        <form action={invitePersonAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`i-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><SubmitButton>{p.access === "invited" ? "Send the invitation again" : "Invite to the client portal"}</SubmitButton></form>
                       )}
                       {(p.access === "none") && !p.email && <p className="text-muted">Add an email address below to invite them.</p>}
                       {p.access === "active" && (
                         <>
                           <form action={setAccessAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`a-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><button className="btn btn-quiet">Save access</button></form>
                           <div className="flex flex-wrap gap-2">
-                            <form action={resetPasswordAction}><Hidden customerId={customerId} contactId={p.id} /><button className="btn btn-quiet">Send password reset email</button></form>
+                            <form action={resetPasswordAction}><Hidden customerId={customerId} contactId={p.id} /><SubmitButton className="btn btn-quiet">Send password reset email</SubmitButton></form>
                             <form action={revokeAccessAction}><Hidden customerId={customerId} contactId={p.id} /><button className="btn btn-quiet">Remove portal access and sign them out</button></form>
                           </div>
                         </>
                       )}
                       {p.access === "invited" && <form action={revokeAccessAction}><Hidden customerId={customerId} contactId={p.id} /><button className="btn btn-quiet">Cancel the invitation</button></form>}
-                      {p.access === "revoked" && <form action={invitePersonAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`g-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><button className="btn">Give access again</button></form>}
+                      {p.access === "revoked" && <form action={invitePersonAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`g-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><SubmitButton>Give access again</SubmitButton></form>}
                       <form action={updatePersonAction} className="grid gap-3 sm:grid-cols-2"><Hidden customerId={customerId} contactId={p.id} />
                         <div><label className="label" htmlFor={`n-${p.id}`}>Name</label><input id={`n-${p.id}`} name="name" className="field !min-h-9" defaultValue={p.name} required /></div>
                         <div><label className="label" htmlFor={`e-${p.id}`}>Email</label><input id={`e-${p.id}`} name="email" type="email" className="field !min-h-9" defaultValue={p.email ?? ""} required /></div>

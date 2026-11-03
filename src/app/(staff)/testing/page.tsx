@@ -3,6 +3,7 @@ import { requireStaff } from "@/modules/identity/session";
 import { EMAILS } from "@/modules/settings/email-samples";
 import { testClientStatus, TEST_CLIENT_NAME } from "@/modules/crm/test-client";
 import { createTestClientAction, resetTestClientAction } from "@/app/actions/testing";
+import { SubmitButton } from "@/components/submit-button";
 import { EmailTestButton } from "@/components/email-test-button";
 import { StripeCheckButton } from "@/components/stripe-check";
 import { RecordHeader, ErrorSummary, Section, fmtDateTime } from "@/components/ui";
@@ -48,7 +49,7 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
           )}
           <form action={createTestClientAction} className="flex flex-wrap items-end gap-3">
             <div className="min-w-60 flex-1"><label className="label" htmlFor="demo-email">{demo ? "Send a new portal invitation to" : "Send the portal invitation to"}</label><input id="demo-email" name="email" type="email" className="field" autoComplete="off" required /></div>
-            <button className="btn">{demo ? "Send invitation" : "Create test client"}</button>
+            <SubmitButton>{demo ? "Send invitation" : "Create test client"}</SubmitButton>
           </form>
           <p className="hint mt-2">Use an email that isn't your team login. With Gmail, add +test (you+test@gmail.com) and it still lands in your inbox.</p>
           {demo && <form action={resetTestClientAction} className="mt-4"><button className="btn btn-quiet">Delete the demo business and start again</button></form>}
