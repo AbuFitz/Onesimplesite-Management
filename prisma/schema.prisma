@@ -465,6 +465,7 @@ model Project {
   name        String
   stage       ProjectStage @default(planned)
   awaitingContract Boolean @default(false)
+  workType    String       @default("new_site") // new_site | revamp | shop | hosting_only | care | custom: decides which stages and usual tasks apply
   ownerId     String?      @db.Uuid
   dueDate     DateTime?    @db.Date
   scopeSnapshot String

@@ -4,11 +4,11 @@ import { Check, ListChecks, Files as FilesIcon, Ticket, Package, Megaphone, Spar
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
-import { getProject, ALLOWED, STAGE_GUIDE, STAGE_ORDER } from "@/modules/projects/service";
+import { getProject, STAGE_GUIDE, PROJECT_TYPES, typeOf } from "@/modules/projects/service";
 import { projectFileList } from "@/modules/files/service";
 import { STATUS_LABEL } from "@/modules/support/options";
 import { transitionAction, updateAction, assetAction, taskAction } from "@/app/actions/work";
-import { seedTasksAction, toggleTaskAction, receiveAssetAction, uploadProjectFilesAction, shareFileAction, deleteFileAction } from "@/app/actions/projects";
+import { projectTypeAction, seedTasksAction, toggleTaskAction, receiveAssetAction, uploadProjectFilesAction, shareFileAction, deleteFileAction } from "@/app/actions/projects";
 import { RecordHeader, Status, ErrorSummary, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
 import { Panel } from "@/components/panel";
 import { FilePicker } from "@/components/file-picker";
@@ -32,8 +32,13 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   ]);
   const canWrite = can(ctx.role, "project.write");
   const guide = STAGE_GUIDE[p.stage];
-  const idx = STAGE_ORDER.indexOf(p.stage as (typeof STAGE_ORDER)[number]);
-  const next = ALLOWED[p.stage].find((s) => STAGE_ORDER.indexOf(s as (typeof STAGE_ORDER)[number]) === idx + 1) ?? ALLOWED[p.stage][0];
+  const tpl = typeOf(p.workType);
+  const idx = tpl.stages.indexOf(p.stage);
+  const next = idx >= 0 ? tpl.stages[idx + 1] : tpl.stages[0];
+  const NAME: Record<string, string> = { completed: "Completed", held: "On hold", cancelled: "Cancelled" };
+  const label = (s: string) => STAGE_GUIDE[s]?.label ?? NAME[s] ?? s.replaceAll("_", " ");
+  const others = ["design", "development", "qa", "client_review", "ready_to_launch", "launched", "planned", "awaiting_assets", "completed", "held", "cancelled"].filter((s) => s !== p.stage && !tpl.stages.includes(s as never));
+  const finished = p.stage === "completed" || p.stage === "cancelled";
   const openTasks = p.tasks.filter((t) => !t.doneAt), doneTasks = p.tasks.filter((t) => t.doneAt);
   const missing = p.assetRequests.filter((a) => !a.receivedAt);
   const folders = [...new Set(files.map((f) => f.folder ?? ""))].sort((a, b) => (a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)));
@@ -41,28 +46,31 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   return (
     <>
       <LiveRefresh seconds={30} />
-      <RecordHeader back={{ href: "/projects", label: "Projects" }} title={p.name} status={<Status label={guide?.label ?? p.stage.replaceAll("_", " ")} kind={p.stage === "launched" || p.stage === "completed" ? "good" : p.stage === "held" || p.stage === "cancelled" ? "bad" : "neutral"} />}
+      <RecordHeader back={{ href: "/projects", label: "Projects" }} title={p.name} status={<Status label={label(p.stage)} kind={p.stage === "launched" || p.stage === "completed" ? "good" : p.stage === "held" || p.stage === "cancelled" ? "bad" : "neutral"} />}
         meta={<><Link className="underline" href={`/customers/${p.customerId}`}>{p.customer.displayName}</Link>{p.dueDate ? ` · due ${fmtDate(p.dueDate)}` : ""}{contract ? <> · <Link className="underline" href={`/contracts/${contract.id}`}>{contract.reference}</Link></> : null}</>} />
       <ErrorSummary message={error} />
 
-      <ol className="mb-5 grid grid-cols-4 gap-1.5 sm:grid-cols-8" aria-label="Progress">
-        {STAGE_ORDER.map((s, i) => { const done = idx > i || p.stage === "completed", cur = idx === i; return (
-          <li key={s} aria-current={cur ? "step" : undefined}><div className={`h-2.5 rounded-full ${done ? "bg-[#18181b]" : cur ? "bg-[#0c1322]" : "bg-[#e4e4e7]"}`} /><p className={`mt-1.5 text-[12.5px] leading-tight ${cur ? "font-bold text-ink" : "text-ink/65"}`}>{STAGE_GUIDE[s].label}</p></li>); })}
+      <ol className="mb-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${tpl.stages.length}, minmax(0, 1fr))` }} aria-label="Progress">
+        {tpl.stages.map((st, i) => { const done = (idx > i) || p.stage === "completed", cur = idx === i; return (
+          <li key={st} aria-current={cur ? "step" : undefined}><div className={`h-2.5 rounded-full ${done ? "bg-[#18181b]" : cur ? "bg-[#2450d6]" : "bg-[#e4e4e7]"}`} /><p className={`mt-1.5 text-[12.5px] leading-tight ${cur ? "font-bold text-ink" : "text-ink/65"}`}>{label(st)}</p></li>); })}
       </ol>
+      <p className="mb-5 text-[13px] text-ink/65">{tpl.label}. {idx < 0 ? <strong className="text-ink">The project is at “{label(p.stage)}”, which isn't one of this type's usual steps. That's fine.</strong> : "Move to any stage you like, forwards, back or skipping steps."}</p>
 
-      {guide && (
-        <section className="mb-5 rounded-2xl border border-[#e4e4e7] bg-[#fafafa] p-5" aria-label="What to do now">
-          <p className="flex items-center gap-2 text-sm font-bold text-[#18181b]"><Sparkles size={16} aria-hidden /> What to do now · {guide.label}</p>
-          <p className="mt-1 max-w-2xl text-[17px] font-semibold">{guide.now}</p>
+      {(guide || p.stage === "held" || finished) && (
+        <section className="mb-5 rounded-xl border border-[#e4e4e7] bg-[#fafafa] p-5" aria-label="What to do now">
+          <p className="flex items-center gap-2 text-sm font-bold text-[#18181b]"><Sparkles size={16} aria-hidden /> What to do now · {label(p.stage)}</p>
+          <p className="mt-1 max-w-2xl text-[17px] font-semibold">{guide?.now ?? (p.stage === "held" ? "This project is paused. Move it back to a stage when the customer is ready." : "This project is finished. Reopen it if something comes up.")}</p>
           {canWrite && (
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <form action={seedTasksAction}><input type="hidden" name="id" value={p.id} /><SubmitButton className="btn btn-quiet" pendingText="Adding…">Add the usual tasks for this stage</SubmitButton></form>
-              {ALLOWED[p.stage].length > 0 && (
-                <form action={transitionAction} className="flex flex-wrap items-center gap-2"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} />
-                  <label className="sr-only" htmlFor="stage-sel">Move to</label>
-                  <select id="stage-sel" name="stage" className="field !min-h-10 w-auto" defaultValue={next}>{ALLOWED[p.stage].map((s) => <option key={s} value={s}>{STAGE_GUIDE[s]?.label ?? s.replaceAll("_", " ")}</option>)}</select>
-                  <button className="btn">Move on <ArrowRight size={15} aria-hidden /></button></form>
-              )}
+              <form action={transitionAction} className="flex flex-wrap items-center gap-2"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} />
+                <label className="sr-only" htmlFor="stage-sel">Move to</label>
+                <select id="stage-sel" name="stage" className="field !min-h-10 w-auto" defaultValue={next ?? others[0]}>
+                  <optgroup label="This project's stages">{tpl.stages.filter((st) => st !== p.stage).map((st) => <option key={st} value={st}>{label(st)}</option>)}</optgroup>
+                  <optgroup label="Other">{others.map((st) => <option key={st} value={st}>{label(st)}</option>)}</optgroup>
+                </select>
+                {finished && <><label className="sr-only" htmlFor="why">Why reopen</label><input id="why" name="reason" className="field !min-h-10 w-56" placeholder="Why are you reopening it?" required /></>}
+                <button className="btn">Move to this stage <ArrowRight size={15} aria-hidden /></button></form>
             </div>
           )}
         </section>
@@ -135,6 +143,15 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
             )}
           </Panel>
 
+          {canWrite && (
+            <Panel title="Type of project" icon={Package} tone="neutral">
+              <form action={projectTypeAction} className="space-y-2"><input type="hidden" name="id" value={p.id} />
+                <label className="sr-only" htmlFor="pt">Type</label>
+                <select id="pt" name="type" className="field" defaultValue={p.workType}>{Object.entries(PROJECT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
+                <p className="text-[13px] text-ink/65">{tpl.hint} Changing it changes the steps on the progress bar and the usual tasks we suggest. Nothing is deleted.</p>
+                <button className="btn btn-quiet !min-h-9">Save type</button></form>
+            </Panel>
+          )}
           <Panel title="Tickets for this project" icon={Ticket} tone="rose" action={<Link className="text-sm font-semibold text-moss" href={`/tickets/new?business=${p.customerId}`}>New ticket</Link>}>
             {tickets.length === 0 ? <p className="text-[15px] text-ink/70">None. Anything a customer raises about this site shows here.</p> : <ul className="divide-y divide-[var(--card-rule)]">{tickets.map((t) => { const s = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const }; return <li key={t.id}><Link href={`/support/${t.id}`} className="flex items-center justify-between gap-2 py-2.5"><span className="min-w-0"><span className="block truncate font-semibold">{t.title}</span><span className="text-[13px] text-ink/65">{t.reference} · {timeAgo(t.updatedAt)}</span></span><Status label={s.label} kind={s.kind} /></Link></li>; })}</ul>}
           </Panel>

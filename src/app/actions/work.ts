@@ -15,7 +15,7 @@ const back = (path: string, e: unknown): never => redirect(`${path}${path.includ
 export async function transitionAction(fd: FormData) {
   const ctx = await requireStaff("project.write");
   const id = String(fd.get("id"));
-  try { await transitionProject(ctx, id, fd.get("stage") as never, Number(fd.get("version")), String(fd.get("override") ?? "")); } catch (e) { return back(`/projects/${id}`, e); }
+  try { await transitionProject(ctx, id, fd.get("stage") as never, Number(fd.get("version")), String(fd.get("reason") ?? "")); } catch (e) { return back(`/projects/${id}`, e); }
   redirect(`/projects/${id}`);
 }
 export async function updateAction(fd: FormData) {

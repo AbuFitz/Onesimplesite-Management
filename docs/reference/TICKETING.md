@@ -65,6 +65,9 @@ flowchart TD
 Team controls (Business > People): invite, resend, change level, send password reset, remove access (signs them out), remove the person.
 A client owner can ask for a new person; the team approves (can change the level) or declines, and the requester is emailed.
 
+## See also
+[How projects work](./PROJECTS.md)
+
 ## Emails
 Customer: ticket received · team reply · sorted · waiting reminders · change priced (approve) · payment received · plan live · payment failed · portal invitation · access request answered.
 Team: new ticket / customer reply · customers waiting list · change approved/declined · payment events · access request.

@@ -9,6 +9,7 @@ import { Search } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { can, ROLE_INFO } from "@/modules/identity/permissions";
 import { SideNav, BottomNav, type NavGroup } from "@/components/nav";
+import { CommandPalette } from "@/components/command-palette";
 import { NewMenu, UserMenu } from "@/components/menus";
 import { after } from "next/server";
 import { maybeRunReminders } from "@/modules/support/reminders";
@@ -53,11 +54,7 @@ export default async function StaffLayout({ children, modal }: { children: React
           <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[11rem]">
             <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={126} height={26} priority />
           </Link>
-          <form action="/search" role="search" className="relative mx-auto hidden max-w-lg flex-1 sm:block">
-            <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <label htmlFor="gs" className="sr-only">Search</label>
-            <input id="gs" name="q" type="search" placeholder="Search businesses, tickets, projects" className="field !min-h-9 !rounded-lg !border-line !bg-soft !pl-9 !text-sm hover:!border-edge focus:!bg-white" />
-          </form>
+          <CommandPalette actions={create} />
           <div className="ml-auto flex items-center gap-2">
             <span className="sm:hidden"><Link href="/search" aria-label="Search" className="btn btn-quiet !min-h-10 !px-3"><Search size={17} aria-hidden /></Link></span>
             <NewMenu links={create} />

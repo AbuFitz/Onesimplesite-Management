@@ -64,3 +64,36 @@ describe("project files", () => {
     await expect(addProjectFiles(x.staff, x.project.id, [], { shared: false })).rejects.toThrow(/Choose a file/);
   });
 });
+
+import { transitionProject, setProjectType, typeOf, PROJECT_TYPES, ALLOWED } from "@/modules/projects/service";
+describe("flexible project flow", () => {
+  it("any stage can move to any other, forwards, backwards or skipping; only reopening a finished project needs a reason", async () => {
+    const x = await world();
+    const stage = async () => (await db.project.findUniqueOrThrow({ where: { id: x.project.id } }));
+    const go = async (to: string, reason?: string) => transitionProject(x.staff, x.project.id, to as never, (await stage()).version, reason);
+    await go("launched");                                         // skipped everything in between
+    await go("design");                                           // and straight back
+    await go("held"); await go("development");                    // pause and resume
+    await go("completed");
+    await expect(go("qa")).rejects.toThrow(/Say why/);            // finished: needs a reason
+    await go("qa", "Customer found a bug after launch");
+    expect((await stage()).stage).toBe("qa");
+    await expect(go("qa")).rejects.toThrow(/already at that stage/);
+    const log = await db.auditEvent.findMany({ where: { targetId: x.project.id, action: "project.stage" }, orderBy: { createdAt: "asc" } });
+    expect(log).toHaveLength(6); expect((log.at(-1)!.detail as { reason?: string }).reason).toMatch(/bug/);
+    expect(Object.values(ALLOWED).every((t) => t.length === 10)).toBe(true);
+  });
+  it("project types change the steps and the usual tasks, never delete anything", async () => {
+    const x = await world();
+    expect(typeOf("hosting_only").stages).not.toContain("design"); expect(typeOf("nonsense").label).toBe("New website");
+    await setProjectType(x.staff, x.project.id, "revamp");
+    await db.project.update({ where: { id: x.project.id }, data: { stage: "planned" } });
+    await seedStageTasks(x.staff, x.project.id);
+    const titles = (await db.task.findMany({ where: { projectId: x.project.id } })).map((t) => t.title);
+    expect(titles).toContain("Back up the current site"); expect(titles).toContain("Send the welcome email and book the kick-off call");
+    await setProjectType(x.staff, x.project.id, "hosting_only");
+    expect((await db.task.count({ where: { projectId: x.project.id } }))).toBe(titles.length);
+    await expect(setProjectType(x.staff, x.project.id, "bogus")).rejects.toThrow(/Pick a type/);
+    for (const t of Object.values(PROJECT_TYPES)) expect(t.stages.length).toBeGreaterThan(1);
+  });
+});

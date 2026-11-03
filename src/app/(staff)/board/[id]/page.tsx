@@ -23,7 +23,7 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
   return (
     <div className="mx-auto max-w-3xl">
       <Link href="/board" className="mb-4 inline-flex min-h-9 items-center text-sm text-muted hover:text-ink">‹ Team Board</Link>
-      <article className="rounded-2xl border border-line bg-white p-5 sm:p-8">
+      <article className="rounded-xl border border-[var(--card-line)] bg-white p-5 sm:p-8">
         <header className="mb-5 flex flex-wrap items-center gap-3">
           <Avatar name={author.displayName} size={40} />
           <div className="min-w-0 flex-1"><p className="font-semibold">{author.displayName}{author.jobTitle && <span className="font-normal text-muted"> · {author.jobTitle}</span>}</p><p className="text-sm text-muted">Posted {timeAgo(post.createdAt)}</p></div>

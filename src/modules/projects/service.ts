@@ -6,19 +6,27 @@ import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ProjectStage } from "@/generated/prisma/enums";
 
-export const ALLOWED: Record<ProjectStage, ProjectStage[]> = {
-  planned: ["awaiting_assets", "design", "held", "cancelled"],
-  awaiting_assets: ["design", "held", "cancelled"],
-  design: ["development", "awaiting_assets", "held", "cancelled"],
-  development: ["qa", "design", "held", "cancelled"],
-  qa: ["client_review", "development", "held", "cancelled"],
-  client_review: ["ready_to_launch", "design", "development", "held", "cancelled"],
-  ready_to_launch: ["launched", "client_review", "held", "cancelled"],
-  launched: ["completed", "held"],
-  completed: [],
-  held: ["planned", "awaiting_assets", "design", "development", "qa", "client_review", "ready_to_launch", "cancelled"],
-  cancelled: [],
+const ALL_STAGES: ProjectStage[] = ["planned", "awaiting_assets", "design", "development", "qa", "client_review", "ready_to_launch", "launched", "completed", "held", "cancelled"];
+/**
+ * Every real project is different (a Shopify storefront revamp has no brand-new design, a hosting move has no review), so a project can move
+ * to ANY other stage, forwards, backwards or sideways. The only rule: bringing back a finished or cancelled project needs a reason.
+ */
+export const ALLOWED: Record<ProjectStage, ProjectStage[]> = Object.fromEntries(ALL_STAGES.map((s) => [s, ALL_STAGES.filter((t) => t !== s)])) as Record<ProjectStage, ProjectStage[]>;
+const TERMINAL: ProjectStage[] = ["completed", "cancelled"];
+
+/** The kinds of project we run. Each decides which stages show on the progress bar and which usual tasks are suggested. */
+export const PROJECT_TYPES: Record<string, { label: string; hint: string; stages: ProjectStage[]; extra: Partial<Record<ProjectStage, string[]>> }> = {
+  new_site: { label: "New website", hint: "A brand-new site, from brief to launch.", stages: ["planned", "awaiting_assets", "design", "development", "qa", "client_review", "ready_to_launch", "launched"], extra: {} },
+  revamp: { label: "Revamp an existing site", hint: "A new look or rebuild of something they already have, such as a Shopify storefront.", stages: ["planned", "awaiting_assets", "design", "development", "qa", "client_review", "ready_to_launch", "launched"],
+    extra: { planned: ["Review the current site and what to keep", "Back up the current site", "Get access to their current platform (never by email)"], development: ["Move over content and products worth keeping", "Set up redirects from the old pages"], ready_to_launch: ["Check the old links redirect properly"] } },
+  shop: { label: "Online shop", hint: "A site that sells things, with payments.", stages: ["planned", "awaiting_assets", "design", "development", "qa", "client_review", "ready_to_launch", "launched"],
+    extra: { awaiting_assets: ["Collect product photos, names and prices"], development: ["Set up the shop and payments", "Add delivery and returns details", "Test a real order from start to finish"], qa: ["Test checkout on a phone"] } },
+  hosting_only: { label: "Hosting and move-over", hint: "We host or move an existing site. No design stage.", stages: ["planned", "development", "qa", "ready_to_launch", "launched"],
+    extra: { planned: ["Get the site files and access safely"], development: ["Move the site to our hosting", "Set up backups and monitoring"], ready_to_launch: ["Point the domain at the new hosting"] } },
+  care: { label: "Ongoing care only", hint: "No build. Just looking after a site.", stages: ["planned", "launched"], extra: { planned: ["Add the site to monitoring and backups", "Confirm the care plan and what's included"] } },
+  custom: { label: "Something else", hint: "Use whichever stages you need. Everything is available.", stages: ["planned", "awaiting_assets", "design", "development", "qa", "client_review", "ready_to_launch", "launched"], extra: {} },
 };
+export const typeOf = (t?: string | null) => PROJECT_TYPES[t ?? ""] ?? PROJECT_TYPES.new_site;
 
 /** Project access: all-project capability or ownership; delivery staff see assigned work only. */
 export function projectWhere(ctx: StaffCtx) {
@@ -34,16 +42,29 @@ export async function getProject(ctx: StaffCtx, id: string) {
   });
 }
 
-export async function transitionProject(ctx: StaffCtx, id: string, to: ProjectStage, expectedVersion: number, overrideReason?: string) {
+export async function transitionProject(ctx: StaffCtx, id: string, to: ProjectStage, expectedVersion: number, reason?: string) {
   if (!can(ctx.role, "project.write")) throw forbidden();
+  if (!ALL_STAGES.includes(to)) throw new DomainError("validation", "Pick a stage.");
   return db.$transaction(async (tx) => {
     const p = await tx.project.findFirst({ where: { id, ...projectWhere(ctx) } });
     if (!p) throw notFound();
-    const allowed = ALLOWED[p.stage].includes(to);
-    if (!allowed && !(ctx.role === "owner" && overrideReason?.trim())) throw new DomainError("validation", `Cannot move from ${p.stage} to ${to}. An owner can override with a reason.`);
+    if (p.stage === to) throw new DomainError("validation", "It's already at that stage.");
+    if (TERMINAL.includes(p.stage) && !reason?.trim()) throw new DomainError("validation", "This project is finished. Say why you're reopening it.");
     const r = await tx.project.updateMany({ where: { id, version: expectedVersion }, data: { stage: to, version: { increment: 1 } } });
     if (r.count === 0) throw stale();
-    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "project.stage", targetType: "project", targetId: id, customerId: p.customerId, detail: { from: p.stage, to, override: allowed ? undefined : overrideReason } });
+    const order = typeOf(p.workType).stages;
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "project.stage", targetType: "project", targetId: id, customerId: p.customerId, detail: { from: p.stage, to, reason: reason?.trim() || undefined, skipped: order.slice(order.indexOf(p.stage) + 1, order.indexOf(to)).length > 0 && order.indexOf(to) > order.indexOf(p.stage) ? order.slice(order.indexOf(p.stage) + 1, order.indexOf(to)) : undefined } });
+  });
+}
+
+export async function setProjectType(ctx: StaffCtx, id: string, type: string) {
+  if (!can(ctx.role, "project.write")) throw forbidden();
+  if (!PROJECT_TYPES[type]) throw new DomainError("validation", "Pick a type of project.");
+  const p = await db.project.findFirst({ where: { id, ...projectWhere(ctx) } });
+  if (!p) throw notFound();
+  await db.$transaction(async (tx) => {
+    await tx.project.update({ where: { id }, data: { workType: type } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "project.type", targetType: "project", targetId: id, customerId: p.customerId, detail: { from: p.workType, to: type } });
   });
 }
 
@@ -99,7 +120,7 @@ export async function seedStageTasks(ctx: StaffCtx, projectId: string) {
   const guide = STAGE_GUIDE[p.stage];
   if (!guide) return 0;
   const have = new Set((await db.task.findMany({ where: { projectId }, select: { title: true } })).map((t) => t.title));
-  const fresh = guide.tasks.filter((t) => !have.has(t));
+  const fresh = [...guide.tasks, ...(typeOf(p.workType).extra[p.stage] ?? [])].filter((t) => !have.has(t));
   if (fresh.length) await db.task.createMany({ data: fresh.map((title) => ({ workspaceId: ctx.workspaceId, projectId, customerId: p.customerId, title, assigneeId: p.ownerId ?? ctx.staffId })) });
   return fresh.length;
 }
