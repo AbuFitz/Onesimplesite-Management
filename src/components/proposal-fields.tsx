@@ -15,7 +15,7 @@ export function ProposalFields({ initial, defaults, plans = [] }: { initial?: In
       <div><label className="label" htmlFor="scope">What we are building</label><textarea id="scope" name="scope" className="field min-h-24" defaultValue={initial?.scope ?? defaults?.scope} required /></div>
       <PriceLines lines={initial?.lines ?? []} />
       {plans.length > 0 && <div><label className="label" htmlFor="plan">Care plan</label><select id="plan" name="plan" className="field" defaultValue={initial?.requirements?.plan ?? ""}><option value="">No care plan</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.name}, {p.price} a month</option>)}</select><p className="hint mt-1">Choosing a plan adds its monthly price and brings the Service Level Agreement and Hosting terms into the pack.</p></div>}
-      <div><label className="label" htmlFor="pjt">What kind of project is it?</label><select id="pjt" name="projectType" className="field" defaultValue={initial?.requirements?.projectType ?? "new_site"}>{Object.entries(PROJECT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select><p className="hint mt-1">Decides the steps and usual tasks on the project that's created when they sign. You can change it later.</p></div>
+      <div><label className="label" htmlFor="dp">Deposit due when they sign</label><select id="dp" name="depositPercent" className="field" defaultValue={initial?.requirements?.depositPercent ?? ""}><option value="">No deposit, pay the website fee in one go</option>{["10", "20", "25", "30", "40", "50", "60", "70", "75"].map((n) => <option key={n} value={n}>{n}% deposit, the rest before launch</option>)}</select><p className="hint mt-1">Shown on the agreement they sign, so there are no surprises. The two payments are created for you once they sign.</p></div>
       <fieldset className="rounded-xl border border-line p-4"><legend className="px-1 text-sm font-semibold">Offer for this company <span className="font-normal text-muted">(optional)</span></legend>
         <p className="mb-3 text-sm text-muted">A promotion just for them. It is written into the order they sign, and the free months and discount are applied automatically when they pay.</p>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -30,6 +30,7 @@ export function ProposalFields({ initial, defaults, plans = [] }: { initial?: In
       <details className="rounded-xl border border-line px-4 py-3" open={filledReqs > 0}>
         <summary className="cursor-pointer text-sm font-semibold">More details <span className="font-normal text-muted">· website requirements, payment plan, extra terms{filledReqs ? ` (${filledReqs} filled)` : ""}</span></summary>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div><label className="hint" htmlFor="pjt">Project type</label><select id="pjt" name="projectType" className="field" defaultValue={initial?.requirements?.projectType ?? "new_site"}>{Object.entries(PROJECT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select><p className="hint mt-1">Chosen when the agreement was started. Only change it if the job changed.</p></div>
           {REQUIREMENT_FIELDS.map(([k, label]) => (
             <div key={k} className={k === "payment" || k === "notes" ? "sm:col-span-2" : ""}>
               <label className="hint" htmlFor={`req_${k}`}>{label}</label>

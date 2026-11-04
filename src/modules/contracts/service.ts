@@ -62,7 +62,13 @@ export async function runCompletionWorkflow(tx: Tx, contractId: string) {
   // An offer on the order (a discount on the website fee, free months on the plan) is applied here, once, so what they pay matches what they signed.
   const promo = promoFrom((c.proposalVersion?.requirements ?? {}) as Record<string, string | undefined>);
   const oneOff = Math.max(0, c.oneOffMinor - (promo?.discountMinor ?? 0));
-  if (oneOff > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "one_off" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "one_off", amountMinor: oneOff, currency: c.currency, ...(promo?.discountMinor ? { promoLabel: promo.label, description: `Website (${promo.label}: £${(promo.discountMinor / 100).toFixed(2)} off)` } : {}) }, update: {} });
+  const depPct = Number((c.proposalVersion?.requirements as { depositPercent?: string } | null)?.depositPercent) || 0;
+  const base = { workspaceId: c.workspaceId, customerId: c.customerId, contractId, currency: c.currency };
+  if (oneOff > 0 && depPct > 0) {
+    const dep = Math.round((oneOff * depPct) / 100);
+    await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "deposit" } }, create: { ...base, kind: "deposit", amountMinor: dep, description: `Website deposit (${depPct}%)`, ...(promo?.discountMinor ? { promoLabel: promo.label } : {}) }, update: {} });
+    await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "balance" } }, create: { ...base, kind: "balance", amountMinor: oneOff - dep, description: "Website final payment" }, update: {} });
+  } else if (oneOff > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "one_off" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "one_off", amountMinor: oneOff, currency: c.currency, ...(promo?.discountMinor ? { promoLabel: promo.label, description: `Website (${promo.label}: £${(promo.discountMinor / 100).toFixed(2)} off)` } : {}) }, update: {} });
   if (c.recurringMinor > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "recurring_setup" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "recurring_setup", amountMinor: c.recurringMinor, currency: c.currency, trialMonths: promo?.freeMonths ?? 0, promoLabel: promo?.freeMonths ? promo.label : null }, update: {} });
   const oppId = c.proposalVersion?.proposal.opportunityId;
   if (oppId) await tx.opportunity.updateMany({ where: { id: oppId, stage: { not: "won" } }, data: { stage: "won", version: { increment: 1 } } });

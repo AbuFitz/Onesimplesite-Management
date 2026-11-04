@@ -24,7 +24,8 @@ export async function createTicketStaffAction(_: unknown, fd: FormData): Promise
     if (!cu) throw new DomainError("not_found", "Pick the company first.");
     let contactId = g("contactId");
     if (contactId === "new") contactId = (await addPerson(ctx, cu.id, { name: g("newName"), email: g("newEmail"), position: g("newPosition") || undefined })).id;
-    if (type === "onboarding") {
+    if (type === "onboarding") redirect(`/agreements/new?business=${cu.id}`);
+    if (false as boolean) {
       const work = WORK_TYPES.find((w) => w.id === g("work")) ?? WORK_TYPES[0];
       const title = g("title") || `${work.label} for ${cu.displayName}`;
       const opp = await db.opportunity.create({ data: { workspaceId: ctx.workspaceId, customerId: cu.id, title, ownerId: g("assigneeId") || ctx.staffId, priority: g("priority") || "normal" } });

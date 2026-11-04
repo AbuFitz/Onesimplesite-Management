@@ -234,6 +234,9 @@ export function composeAgreement(c: ComposeIn) {
   const included = [...lines_(req.features), ...lines_(req.integrations)];
   const notes = lines_(req.notes), pay = lines_(req.payment), specials = lines_(c.special);
   const promo = promoFrom(req);
+  const payable = Math.max(0, c.oneOffMinor - (promo?.discountMinor ?? 0));
+  const depositPct = Number(req.depositPercent) || 0;
+  const deposit = depositPct > 0 && payable > 0 ? { pct: depositPct, now: Math.round((payable * depositPct) / 100), later: payable - Math.round((payable * depositPct) / 100) } : null;
   const row = (k: string, v: string | undefined) => (v?.trim() ? [`kv: ${k} | ${cell(v)}`] : []);
   let section = 0;
   // Headings are numbered by the document parser; the count is kept here so clauses carry the right number.
@@ -260,6 +263,7 @@ export function composeAgreement(c: ComposeIn) {
     ...(promo?.discountMinor && c.oneOffMinor > 0 ? [`| ${cell(promo.label)}: discount on the website fee |  | −${m(Math.min(promo.discountMinor, c.oneOffMinor))} |`, `| Website fee to pay |  | ${m(Math.max(0, c.oneOffMinor - promo.discountMinor))} |`] : []),
     ...(c.recurringMinor > 0 ? [`| Total (recurring) |  | ${m(c.recurringMinor)} ${per} |`] : []),
     "",
+    ...(deposit ? [`note: How the website fee is paid: a deposit of ${deposit.pct}% (${m(deposit.now)}) is due when you sign, and the final payment of ${m(deposit.later)} is due before the website goes live.`] : []),
     ...(promo?.freeMonths && c.recurringMinor > 0 ? [`note: ${promo.label}: the first ${monthsWords(promo.freeMonths)} of your monthly plan ${promo.freeMonths === 1 ? "is" : "are"} free. You set the plan up with your card as normal, you are not charged during the free period, and the first payment of ${m(c.recurringMinor)} is taken ${monthsWords(promo.freeMonths)} after the day the plan starts. You can cancel under clause 14.1 of the Terms before then and pay nothing.`] : []),
     c.provider.vatNumber ? "note: Amounts exclude VAT, which is added at the current rate. Invoices are issued separately for the amounts and dates below." : `note: VAT is not charged because ${c.provider.legalName} is not VAT-registered. Invoices are issued separately for the amounts and dates below.`,
     ...clauses(pay),

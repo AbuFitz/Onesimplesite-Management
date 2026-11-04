@@ -14,8 +14,8 @@ import { RecordHeader, Status, ErrorSummary, money, fmtDateTime } from "@/compon
 import { ProposalFields } from "@/components/proposal-fields";
 import Link from "next/link";
 
-export const metadata = { title: "Ticket" };
-export default async function ProposalPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string; sent?: string }> }) {
+export const metadata = { title: "Agreement" };
+export default async function ProposalPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string; sent?: string; existing?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const { id } = await params;
   const sp = await searchParams;
@@ -43,14 +43,15 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const ready = checks.every(([, ok]) => ok);
   return (
     <>
-      <RecordHeader back={{ href: `/customers/${p.customerId}`, label: p.customer.displayName }} title={p.title} status={<><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} />{opp && can(ctx.role, "opportunity.write") && <AutoSelect action={setTicketStageAction} name="stage" value={opp.stage} label="Where this ticket is up to" hidden={{ id: opp.id, version: String(opp.version), back: `/proposals/${p.id}` }} options={Object.entries(ONBOARDING_LABEL).map(([value, v]) => ({ value, label: v.label }))} />}</>} meta={<span>{p.reference} · version {cur.number}</span>} />
+      <RecordHeader back={{ href: "/agreements", label: "Agreements" }} title={p.title} status={<><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} />{opp && can(ctx.role, "opportunity.write") && <AutoSelect action={setTicketStageAction} name="stage" value={opp.stage} label="Where this ticket is up to" hidden={{ id: opp.id, version: String(opp.version), back: `/proposals/${p.id}` }} options={Object.entries(ONBOARDING_LABEL).map(([value, v]) => ({ value, label: v.label }))} />}</>} meta={<span>{p.reference} · version {cur.number}</span>} />
       <ErrorSummary message={sp.error} />
+      {sp.existing && <p role="status" className="mb-4 text-sm text-moss">{p.customer.displayName} already has an agreement in progress, so we opened it rather than starting a second one.</p>}
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
       {sp.sent && <p role="status" className="mb-4 text-sm text-moss">Agreement sent. The customer receives one email with the signing link.</p>}
       {contract && <p className="mb-4 text-sm"><Link className="underline" href={`/contracts/${contract.id}`}>Open signed copy and status ({contract.reference})</Link> ({contract.status.replace("_", " ")})</p>}
       <div className="grid gap-10 lg:grid-cols-2">
         <section aria-labelledby="ed">
-          <h2 id="ed" className="mb-3">{editable ? "Ticket details" : "Sent version (read-only)"}</h2>
+          <h2 id="ed" className="mb-3">{editable ? "The agreement" : "Sent version (read-only)"}</h2>
           {editable ? (
             <form action={saveDraftAction} className="space-y-4"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} />
               <ProposalFields plans={(await db.servicePlan.findMany({ where: { workspaceId: ctx.workspaceId, active: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })).map((x) => ({ id: x.id, name: x.name, price: `£${(x.monthlyMinor / 100).toFixed(2)}` }))} initial={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil, recurringPeriod: cur.recurringPeriod, lines: cur.lines, requirements: cur.requirements as Record<string, string | undefined> | null }} />

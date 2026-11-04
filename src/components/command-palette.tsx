@@ -28,7 +28,7 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
     return () => { clearTimeout(t); ctl.abort(); };
   }, [q]);
 
-  const quick: Item[] = useMemo(() => [...actions.map((a) => ({ href: a.href, title: a.label, kind: "action" })), ...[["/", "Today"], ["/tickets", "Tickets"], ["/customers", "Companies"], ["/projects", "Projects"], ["/calendar", "Calendar"], ["/board", "Team Board"]].map(([href, title]) => ({ href, title: `Go to ${title}`, kind: "go" }))], [actions]);
+  const quick: Item[] = useMemo(() => [...actions.map((a) => ({ href: a.href, title: a.label, kind: "action" })), ...[["/", "Today"], ["/agreements", "Agreements"], ["/tickets", "Tickets"], ["/customers", "Companies"], ["/projects", "Projects"], ["/calendar", "Calendar"], ["/board", "Team Board"]].map(([href, title]) => ({ href, title: `Go to ${title}`, kind: "go" }))], [actions]);
   const flat: Item[] = q.trim().length < 2 ? quick : groups.flatMap((g) => g.items.map((i) => ({ ...i, kind: g.kind })));
   const go = (href: string) => { setOpen(false); router.push(href); };
   const onKey = (e: React.KeyboardEvent) => {

@@ -2,16 +2,16 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { db } from "@/lib/db";
-import { STATUS_LABEL, CATEGORY_LABEL, ONBOARDING_LABEL } from "@/modules/support/options";
+import { STATUS_LABEL, CATEGORY_LABEL } from "@/modules/support/options";
 import { RecordHeader, Status, Empty, timeAgo, money } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
 import { Search } from "lucide-react";
 
 export const metadata = { title: "Tickets" };
 const TABS = [["needs", "Needs us"], ["waiting", "Waiting on customer"], ["done", "Done"], ["all", "All"]] as const;
-const TYPES = [["all", "All types"], ["onboarding", "New website"], ["change_request", "Change requests"], ["support", "Support"]] as const;
+const TYPES = [["all", "All types"], ["change_request", "Change requests"], ["support", "Support"]] as const;
 
-type Row = { key: string; type: "onboarding" | "change_request" | "support"; href: string; title: string; business: string; businessId: string; person?: string; label: string; kind: "good" | "warn" | "bad" | "neutral"; bucket: "needs" | "waiting" | "done"; mine: boolean; at: Date; priority: string; extra?: string };
+type Row = { key: string; type: "change_request" | "support"; href: string; title: string; business: string; businessId: string; person?: string; label: string; kind: "good" | "warn" | "bad" | "neutral"; bucket: "needs" | "waiting" | "done"; mine: boolean; at: Date; priority: string; extra?: string };
 
 /** Every kind of ticket in one list, in one set of plain statuses. */
 export default async function Tickets({ searchParams }: { searchParams: Promise<{ tab?: string; type?: string; q?: string; mine?: string; s?: string; c?: string; p?: string }> }) {
@@ -22,19 +22,14 @@ export default async function Tickets({ searchParams }: { searchParams: Promise<
   const q = sp.q?.trim().toLowerCase();
   const mine = sp.mine === "1";
   const st = sp.s?.trim() || "", company = sp.c?.trim() || "", pr = ["urgent", "high", "normal", "low", "attention"].includes(String(sp.p)) ? String(sp.p) : "";
-  const [tickets, opps] = await Promise.all([
-    type === "onboarding" ? [] : db.ticket.findMany({ where: { workspaceId: ctx.workspaceId, ...(type !== "all" ? { category: type } : {}) }, include: { customer: { select: { displayName: true } }, contact: { select: { name: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
-    type === "all" || type === "onboarding" ? db.opportunity.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, proposals: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }) : [],
+  const [tickets] = await Promise.all([
+    db.ticket.findMany({ where: { workspaceId: ctx.workspaceId, ...(type !== "all" ? { category: type } : {}) }, include: { customer: { select: { displayName: true } }, contact: { select: { name: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
   ]);
   const all: Row[] = [
     ...tickets.map((t): Row => {
       const s = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const };
       const quoted = t.chargeStatus === "quoted";
       return { key: t.id, type: t.category === "change_request" ? "change_request" : "support", href: `/support/${t.id}`, title: t.title, business: t.customer.displayName, businessId: t.customerId, person: t.contact?.name, label: quoted ? "Waiting for approval" : s.label, kind: quoted ? "neutral" : s.kind, bucket: ["resolved", "closed"].includes(t.status) ? "done" : t.status === "waiting_customer" ? "waiting" : "needs", mine: t.assigneeId === ctx.staffId, at: t.updatedAt, priority: t.priority, extra: t.priceMinor ? `${money(t.priceMinor)}${t.chargeStatus === "paid" ? " · paid" : t.chargeStatus === "approved" ? " · approved" : t.chargeStatus === "declined" ? " · declined" : ""}` : undefined };
-    }),
-    ...opps.map((o): Row => {
-      const s = ONBOARDING_LABEL[o.stage] ?? { label: o.stage, kind: "neutral" as const };
-      return { key: o.id, type: "onboarding", href: o.proposals[0] ? `/proposals/${o.proposals[0].id}` : `/customers/${o.customerId}`, title: o.title, business: o.customer.displayName, businessId: o.customerId, label: s.label, kind: s.kind, bucket: o.stage === "won" || o.stage === "lost" ? "done" : o.stage === "proposal_sent" || o.stage === "contract_pending" ? "waiting" : "needs", mine: o.ownerId === ctx.staffId, at: o.updatedAt, priority: o.priority };
     }),
   ];
   // One place decides what a filter means, so the counts on every chip match what you will see when you click it.
@@ -53,7 +48,7 @@ export default async function Tickets({ searchParams }: { searchParams: Promise<
   const extra = [!!st, !!company, !!pr, mine, !!q].filter(Boolean).length;
   return (
     <>
-      <RecordHeader title="Tickets" meta="New websites, change requests and support, all in one place" action={<Link className="btn" href="/tickets/new"><Plus size={16} aria-hidden /> New ticket</Link>} />
+      <RecordHeader title="Tickets" meta="Change requests and support. New websites are in Agreements." action={<Link className="btn" href="/tickets/new"><Plus size={16} aria-hidden /> New ticket</Link>} />
       <AutoGetForm className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(5,minmax(0,1fr))_auto]">
         <div className="relative col-span-2 min-w-0 lg:col-span-1"><Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-[2.2rem] text-muted" /><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="q">Search</label>
           <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Title or company" className="field !pl-9" /></div>

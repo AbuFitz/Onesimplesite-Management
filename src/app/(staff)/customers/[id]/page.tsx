@@ -43,7 +43,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         action={<>
           {primary?.phone && <a className="btn btn-quiet" href={`tel:${primary.phone}`}>Call</a>}
           {primary?.email && <a className="btn btn-quiet" href={`mailto:${primary.email}`}>Email</a>}
-          {can(ctx.role, "proposal.write") && <Link className="btn" href={`/tickets/new?business=${c.id}`}>New ticket</Link>}
+          {can(ctx.role, "proposal.write") && <><Link className="btn btn-quiet" href={`/tickets/new?business=${c.id}`}>New ticket</Link><Link className="btn" href={`/agreements/new?business=${c.id}`}>New agreement</Link></>}
           {can(ctx.role, "customer.write") && (
             <details className="relative">
               <summary className="btn btn-quiet cursor-pointer list-none">Status</summary>
@@ -143,9 +143,9 @@ export default async function CustomerPage({ params, searchParams }: { params: P
                 <li key={t.id}><Link href={`/support/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-bone/60"><span className="min-w-0"><span className="flex items-center gap-2"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${CATEGORY_LABEL[t.category]?.cls ?? ""}`}>{CATEGORY_LABEL[t.category]?.label ?? "Support"}</span><span className="truncate font-semibold">{t.title}</span></span><span className="text-sm text-muted">{t.reference}{t.contact ? ` · ${t.contact.name}` : ""} · {timeAgo(t.updatedAt)}{t.priceMinor ? ` · ${money(t.priceMinor)}` : ""}</span></span><Status label={st.label} kind={st.kind} /></Link></li>); })}
             </ul>
           )}
-          {c.proposals.length + c.contracts.length + tickets.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`/tickets/new?business=${c.id}`}>Create the first ticket</Link></Empty> : (
+          {c.proposals.length + c.contracts.length + tickets.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`/agreements/new?business=${c.id}`}>Start their agreement</Link></Empty> : (
             <ul>
-              {c.proposals.map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Proposal {p.reference}</span></span><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
+              {c.proposals.filter((p) => !c.contracts.some((k) => k.proposalVersion?.proposalId === p.id)).map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Agreement {p.reference}</span></span><Status label={p.status === "draft" ? "being written" : p.status === "sent" ? "waiting for signature" : p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
               {c.contracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}
             </ul>
           )}

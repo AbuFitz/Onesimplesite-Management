@@ -8,7 +8,6 @@ import { ErrorSummary } from "./ui";
 import { SubmitButton } from "./submit-button";
 
 const TYPES = [
-  { id: "onboarding", label: "New website", hint: "A new customer or a new site. We quote it, they sign, we set up payment.", Icon: Globe, tone: "bg-[#dff5ea]" },
   { id: "change_request", label: "Change request", hint: "Work outside their plan. We price it, they approve, they pay.", Icon: Wrench, tone: "bg-[#fbf3d5]" },
   { id: "support", label: "Support", hint: "Something is broken, or a question. Covered by their plan.", Icon: LifeBuoy, tone: "bg-[#e3effa]" },
 ] as const;
@@ -26,7 +25,7 @@ export function TicketCreateForm({ customer, people, team, me, initialType }: { 
 
       <fieldset>
         <legend className="mb-3 text-xl font-bold">What kind of ticket is it?</legend>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {TYPES.map(({ id, label, hint, Icon, tone }) => (
             <button type="button" key={id} aria-pressed={type === id} onClick={() => setType(id)} className={`flex flex-col items-start gap-2 rounded-2xl border-2 p-4 text-left transition-colors ${type === id ? "border-ink " + tone : "border-line bg-white hover:bg-bone"}`}>
               <span className={`grid size-10 place-items-center rounded-xl ${tone}`}><Icon size={20} aria-hidden /></span>

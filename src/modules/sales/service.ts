@@ -22,10 +22,10 @@ const lineInput = z.object({
 export const REQUIREMENT_FIELDS = [
   ["pages", "Pages and structure"], ["features", "Features and functionality"], ["integrations", "Integrations (forms, booking, payments, analytics)"],
   ["domainHosting", "Domain and hosting"], ["contentBy", "Who supplies content, images and logo"], ["timeline", "Timeline and launch date"],
-  ["payment", "Payment schedule for this order (amounts and dates)"], ["notes", "Other requirements or exclusions"],
+  ["payment", "Anything else about payment (optional)"], ["notes", "Other requirements or exclusions"],
 ] as const;
 // The plan is not wording: it is the id of the care plan being sold, stored with the requirements so it is frozen with the quote.
-const requirementsInput = z.object({ ...Object.fromEntries(REQUIREMENT_FIELDS.map(([k]) => [k, z.string().trim().max(5000).optional()])), plan: z.string().uuid().optional(), projectType: z.string().max(40).optional(), promoLabel: z.string().trim().max(60).optional(), promoFreeMonths: z.enum(["1", "2", "3", "6", "12"]).optional(), promoDiscount: z.string().regex(/^\d{1,6}(\.\d{1,2})?$/, "Enter the discount as a number of pounds.").optional() }).partial();
+const requirementsInput = z.object({ ...Object.fromEntries(REQUIREMENT_FIELDS.map(([k]) => [k, z.string().trim().max(5000).optional()])), plan: z.string().uuid().optional(), projectType: z.string().max(40).optional(), promoLabel: z.string().trim().max(60).optional(), depositPercent: z.enum(["10", "20", "25", "30", "40", "50", "60", "70", "75"]).optional(), promoFreeMonths: z.enum(["1", "2", "3", "6", "12"]).optional(), promoDiscount: z.string().regex(/^\d{1,6}(\.\d{1,2})?$/, "Enter the discount as a number of pounds.").optional() }).partial();
 export type Requirements = z.infer<typeof requirementsInput>;
 
 export const draftInput = z.object({

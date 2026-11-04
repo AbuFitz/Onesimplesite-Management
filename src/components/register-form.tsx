@@ -48,7 +48,7 @@ export function RegisterForm() {
       </section>
       <div className="flex flex-wrap gap-2">
         <SubmitButton pendingText="Saving…">Add company</SubmitButton>
-        <button name="next" value="ticket" className="btn btn-quiet">Add company and start a ticket</button>
+        <button name="next" value="ticket" className="btn btn-quiet">Add company and start an agreement</button>
       </div>
     </form>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
 import { db } from "@/lib/db";
 import { TicketCreateForm } from "@/components/ticket-create-form";
@@ -10,6 +11,7 @@ export const metadata = { title: "New ticket" };
 export default async function NewTicket({ searchParams }: { searchParams: Promise<{ business?: string; type?: string }> }) {
   const ctx = await requireStaff("customer.write");
   const sp = await searchParams;
+  if (sp.type === "onboarding") redirect(`/agreements/new${sp.business ? `?business=${sp.business}` : ""}`);
   const companies = await db.customer.findMany({ where: { workspaceId: ctx.workspaceId }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true, reference: true }, take: 500 });
   const biz = companies.find((b) => b.id === sp.business);
   const [people, team] = biz ? await Promise.all([
