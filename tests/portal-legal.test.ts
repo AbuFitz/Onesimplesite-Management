@@ -21,4 +21,13 @@ describe("portal legal pages (in code)", () => {
   it("cookie notice only claims strictly necessary cookies", () => {
     expect(LEGAL_PAGES.cookies.body).toMatch(/strictly necessary/); expect(LEGAL_PAGES.cookies.body).toMatch(/No advertising, tracking or analytics/);
   });
+
+  it("tells people about last-seen, devices and what each side can see", () => {
+    const priv = LEGAL_PAGES.privacy.body, cook = LEGAL_PAGES.cookies.body, terms = LEGAL_PAGES.terms.body;
+    expect(priv).toContain("## What you can see, and what we can see");
+    expect(priv).toMatch(/when you were last active/); expect(priv).toMatch(/which devices you have signed in from/); expect(priv).toMatch(/passkeys/);
+    expect(priv).toMatch(/Only our team can see/);
+    expect(cook).toMatch(/Device cookie/); expect(cook).toMatch(/Trusted device cookie/);
+    expect(terms).toMatch(/last active/); expect(terms).toMatch(/who raised them/);
+  });
 });

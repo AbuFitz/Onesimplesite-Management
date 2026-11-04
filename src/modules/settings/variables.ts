@@ -1,7 +1,7 @@
 import { ADDRESSES } from "@/lib/sender-identities";
 
 /**
- * Values the legal documents quote. They live in Business settings, not in the wording, so changing a price,
+ * Values the legal documents quote. They live in Settings, not in the wording, so changing a price,
  * a support hour or an email address never means republishing a legal document. Values are written into the
  * order when it is sent, so a signed order keeps the figures the customer agreed.
  */

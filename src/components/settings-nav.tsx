@@ -5,7 +5,7 @@ import { Building2, CreditCard, ScrollText, Mail, Bell, ShieldCheck } from "luci
 
 type Item = { href: string; label: string; note: string; Icon: typeof Building2; match: string[]; exact?: boolean };
 const GROUPS: { title: string; items: Item[] }[] = [
-  { title: "Business", items: [
+  { title: "Company", items: [
     { href: "/settings", label: "Company details", note: "Who we are on every agreement", Icon: Building2, match: ["/settings"] , exact: true },
     { href: "/settings/plans", label: "Plans and details", note: "Care plans and quoted details", Icon: CreditCard, match: ["/settings/plans"] },
   ] },

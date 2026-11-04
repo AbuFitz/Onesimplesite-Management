@@ -74,7 +74,7 @@ ok(true, "company details saved in Settings");
 
 // 2. Terms: starter has placeholders -> publish blocked -> write real terms -> publish
 await staff.goto(`${M}/settings/terms`);
-await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
+await staff.click("main a[href^='/settings/legal/terms/'] >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
 if (await staff.locator("button:has-text('Publish version')").count()) {
   // The starter wording is complete (values live in settings), so it can be published as it stands.
   await staff.click("button:has-text('Publish version')"); await staff.waitForURL(/published=1/);
@@ -90,12 +90,12 @@ ok(await staff.locator("text=Live: ").count() > 0, "terms published");
 // 3. Enquiry -> customer details -> proposal with requirements
 await staff.goto(`${M}/settings/legal`);
 ok((await staff.locator("main li h3").allInnerTexts()).join("|") === ["Services Agreement", "Service Level Agreement", "Hosting and Care Plan Terms", "Data Processing Agreement", "Change Request"].join("|"), "the five customer legal documents are listed");
-await staff.goto(`${M}/settings/legal/dpa`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/legal\/dpa\/[0-9a-f-]{36}/);
+await staff.goto(`${M}/settings/legal/dpa`); await staff.click("main a[href^='/settings/legal/dpa/'] >> nth=0"); await staff.waitForURL(/\/legal\/dpa\/[0-9a-f-]{36}/);
 ok((await staff.locator("article").first().innerText()).toLowerCase().includes("data processing agreement"), "data processing agreement preview renders in the document layout");
 ok(await staff.locator("button:has-text('Publish version')").count() === 0 && (await staff.locator("main").innerText()).toLowerCase().includes("published"), "the up-to-date data processing agreement was published automatically");
 await staff.goto(`${M}/settings/emails?e=signing_confirmation&w=phone`);
 ok(await staff.locator("iframe").count() === 1 && (await staff.locator("main").innerText()).includes("Signed copy"), "email preview page renders the customer emails");
-await staff.goto(`${M}/settings/terms`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
+await staff.goto(`${M}/settings/terms`); await staff.click("main a[href^='/settings/legal/terms/'] >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
 const termsUrl = staff.url().split("?")[0];
 await staff.goto(`${termsUrl}/preview`);
 { const doc = (await staff.locator("article").first().innerText()).toLowerCase(); ok(doc.includes("introduction and definitions") && doc.includes("acceptance of terms") && doc.includes("version 1.4"), "full document preview shows the whole v1.4 agreement"); }
@@ -163,7 +163,7 @@ ok(conf?.attachments?.length === 1, "customer gets confirmation with the signed 
 ok(notice?.to === "hello@onesimplesite.co.uk" && notice.attachments?.length === 1, "hello@ gets the internal notice with the signed PDF");
 await staff.goto(proposalUrl);
 ok(await staff.locator("text=accepted").count() > 0, "proposal is now accepted (signing = acceptance)");
-await staff.click("a:has-text('Open signed copy and status')"); await staff.waitForURL(/\/contracts\//);
+await staff.click("a:has-text('Status and signed copy')"); await staff.waitForURL(/\/contracts\//);
 const contractPath = new URL(staff.url()).pathname;
 ok(await staff.locator("text=Completed").count() > 0, "agreement completed");
 const pdf = await get(staff, contractPath + "/pdf");

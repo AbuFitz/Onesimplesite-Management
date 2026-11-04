@@ -312,12 +312,12 @@ async function assemble(tx: Tx, ctx: StaffCtx, proposalId: string, signer: { nam
     (await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind, status: "published" } })) ?? (draftOk ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind }, orderBy: { number: "desc" } }) : null);
   const [terms, sla, hosting] = await Promise.all([pick("terms"), plan ? pick("sla") : null, plan ? pick("hosting") : null]);
   const useDraft = [terms, sla, hosting].some((d) => d && d.status !== "published");
-  if (!terms) blockers.push("a published Services Agreement (Business settings, Legal documents)");
-  if (plan && !sla) blockers.push("a published Service Level Agreement (Business settings, Legal documents)");
-  if (plan && !hosting) blockers.push("published Hosting and Care Plan Terms (Business settings, Legal documents)");
+  if (!terms) blockers.push("a published Services Agreement (Settings, Legal documents)");
+  if (plan && !sla) blockers.push("a published Service Level Agreement (Settings, Legal documents)");
+  if (plan && !hosting) blockers.push("published Hosting and Care Plan Terms (Settings, Legal documents)");
   const vars = await documentValues(ctx.workspaceId, plan?.id);
   const unfilled = emptyVars([terms?.body, sla?.body, hosting?.body].filter(Boolean).join("\n"), vars).map(labelFor);
-  if (unfilled.length) blockers.push(`these details (Business settings, Plans and details): ${[...new Set(unfilled)].join(", ")}`);
+  if (unfilled.length) blockers.push(`these details (Settings, Plans and details): ${[...new Set(unfilled)].join(", ")}`);
   const position = (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { jobTitle: true } }))?.jobTitle || "OneSimpleSite";
   const compose = (reference: string, validUntil: Date) => composeAgreement({
     reference, title: p.title, dateLabel: day(new Date()), validUntilLabel: day(v.validUntil ?? validUntil), currency: v.currency, oneOffMinor: v.oneOffMinor, recurringMinor: v.recurringMinor, recurringPeriod: v.recurringPeriod,

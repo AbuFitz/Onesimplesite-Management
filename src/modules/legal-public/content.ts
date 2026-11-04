@@ -14,15 +14,25 @@ const PRIVACY = `## Who we are
 ## What we collect
 1.1 About you: your name, email address, phone number and job title.
 1.1 About your company: its name, address, company number and what it does.
-1.1 Your account: your sign-in email, a hashed (unreadable) password, and technical details of each sign-in, such as the time, device and network address.
+1.1 Your account: your sign-in email, a hashed (unreadable) password, your profile picture if you add one, and technical details of each sign-in, such as the time, device type and network address.
+1.1 Your sign-in security: if you turn them on, the passkeys you register (we only keep the public part, never your fingerprint or face) and an authenticator app setup, with backup codes stored in a protected form.
+1.1 Activity on your account: when you were last active and which devices you have signed in from, so we can spot sign-ins that are not yours.
 1.1 Your work with us: your projects, the files and messages you send us, support tickets, and the agreements you sign, including your signature and the time and technical details recorded when you sign.
 1.1 Payments: amounts due and paid and their dates. Card details are entered on our payment provider's secure page and are never seen or stored by us.
 1.1 Emails: a record of the emails we send you.
 
+## What you can see, and what we can see
+1.1 So there are no surprises, here is who can see what in the portal.
+kv: You can see | Your own details, your company's agreements, payments and receipts, projects and files, and the support tickets raised by anyone at your company, including who raised each one.
+kv: Colleagues at your company can see | Your name and profile picture, and the tickets and messages you raise for the company. People you give access to can see what that access allows. Your company's owner can see who has access and add or remove people.
+kv: Our team can see | Your company and contact details, your agreements, payments, projects, tickets and files, and for security: when you were last active, which devices you have signed in from (their type and when they were first and last used) and your recent sign-ins.
+kv: Only our team can see | Internal notes and files marked as team-only. These are never shown to customers.
+1.1 We do not read your files or messages except to provide your service, or where we need to in order to keep the portal safe or the law requires it.
+
 ## Why we use it, and our lawful reasons
 kv: To provide your website, support and portal | Contract
 kv: To take payment and keep accounts | Contract and legal obligation
-kv: To keep the portals secure and fix problems | Legitimate interests
+kv: To keep the portals secure, spot sign-ins that are not yours, and fix problems | Legitimate interests
 kv: To tell you about your project, documents and payments | Contract
 1.1 We do not use the portals for marketing and we do not make decisions about you by automated means.
 1.1 You need to give us the details above to use our services. Without them we cannot set up or run your account.
@@ -38,7 +48,7 @@ kv: To tell you about your project, documents and payments | Contract
 kv: Account and company details | While you are a customer and for 6 years afterwards
 kv: Signed agreements and payment records | 6 years from the end of the financial year they relate to
 kv: Support tickets and their files | 3 years after the ticket is closed
-kv: Sign-in and security records | 12 months
+kv: Sign-in, device and security records | 12 months
 1.1 When a period ends we delete the information or make it anonymous. If you ask us to delete something earlier, we will unless the law requires us to keep it.
 
 ## Your rights
@@ -47,7 +57,7 @@ kv: Sign-in and security records | 12 months
 1.1 If you are unhappy with how we have handled your information, please tell us so we can put it right. You can also complain to the Information Commissioner's Office at ico.org.uk or on 0303 123 1113.
 
 ## Security
-1.1 Access is protected by sign-in, files are only visible to you and our team, and our team's access is limited by role. Please use a strong, unique password and tell us straight away if you think your account has been used by someone else.
+1.1 Access is protected by sign-in, and you can add a passkey or an authenticator app for extra protection. We email you if someone signs in from a device we have not seen before. Files are only visible to you, your colleagues you have given access to, and our team, and our team's access is limited by role. Please use a strong, unique password and tell us straight away if you think your account has been used by someone else.
 
 ## Changes
 1.1 We will update this notice if how we use your information changes. The version and date are shown at the top.`;
@@ -55,10 +65,14 @@ kv: Sign-in and security records | 12 months
 const COOKIES = `## What we use
 1.1 The portals only use cookies that are strictly necessary. They cannot work without them, so the law does not require us to ask for your consent.
 kv: Sign-in cookie | Keeps you signed in as you move between pages. With "Keep me signed in" it lasts up to 30 days on the client portal and 14 days on the team app. Without it, it ends when you close your browser.
+kv: Device cookie | A random code that lets us recognise a device you have used before, so we can tell you if someone signs in from a new one. It holds nothing about you and lasts up to 13 months.
+kv: Trusted device cookie | If you use two-step sign-in and choose to trust a device, this remembers it for 30 days so we do not ask for a code every time.
 kv: Security cookies | Protect sign-in and forms from misuse. They are removed when no longer needed.
+kv: Remembered choices | Your "Got it" on this notice is saved in your browser's storage, not sent to us.
 
 ## What we do not use
 1.1 No advertising, tracking or analytics cookies, and we share no cookie data with advertisers.
+1.1 The device cookie is for security only. It is not used to follow you around the web or build a profile.
 
 ## Cookies from other companies
 1.1 When you pay, you go to a secure page run by our card payment provider, which sets its own cookies to take payment safely and prevent fraud. Its own cookie policy explains them.
@@ -70,6 +84,8 @@ kv: Security cookies | Protect sign-in and forms from misuse. They are removed w
 const TERMS = `## Your account
 1.1 Your account is personal to you. Keep your password private and do not share it. Ask us if you want a colleague to have access.
 1.1 Tell us straight away at {{support_email}} if you think someone else has used your account.
+1.1 For your security we record when you were last active and the devices you sign in from, and we may email you if a sign-in looks unfamiliar. Our team can see this. See the Privacy Notice.
+1.1 Anyone at your company with portal access can see the tickets and files your company shares there, and who raised them.
 
 ## Using the portal
 1.1 Use the portal only for your own company and your work with us.
@@ -96,7 +112,7 @@ kv: Address | {{registered_office}}
 kv: Email | {{general_email}}`;
 
 export const LEGAL_PAGES: Record<string, PublicLegal> = {
-  privacy: { slug: "privacy", title: "Privacy Notice", ref: "OSS-PN-001", version: "1.0", intro: "How we use your personal information when you use the OneSimpleSite client portal and team app.", body: PRIVACY },
-  cookies: { slug: "cookies", title: "Cookie Notice", ref: "OSS-CK-001", version: "1.0", intro: "The portals use only the cookies they need to work.", body: COOKIES },
-  terms: { slug: "terms", title: "Portal Terms of Use", ref: "OSS-PT-001", version: "1.0", intro: "The rules for using the client portal and the team app. They sit alongside the agreement you signed for your website.", body: TERMS },
+  privacy: { slug: "privacy", title: "Privacy Notice", ref: "OSS-PN-001", version: "1.1", intro: "How we use your personal information when you use the OneSimpleSite client portal and team app.", body: PRIVACY },
+  cookies: { slug: "cookies", title: "Cookie Notice", ref: "OSS-CK-001", version: "1.1", intro: "The portals use only the cookies they need to work.", body: COOKIES },
+  terms: { slug: "terms", title: "Portal Terms of Use", ref: "OSS-PT-001", version: "1.1", intro: "The rules for using the client portal and the team app. They sit alongside the agreement you signed for your website.", body: TERMS },
 };

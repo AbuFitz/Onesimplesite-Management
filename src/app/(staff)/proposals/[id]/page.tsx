@@ -43,8 +43,16 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const ready = checks.every(([, ok]) => ok);
   return (
     <>
-      <RecordHeader back={{ href: "/agreements", label: "Agreements" }} title={p.title} status={<><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} />{opp && can(ctx.role, "opportunity.write") && <AutoSelect action={setTicketStageAction} name="stage" value={opp.stage} label="Where this ticket is up to" hidden={{ id: opp.id, version: String(opp.version), back: `/proposals/${p.id}` }} options={Object.entries(ONBOARDING_LABEL).map(([value, v]) => ({ value, label: v.label }))} />}</>} meta={<span>{p.reference} · version {cur.number}</span>} />
+      <RecordHeader back={{ href: "/agreements", label: "Agreements" }} title={p.title} status={<><Status label={p.status === "draft" ? "Being written" : p.status === "sent" ? "Waiting for signature" : p.status === "accepted" ? "Signed" : p.status} kind={p.status === "accepted" ? "good" : p.status === "sent" ? "warn" : "neutral"} />{p.status !== "draft" && opp && can(ctx.role, "opportunity.write") && <AutoSelect action={setTicketStageAction} name="stage" value={opp.stage} label="Where this deal is up to" hidden={{ id: opp.id, version: String(opp.version), back: `/proposals/${p.id}` }} options={Object.entries(ONBOARDING_LABEL).map(([value, v]) => ({ value, label: v.label }))} />}</>} meta={<span>{p.reference} · version {cur.number}</span>} />
       <ErrorSummary message={sp.error} />
+      {editable && can(ctx.role, "proposal.send") && (
+        <nav aria-label="Steps" className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-line bg-bone/60 px-4 py-3 text-sm">
+          <span className="font-semibold">1. Fill it in</span>
+          <Link className="font-semibold underline" href={`/proposals/${p.id}/preview`}>2. Preview it</Link>
+          <a className="font-semibold underline" href="#send">3. Send for signature</a>
+          <span className="text-muted sm:ml-auto">{ready ? "Everything needed is ready." : `${checks.filter(([, ok]) => !ok).length} thing${checks.filter(([, ok]) => !ok).length === 1 ? "" : "s"} still needed before sending.`}</span>
+        </nav>
+      )}
       {sp.existing && <p role="status" className="mb-4 text-sm text-moss">{p.customer.displayName} already has an agreement in progress, so we opened it rather than starting a second one.</p>}
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
       {sp.sent && <p role="status" className="mb-4 text-sm text-moss">Agreement sent. The customer receives one email with the signing link.</p>}
@@ -64,7 +72,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
             <p>Recurring: <strong>{money(cur.recurringMinor)}</strong>{cur.recurringPeriod ? ` / ${cur.recurringPeriod}` : ""}</p>
             <p className="hint">Valid until {cur.validUntil ? fmtDateTime(cur.validUntil) : "set when sent (30 days)"}</p></div>
           {editable && can(ctx.role, "proposal.send") && (
-            <form action={sendAgreementAction} className="space-y-3 border-t border-line pt-4"><input type="hidden" name="id" value={p.id} />
+            <form action={sendAgreementAction} id="send" className="scroll-mt-24 space-y-3 border-t border-line pt-4"><input type="hidden" name="id" value={p.id} />
               <h2>Send for signature</h2>
               <p className="text-sm"><Link className="btn btn-quiet" href={`/proposals/${p.id}/preview`}>Preview what they will see</Link> <a className="ml-2 text-sm underline" href={`/proposals/${p.id}/preview/pdf`} target="_blank" rel="noreferrer">PDF preview</a></p>
               <ul className="text-sm">{checks.map(([label, ok, href]) => <li key={label} className="py-0.5"><Status label={ok ? "ready" : "needed"} kind={ok ? "good" : "warn"} /> {label}{!ok && <> · <Link className="underline" href={href}>fix</Link></>}</li>)}</ul>

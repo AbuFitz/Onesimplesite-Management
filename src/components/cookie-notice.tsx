@@ -21,7 +21,7 @@ export function CookieNotice({ aboveTabs = false }: { aboveTabs?: boolean }) {
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-butter"><Cookie size={20} aria-hidden /></span>
           <div className="min-w-0">
             <p className="font-bold">Just the cookies we need</p>
-            <p className="mt-1 text-sm text-muted">We use cookies to keep you signed in and your account safe. Nothing for tracking or adverts.</p>
+            <p className="mt-1 text-sm text-muted">We use cookies to keep you signed in and to recognise your devices so we can warn you about unfamiliar sign-ins. Nothing for tracking or adverts.</p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
