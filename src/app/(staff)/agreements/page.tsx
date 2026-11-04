@@ -16,16 +16,20 @@ export default async function Agreements({ searchParams }: { searchParams: Promi
   const show = SHOW.find(([id]) => id === sp.show)?.[0] ?? "all";
   const q = sp.q?.trim().toLowerCase(), company = sp.c?.trim() || "";
   const [contracts, proposals] = await Promise.all([
-    db.contract.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, proposalVersion: { select: { proposalId: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
+    db.contract.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, proposalVersion: { select: { proposalId: true, supersededAt: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
     db.proposal.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, versions: { select: { number: true, oneOffMinor: true, recurringMinor: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
   ]);
-  const covered = new Set(contracts.map((c) => c.proposalVersion?.proposalId).filter(Boolean));
+  // A signed or waiting contract stands in for its proposal. A withdrawn one does not: the proposal is back to being written, so it must stay visible.
+  const live = contracts.filter((c) => !["voided", "declined", "expired"].includes(c.status));
+  const covered = new Set(live.map((c) => c.proposalVersion?.proposalId).filter(Boolean));
+  // Contracts for a version that was replaced by a newer one are just history, so they are not listed again.
+  const shown = contracts.filter((c) => !(c.proposalVersion?.supersededAt && ["voided", "declined", "expired"].includes(c.status)));
   const all: Row[] = [
-    ...contracts.map((c): Row => {
+    ...shown.map((c): Row => {
       const done = c.status === "completed", waiting = c.status === "awaiting_signature" || c.status === "draft";
       return { key: c.id, href: `/contracts/${c.id}`, title: c.title, company: c.customer.displayName, companyId: c.customerId, ref: c.reference, group: done ? "signed" : waiting ? "awaiting" : "closed", label: done ? "Signed" : waiting ? "Waiting for signature" : c.status === "declined" ? "Declined" : c.status === "expired" ? "Expired" : "Cancelled", kind: done ? "good" : waiting ? "warn" : "bad", at: c.completedAt ?? c.updatedAt, amount: `${money(c.oneOffMinor)}${c.recurringMinor ? ` + ${money(c.recurringMinor)}/mo` : ""}` };
     }),
-    ...proposals.filter((p) => !covered.has(p.id)).map((p): Row => {
+    ...proposals.filter((p) => p.status === "draft" || !covered.has(p.id)).map((p): Row => {
       const v = p.versions.find((x) => x.number === p.currentVersion);
       const draft = p.status === "draft", sent = p.status === "sent";
       return { key: p.id, href: `/proposals/${p.id}`, title: p.title, company: p.customer.displayName, companyId: p.customerId, ref: p.reference, group: draft ? "draft" : sent ? "awaiting" : "closed", label: draft ? "Being written" : sent ? "Waiting for signature" : p.status, kind: draft ? "neutral" : sent ? "warn" : "bad", at: p.updatedAt, amount: v ? `${money(v.oneOffMinor)}${v.recurringMinor ? ` + ${money(v.recurringMinor)}/mo` : ""}` : "" };

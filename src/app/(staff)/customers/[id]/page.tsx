@@ -33,8 +33,10 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   const missing = customerDetailsMissing(c);
   const primary = c.contacts.find((x) => x.isPrimary) ?? c.contacts[0];
   const signedValue = c.contracts.filter((k) => k.status === "completed").reduce((n, k) => n + k.oneOffMinor, 0);
-  const unsignedProposals = c.proposals.filter((p) => !c.contracts.some((k) => k.proposalVersion?.proposalId === p.id));
-  const agreementCount = unsignedProposals.length + c.contracts.length;
+  const dead = ["voided", "declined", "expired"];
+  const liveContracts = c.contracts.filter((k) => !(k.proposalVersion?.supersededAt && dead.includes(k.status)));
+  const unsignedProposals = c.proposals.filter((p) => p.status === "draft" || !c.contracts.some((k) => !dead.includes(k.status) && k.proposalVersion?.proposalId === p.id));
+  const agreementCount = unsignedProposals.length + liveContracts.length;
   const href = (t: string) => `/customers/${c.id}${t === "overview" ? "" : `?tab=${t}`}`;
   return (
     <>
@@ -140,7 +142,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           {agreementCount === 0 ? <Empty title="No agreements yet"><Link className="underline" href={`/agreements/new?business=${c.id}`}>Start their agreement</Link></Empty> : (
             <ul>
               {unsignedProposals.map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Agreement {p.reference}</span></span><Status label={p.status === "draft" ? "being written" : p.status === "sent" ? "waiting for signature" : p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
-              {c.contracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}
+              {liveContracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}
             </ul>
           )}
         </Section>

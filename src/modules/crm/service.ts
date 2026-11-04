@@ -46,7 +46,7 @@ export async function getCustomer(ctx: StaffCtx, id: string) {
   if (!can(ctx.role, "customer.read")) throw forbidden();
   return db.customer.findFirst({
     where: { id, workspaceId: ctx.workspaceId },
-    include: { contacts: true, opportunities: { orderBy: { createdAt: "desc" } }, proposals: { orderBy: { createdAt: "desc" } }, contracts: { include: { proposalVersion: { select: { proposalId: true } } } }, projects: true },
+    include: { contacts: true, opportunities: { orderBy: { createdAt: "desc" } }, proposals: { orderBy: { createdAt: "desc" } }, contracts: { include: { proposalVersion: { select: { proposalId: true, supersededAt: true } } } }, projects: true },
   });
 }
 
