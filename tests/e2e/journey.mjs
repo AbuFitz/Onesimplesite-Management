@@ -92,13 +92,13 @@ await staff.goto(`${M}/settings/legal`);
 ok((await staff.locator("main li h3").allInnerTexts()).join("|") === ["Services Agreement", "Service Level Agreement", "Hosting and Care Plan Terms", "Data Processing Agreement", "Change Request"].join("|"), "the five customer legal documents are listed");
 await staff.goto(`${M}/settings/legal/dpa`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/legal\/dpa\/[0-9a-f-]{36}/);
 ok((await staff.locator("article").first().innerText()).toLowerCase().includes("data processing agreement"), "data processing agreement preview renders in the document layout");
-ok(await staff.locator("button:has-text('Publish version')").isDisabled(), "data processing agreement can't be published while decisions are open");
+ok(await staff.locator("button:has-text('Publish version')").count() === 0 && (await staff.locator("main").innerText()).toLowerCase().includes("published"), "the up-to-date data processing agreement was published automatically");
 await staff.goto(`${M}/settings/emails?e=signing_confirmation&w=phone`);
 ok(await staff.locator("iframe").count() === 1 && (await staff.locator("main").innerText()).includes("Signed copy"), "email preview page renders the customer emails");
 await staff.goto(`${M}/settings/terms`); await staff.click("main ul a >> nth=0"); await staff.waitForURL(/\/settings\/legal\/terms\/[0-9a-f-]{36}/);
 const termsUrl = staff.url().split("?")[0];
 await staff.goto(`${termsUrl}/preview`);
-ok((await staff.locator("article").first().innerText()).includes("Order summary".toUpperCase()) || (await staff.locator("article").first().innerText()).toLowerCase().includes("order summary"), "full document preview shows the whole agreement");
+{ const doc = (await staff.locator("article").first().innerText()).toLowerCase(); ok(doc.includes("introduction and definitions") && doc.includes("acceptance of terms") && doc.includes("version 1.4"), "full document preview shows the whole v1.4 agreement"); }
 ok((await get(staff, `${termsUrl}/sample.pdf`)).head === "%PDF-", "sample PDF downloads");
 await staff.goto(`${M}/customers/new`); await staff.waitForLoadState("networkidle");
 await staff.fill("#rb-n", name); await staff.selectOption("#rb-t", "Food and drink"); await staff.fill("input[name=town]", "Bristol");
@@ -134,7 +134,7 @@ const link = mails[0].text.match(/https?:\/\/\S+\/s\/\S+/)[0];
 const phone = await (await browser.newContext({ viewport: { width: 375, height: 800 }, hasTouch: true })).newPage();
 await phone.goto(link);
 const body = await phone.locator("article").innerText();
-for (const n of ["OneSimpleSite Ltd", `${name} Ltd`, "07654321", "A website with bookings in Bristol", "Up to 5 pages", "Contact form", "50% on signing", "£1,500.00", "Services Agreement", "2.1"]) ok(body.includes(n), `agreement shows: ${n}`);
+for (const n of ["OneSimpleSite Ltd", `${name} Ltd`, "07654321", "A website with bookings in Bristol", "Up to 5 pages", "Contact form", "50% on signing", "£1,500.00", "Services Agreement", "Project Scope"]) ok(body.includes(n), `agreement shows: ${n}`);
 ok(!(await phone.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "no horizontal overflow at 375px");
 if (process.env.SHOTS) {
   await phone.screenshot({ path: `${process.env.SHOTS}/agree-phone.png`, fullPage: true });
