@@ -206,7 +206,7 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
   const who = { email: ((o as { customer_details?: { email?: string } }).customer_details?.email ?? (o as { customer_email?: string }).customer_email) || null, name: (o as { customer_details?: { name?: string } }).customer_details?.name || null };
   const record = (b: Mailable, action: string, event: "paid" | "plan_started" | "failed" | "cancelled", hint = who, key = "", rc?: { key: string; method: "card" | "bank" | "other"; stripeRef?: string | null }, trialEndsAt?: Date | null) =>
     db.$transaction(async (tx) => { await audit(tx, { workspaceId, actor: null, action, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor, ...(trialEndsAt ? { freeUntil: trialEndsAt.toISOString() } : {}) } }); await payEmails(tx, b, event, hint, key, rc, trialEndsAt); });
-  if (type === "checkout.session.completed" && intentId) {
+  if ((type === "checkout.session.completed" || type === "checkout.session.async_payment_succeeded") && intentId) {
     const b = await db.billingIntent.findFirst({ where: { id: intentId, workspaceId } });
     if (!b) return;
     const paid = (o as { payment_status?: string }).payment_status === "paid" || !!stripeSubId(o);

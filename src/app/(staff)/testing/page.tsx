@@ -85,7 +85,7 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
           <div className="mt-5 text-sm">
             <p className="font-semibold">Webhook address to give Stripe</p>
             <p className="mt-1 break-all rounded-lg bg-bone px-3 py-2 font-mono text-[13px]">{hook}</p>
-            <p className="mt-2 text-muted">Events: checkout.session.completed, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.</p>
+            <p className="mt-2 text-muted">Events: checkout.session.completed, checkout.session.async_payment_succeeded, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.</p>
           </div>
           <div className="mt-5 text-sm"><p className="font-semibold">Test cards</p>
             <ul className="mt-1">{CARDS.map(([n, w]) => <li key={n} className="row flex justify-between gap-3 py-1.5"><span className="font-mono text-[13px]">{n}</span><span className="text-muted">{w}</span></li>)}</ul>
