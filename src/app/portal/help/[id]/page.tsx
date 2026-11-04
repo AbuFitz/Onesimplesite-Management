@@ -42,12 +42,15 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
       ) : t.chargeStatus === "approved" ? <section className="tile bg-mint !p-5"><p className="font-semibold">You approved {money(t.priceMinor ?? 0)}. <Link className="underline" href="/billing">Pay now</Link></p></section>
         : t.chargeStatus === "paid" ? <section className="tile bg-mint !p-5"><p className="font-semibold">{money(t.priceMinor ?? 0)} paid. Thank you.</p></section> : null}
       <section className="tile bg-white !p-6 sm:!p-8">
+        <ol className="mb-5 grid max-w-xl grid-cols-3 gap-2" aria-label="Progress">{[["Received", true], [t.assigneeName ? `${t.assigneeName} is on it` : "Picked up", !!t.assigneeName || !["open"].includes(t.status)], ["Sorted", ["resolved", "closed"].includes(t.status)]].map(([l, on]) => <li key={String(l)}><div className={`h-2 rounded-full ${on ? "bg-ink" : "bg-line"}`} /><p className={`mt-1.5 text-sm ${on ? "font-bold" : "text-muted"}`}>{l as string}</p></li>)}</ol>
         <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-3xl sm:text-4xl">{t.title}</h1><p className="mt-1 text-sm text-muted">{t.reference}{t.project ? ` · ${t.project.name}` : ""} · raised {fmtDateTime(t.createdAt)}</p></div><ClientStatus status={t.status} /></div>
         {t.body && <p className="mt-5 whitespace-pre-wrap rounded-2xl bg-bone p-4">{t.body}</p>}
         <Files base="/files" items={files.filter((f) => !f.commentId)} />
       </section>
       <section className="space-y-3" aria-label="Conversation">
-        {t.comments.map((m) => (
+        {t.comments.map((m) => m.authorKind === "event" ? (
+          <p key={m.id} className="mx-auto flex w-fit max-w-full items-center gap-2 rounded-full bg-mint px-4 py-1.5 text-sm font-semibold"><span className="size-2 shrink-0 rounded-full bg-ink" aria-hidden />{m.body}<span className="font-normal text-muted">{fmtDateTime(m.createdAt)}</span></p>
+        ) : (
           <div key={m.id} className={`tile !p-5 ${m.authorKind === "client" ? "bg-sky/60" : "bg-white"}`}>
             <div className="mb-2 flex items-center gap-3"><Avatar name={m.authorName} size={32} staffId={m.authorKind === "staff" ? m.authorStaffId : m.authorUserId} base={m.authorKind === "staff" ? "/avatar" : "/avatar/u"} /><div><p className="font-bold leading-tight">{m.authorKind === "client" ? "You" : m.authorName}</p><p className="text-xs text-muted">{fmtDateTime(m.createdAt)}</p></div></div>
             <p className="whitespace-pre-wrap">{m.body}</p>

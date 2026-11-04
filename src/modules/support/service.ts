@@ -62,12 +62,18 @@ export async function clientCreateTicket(c: ClientCtx, customerId: string | unde
 const clientScope = (c: ClientCtx) => ({ customerId: { in: c.memberships.map((m) => m.customerId) } });
 
 export const clientTickets = (c: ClientCtx) =>
-  db.ticket.findMany({ where: clientScope(c), orderBy: { updatedAt: "desc" }, take: 100, select: { id: true, reference: true, title: true, status: true, priority: true, kind: true, updatedAt: true, createdAt: true, contact: { select: { name: true, email: true } }, customer: { select: { displayName: true } } } });
+  db.ticket.findMany({ where: clientScope(c), orderBy: { updatedAt: "desc" }, take: 100, select: { id: true, reference: true, title: true, status: true, priority: true, kind: true, assigneeId: true, updatedAt: true, createdAt: true, contact: { select: { name: true, email: true } }, customer: { select: { displayName: true } } } });
+
+/** A short, customer-visible progress line in the ticket's thread ("Alex has picked this up"). It sends no email and does not count as a reply. */
+export function ticketEvent(tx: Pick<typeof db, "ticketComment">, t: { id: string; workspaceId: string }, text: string) {
+  return tx.ticketComment.create({ data: { workspaceId: t.workspaceId, ticketId: t.id, authorKind: "event", authorName: "OneSimpleSite", body: text } });
+}
 
 /** A ticket and its public conversation. Internal notes never leave the building. */
 export async function clientTicket(c: ClientCtx, id: string) {
   const t = await db.ticket.findFirst({ where: { id, ...clientScope(c) }, include: { project: { select: { name: true } }, contact: { select: { name: true } }, comments: { where: { internal: false }, orderBy: { createdAt: "asc" }, select: { id: true, authorKind: true, authorName: true, authorStaffId: true, authorUserId: true, body: true, createdAt: true } } } });
-  return t;
+  const owner = t?.assigneeId ? await db.staffMembership.findUnique({ where: { id: t.assigneeId }, select: { displayName: true } }) : null;
+  return t ? { ...t, assigneeName: owner?.displayName.split(" ")[0] ?? null } : t;
 }
 
 export async function clientReply(c: ClientCtx, id: string, body: unknown, files: Upload[] = []) {
@@ -161,6 +167,7 @@ export async function staffReply(ctx: StaffCtx, id: string, raw: unknown, files:
     await saveUploads(tx, { workspaceId: ctx.workspaceId, customerId: t.customerId, ticketId: t.id, commentId: cm.id, internal: i.internal || i.filesInternal, by: "staff", name: me.displayName }, files);
     if (i.internal) { await tx.ticket.update({ where: { id: t.id }, data: { updatedAt: new Date() } }); return; }
     await tx.ticket.update({ where: { id: t.id }, data: { status: t.status === "resolved" || t.status === "closed" ? t.status : "waiting_customer", assigneeId: t.assigneeId ?? ctx.staffId, lastStaffAt: new Date() } });
+    if (!t.assigneeId) await ticketEvent(tx, t, `${me.displayName.split(" ")[0]} has picked this up.`);
     if (t.contact?.email) {
       await enqueue(tx, ctx.workspaceId, "email.ticket_reply", `ticket.reply:${t.id}:${Date.now()}`, {
         to: t.contact.email, name: t.contact.name, staffName: me.displayName, ref: t.reference, title: t.title, message: clean(i.body), link: portalLink(`/help/${t.id}`),
@@ -181,6 +188,17 @@ export async function updateSupportTicket(ctx: StaffCtx, id: string, raw: unknow
   const before = await db.ticket.findUniqueOrThrow({ where: { id }, include: { contact: { select: { name: true, email: true } } } });
   await db.$transaction(async (tx) => {
     if (i.status === "resolved" && before.status !== "resolved" && before.contact?.email) await enqueue(tx, ctx.workspaceId, "email.ticket_resolved", `ticket.resolved:${id}:${Date.now()}`, { to: before.contact.email, name: before.contact.name, ref: before.reference, title: before.title, link: portalLink(`/help/${id}`) });
+    let said = false;
+    if (i.assigneeId && i.assigneeId !== before.assigneeId) {
+      const who = (await tx.staffMembership.findUniqueOrThrow({ where: { id: i.assigneeId }, select: { displayName: true } })).displayName.split(" ")[0];
+      await ticketEvent(tx, before, before.assigneeId ? `${who} is now looking after this.` : `${who} has picked this up.`); said = true;
+    }
+    if (i.status && i.status !== before.status) {
+      const done = ["resolved", "closed"];
+      if (done.includes(i.status)) await ticketEvent(tx, before, "Marked as sorted.");
+      else if (done.includes(before.status)) await ticketEvent(tx, before, "Reopened. We're on it.");
+      else if (i.status === "in_progress" && !said) await ticketEvent(tx, before, "We're working on this now.");
+    }
     await tx.ticket.update({ where: { id }, data: { ...(i.status ? { status: i.status, resolvedAt: i.status === "resolved" || i.status === "closed" ? new Date() : null } : {}), ...(i.priority ? { priority: i.priority } : {}), ...(i.assigneeId !== undefined ? { assigneeId: i.assigneeId } : {}) } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "ticket.updated", targetType: "ticket", targetId: id, detail: i });
   });

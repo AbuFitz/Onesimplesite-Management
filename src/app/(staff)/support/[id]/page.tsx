@@ -35,7 +35,9 @@ export default async function SupportTicket({ params, searchParams }: { params: 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-3">
           <article className="rounded-2xl border border-line bg-white p-4"><p className="mb-1 text-sm text-muted">Raised {fmtDateTime(t.createdAt)}{t.source === "portal" ? " from the portal" : " by the team"}</p><p className="whitespace-pre-wrap">{t.body}</p><Files base="/api/files" items={files.filter((f) => !f.commentId)} /></article>
-          {t.comments.map((m) => (
+          {t.comments.map((m) => m.authorKind === "event" ? (
+            <p key={m.id} className="mx-auto flex w-fit max-w-full items-center gap-2 rounded-full bg-[#e9f6ef] px-4 py-1.5 text-sm font-semibold text-[#0a5a3d]"><span className="size-2 shrink-0 rounded-full bg-[#0c6a49]" aria-hidden />{m.body} <span className="font-normal text-muted">{fmtDateTime(m.createdAt)} · customer sees this</span></p>
+          ) : (
             <article key={m.id} className={`rounded-2xl border p-4 ${m.internal ? "border-[#e5d58a] bg-[#fbf3d5]" : m.authorKind === "staff" ? "border-line bg-white" : "border-line bg-[#eaf4fb]"}`}>
               <div className="mb-1 flex items-center gap-2"><Avatar name={m.authorName} size={28} staffId={m.authorKind === "staff" ? m.authorStaffId : m.authorUserId} base={m.authorKind === "staff" ? "/api/avatar" : "/api/avatar/u"} /><p className="font-semibold">{m.authorName}</p><p className="text-sm text-muted">{fmtDateTime(m.createdAt)}</p>{m.internal && <span className="ml-auto rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white">Only the team sees this</span>}</div>
               <p className="whitespace-pre-wrap">{m.body}</p>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Solid black background with no border radius -->
+  <rect width="64" height="64" fill="#000000"/>
+
+  <!-- Beefy "1" design -->
+  <g transform="translate(18, 10)">
+    <!-- Main thick vertical bar -->
+    <rect x="8" y="0" width="16" height="44" fill="#26a269"/>
+
+    <!-- Top diagonal stroke -->
+    <path d="M8 8 L0 12 L0 0 L8 0 Z" fill="#26a269"/>
+
+    <!-- Bottom thick serif -->
+    <rect x="0" y="44" width="28" height="8" fill="#26a269"/>
+  </g>
+</svg>

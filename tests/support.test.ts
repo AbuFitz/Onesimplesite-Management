@@ -65,7 +65,7 @@ describe("support tickets", () => {
     const p = mail.payload as { fromPerson: string; replyTo: string; to: string };
     expect(p.fromPerson).toMatch(/^Abukar at OneSimpleSite <abukar\d+@onesimplesite\.co\.uk>$/); expect(p.replyTo).toMatch(/^abukar\d+@/); expect(p.to).toBe(a.person.email);
     const seen = await clientTicket(a.client, t.id);
-    expect(seen!.status).toBe("waiting_customer"); expect(seen!.comments.map((c) => c.body)).toEqual(["Found it and fixed it. Can you test?"]);
+    expect(seen!.status).toBe("waiting_customer"); expect(seen!.comments.map((c) => c.body)).toEqual(["Found it and fixed it. Can you test?", "Abukar has picked this up."]);
     await clientReply(a.client, t.id, "Works now, thank you!");
     expect((await clientTicket(a.client, t.id))!.status).toBe("customer_replied");
     expect(await db.outbox.count({ where: { workspaceId: w.id, topic: "email.ticket_notice" } })).toBe(2); // new ticket + reply
@@ -96,5 +96,23 @@ describe("support tickets", () => {
     const open = await listSupportTickets(staff, { filter: "mine" });
     expect(open.map((x) => x.id)).toContain(t.id);
     await expect(staffCreateTicket(staff, { customerId: a.c.id, contactId: "00000000-0000-4000-8000-000000000000", title: "x y z", body: "abc" })).rejects.toThrow(/isn't on this account/);
+  });
+});
+
+describe("progress shown to the customer", () => {
+  it("picking a ticket up and finishing it adds visible progress lines, with no email and no reply counted", async () => {
+    const tag = Math.random().toString(36).slice(2, 8);
+    const w = await db.workspace.create({ data: { name: `pg-${tag}` } });
+    const m = await db.staffMembership.create({ data: { workspaceId: w.id, email: `s-${tag}@x.test`, displayName: "Alex Morgan", role: "owner", status: "active" } });
+    const ctx = { userId: null as unknown as string, staffId: m.id, workspaceId: w.id, role: "owner", name: "Alex Morgan", email: m.email } as never;
+    const c = await db.customer.create({ data: { workspaceId: w.id, reference: `OSS-CU-${tag}`, displayName: "Harbour Bakery" } });
+    const t = await db.ticket.create({ data: { workspaceId: w.id, customerId: c.id, reference: `OSS-TK-${tag}`, title: "Form", body: "x", priority: "normal", status: "open" } });
+    const client = { userId: "u", name: "Hana", email: "h@x.test", memberships: [{ customerId: c.id, role: "admin", customer: { id: c.id, displayName: "Harbour Bakery", workspaceId: w.id } }] } as never;
+    await updateSupportTicket(ctx, t.id, { assigneeId: m.id, status: "in_progress" });
+    await updateSupportTicket(ctx, t.id, { status: "resolved" });
+    const view = await clientTicket(client, t.id);
+    expect(view!.assigneeName).toBe("Alex");
+    expect(view!.comments.filter((x) => x.authorKind === "event").map((x) => x.body)).toEqual(["Alex has picked this up.", "Marked as sorted."]);
+    expect(await db.outbox.count({ where: { workspaceId: w.id, topic: "email.ticket_reply" } })).toBe(0);
   });
 });

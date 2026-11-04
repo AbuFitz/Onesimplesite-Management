@@ -14,7 +14,7 @@ export function proxy(req: NextRequest) {
   const h = req.headers.get("host");
   const { pathname } = req.nextUrl;
   if (h === portal) {
-    if (pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || pathname === "/login" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next();
+    if (pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || /^\/(icon|apple-icon|favicon)(\.|$)/.test(pathname) || pathname === "/manifest.webmanifest" || /^\/icon-[\w-]+\.png$/.test(pathname) || pathname === "/login" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next();
     if (pathname.startsWith("/portal")) return NextResponse.next();
     const url = req.nextUrl.clone();
     url.pathname = `/portal${pathname === "/" ? "/overview" : pathname}`;

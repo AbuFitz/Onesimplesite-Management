@@ -33,7 +33,7 @@ export default async function Help() {
   );
 }
 
-const STEP = (st: string) => (["resolved", "closed"].includes(st) ? 3 : ["in_progress", "customer_replied", "waiting_customer"].includes(st) ? 2 : 1);
+const STEP = (st: string, assigned?: string | null) => (["resolved", "closed"].includes(st) ? 3 : assigned || ["in_progress", "customer_replied", "waiting_customer"].includes(st) ? 2 : 1);
 function List({ title, items, empty, me, many }: { title: string; items: Awaited<ReturnType<typeof clientTickets>>; empty?: string; me?: string; many?: boolean }) {
   return (
     <section className="tile bg-white" aria-label={title}>
@@ -42,7 +42,7 @@ function List({ title, items, empty, me, many }: { title: string; items: Awaited
         <ul className="divide-y divide-line">
           {items.map((t) => (
             <li key={t.id}><Link href={`/help/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 py-4 hover:bg-bone/60 -mx-3 px-3 rounded-xl">
-              <span className="min-w-0"><span className="block font-bold">{t.title}</span><span className="block text-sm text-muted">{t.reference} · {t.contact ? (t.contact.email && me && t.contact.email.toLowerCase() === me.toLowerCase() ? "raised by you" : `raised by ${t.contact.name}`) : "raised by us"}{many ? ` · ${t.customer.displayName}` : ""} · updated {timeAgo(t.updatedAt)}</span><span className="mt-2 flex w-40 gap-1" role="img" aria-label={`Progress: step ${STEP(t.status)} of 3`}>{[1, 2, 3].map((i) => <i key={i} className={`h-1.5 flex-1 rounded-full ${i <= STEP(t.status) ? "bg-ink" : "bg-line"}`} />)}</span></span>
+              <span className="min-w-0"><span className="block font-bold">{t.title}</span><span className="block text-sm text-muted">{t.reference} · {t.contact ? (t.contact.email && me && t.contact.email.toLowerCase() === me.toLowerCase() ? "raised by you" : `raised by ${t.contact.name}`) : "raised by us"}{many ? ` · ${t.customer.displayName}` : ""} · updated {timeAgo(t.updatedAt)}</span><span className="mt-2 flex w-40 gap-1" role="img" aria-label={`Progress: step ${STEP(t.status, t.assigneeId)} of 3`}>{[1, 2, 3].map((i) => <i key={i} className={`h-1.5 flex-1 rounded-full ${i <= STEP(t.status, t.assigneeId) ? "bg-ink" : "bg-line"}`} />)}</span></span>
               <ClientStatus status={t.status} />
             </Link></li>
           ))}
