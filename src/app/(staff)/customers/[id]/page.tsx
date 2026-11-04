@@ -15,7 +15,7 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { RecordHeader, Status, Empty, ErrorSummary, Section, Stat, Tabs, money, fmtDateTime, timeAgo } from "@/components/ui";
 
 export const metadata = { title: "Company" };
-const TABS = ["overview", "people", "agreements", "projects", "notes", "activity"] as const;
+const TABS = ["overview", "people", "agreements", "tickets", "projects", "notes", "activity"] as const;
 
 export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ status?: string; restored?: string; invited?: string; error?: string; tab?: string; details?: string; done?: string; delete?: string }> }) {
   const ctx = await requireStaff("customer.read");
@@ -25,7 +25,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   const c = await getCustomer(ctx, id);
   if (!c) notFound();
   const [people, requests] = tab === "people" || tab === "overview" ? await Promise.all([listPeople(ctx, id), pendingRequests(ctx, id)]) : [[], []];
-  const [tickets, billing] = tab === "agreements" || tab === "overview" ? await Promise.all([db.ticket.findMany({ where: { customerId: id, workspaceId: ctx.workspaceId }, orderBy: { updatedAt: "desc" }, take: 50, include: { contact: { select: { name: true } } } }), staffBilling(ctx, id)]) : [[], []];
+  const [tickets, billing] = await Promise.all([db.ticket.findMany({ where: { customerId: id, workspaceId: ctx.workspaceId }, orderBy: { updatedAt: "desc" }, take: 50, include: { contact: { select: { name: true } } } }), staffBilling(ctx, id)]);
   const [activity, notes] = await Promise.all([
     tab === "activity" ? db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id }, orderBy: { createdAt: "desc" }, take: 40 }) : [],
     db.note.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id, archivedAt: null, OR: [{ visibility: "team" }, { ownerId: ctx.staffId }] }, orderBy: { updatedAt: "desc" }, take: 20 }),
@@ -33,6 +33,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   const missing = customerDetailsMissing(c);
   const primary = c.contacts.find((x) => x.isPrimary) ?? c.contacts[0];
   const signedValue = c.contracts.filter((k) => k.status === "completed").reduce((n, k) => n + k.oneOffMinor, 0);
+  const unsignedProposals = c.proposals.filter((p) => !c.contracts.some((k) => k.proposalVersion?.proposalId === p.id));
+  const agreementCount = unsignedProposals.length + c.contracts.length;
   const href = (t: string) => `/customers/${c.id}${t === "overview" ? "" : `?tab=${t}`}`;
   return (
     <>
@@ -90,7 +92,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       <Tabs current={tab} tabs={[
         { id: "overview", label: "Overview", href: href("overview") },
         { id: "people", label: "People", href: href("people"), count: requests.length || c.contacts.length },
-        { id: "agreements", label: "Tickets", href: href("agreements"), count: c.proposals.length + c.contracts.length + tickets.length },
+        { id: "agreements", label: "Agreements", href: href("agreements"), count: agreementCount },
+        { id: "tickets", label: "Tickets", href: href("tickets"), count: tickets.length },
         { id: "projects", label: "Projects", href: href("projects"), count: c.projects.length },
         { id: "notes", label: "Notes", href: href("notes"), count: notes.length },
         { id: "activity", label: "Activity", href: href("activity") },
@@ -127,26 +130,29 @@ export default async function CustomerPage({ params, searchParams }: { params: P
                   <span className="flex items-center gap-2"><span className="font-semibold">{money(b.amountMinor, b.currency)}{isMonthly(b.kind) ? " / month" : ""}</span><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${st.tone === "ok" ? "bg-[#e9f6ef] text-[#0a5a3d]" : st.tone === "warn" ? "bg-[#fde6dc] text-[#7a2e12]" : st.tone === "off" ? "bg-bone text-muted" : "bg-[#fbf3d5] text-[#5c4700]"}`}>{st.label}</span></span></li>); })}</ul>
             )}
           </Section>
-          <Section title="Opportunities">
-            {c.opportunities.length === 0 ? <p className="text-sm text-muted">None.</p> : <ul>{c.opportunities.map((o) => <li key={o.id} className="row flex flex-wrap items-center justify-between gap-2 py-3"><span>{o.title}</span><span className="flex items-center gap-3 text-sm text-muted">{money(o.valueMinor, o.currency)}<Status label={o.stage} /></span></li>)}</ul>}
-          </Section>
         </>
       )}
 
       {tab === "people" && <PeoplePanel customerId={c.id} people={people} requests={requests} canEdit={can(ctx.role, "customer.write")} />}
 
       {tab === "agreements" && (
-        <Section title="Tickets and signed agreements">
-          {tickets.length > 0 && (
-            <ul className="mb-6 divide-y divide-line rounded-2xl border border-line bg-white">
-              {tickets.map((t) => { const st = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const }; return (
-                <li key={t.id}><Link href={`/support/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-bone/60"><span className="min-w-0"><span className="flex items-center gap-2"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${CATEGORY_LABEL[t.category]?.cls ?? ""}`}>{CATEGORY_LABEL[t.category]?.label ?? "Support"}</span><span className="truncate font-semibold">{t.title}</span></span><span className="text-sm text-muted">{t.reference}{t.contact ? ` · ${t.contact.name}` : ""} · {timeAgo(t.updatedAt)}{t.priceMinor ? ` · ${money(t.priceMinor)}` : ""}</span></span><Status label={st.label} kind={st.kind} /></Link></li>); })}
+        <Section title="Agreements">
+          {agreementCount === 0 ? <Empty title="No agreements yet"><Link className="underline" href={`/agreements/new?business=${c.id}`}>Start their agreement</Link></Empty> : (
+            <ul>
+              {unsignedProposals.map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Agreement {p.reference}</span></span><Status label={p.status === "draft" ? "being written" : p.status === "sent" ? "waiting for signature" : p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
+              {c.contracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}
             </ul>
           )}
-          {c.proposals.length + c.contracts.length + tickets.length === 0 ? <Empty title="Nothing yet"><Link className="underline" href={`/agreements/new?business=${c.id}`}>Start their agreement</Link></Empty> : (
-            <ul>
-              {c.proposals.filter((p) => !c.contracts.some((k) => k.proposalVersion?.proposalId === p.id)).map((p) => <li key={p.id} className="row"><Link href={`/proposals/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{p.title}</span><span className="block text-sm text-muted">Agreement {p.reference}</span></span><Status label={p.status === "draft" ? "being written" : p.status === "sent" ? "waiting for signature" : p.status} kind={p.status === "accepted" ? "good" : "neutral"} /></Link></li>)}
-              {c.contracts.map((k) => <li key={k.id} className="row"><Link href={`/contracts/${k.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3 hover:bg-soft sm:-mx-3 sm:rounded-lg sm:px-3"><span className="min-w-0"><span className="font-medium">{k.title}</span><span className="block text-sm text-muted">Agreement {k.reference}</span></span><Status label={k.status.replace("_", " ")} kind={k.status === "completed" ? "good" : k.status === "voided" || k.status === "declined" ? "bad" : "warn"} /></Link></li>)}
+        </Section>
+      )}
+
+
+      {tab === "tickets" && (
+        <Section title="Tickets">
+          {tickets.length === 0 ? <Empty title="No tickets yet"><Link className="underline" href={`/tickets/new?business=${c.id}`}>Raise one</Link></Empty> : (
+            <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
+              {tickets.map((t) => { const st = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const }; return (
+                <li key={t.id}><Link href={`/support/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-bone/60"><span className="min-w-0"><span className="flex items-center gap-2"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${CATEGORY_LABEL[t.category]?.cls ?? ""}`}>{CATEGORY_LABEL[t.category]?.label ?? "Support"}</span><span className="truncate font-semibold">{t.title}</span></span><span className="text-sm text-muted">{t.reference}{t.contact ? ` · ${t.contact.name}` : ""} · {timeAgo(t.updatedAt)}{t.priceMinor ? ` · ${money(t.priceMinor)}` : ""}</span></span><Status label={st.label} kind={st.kind} /></Link></li>); })}
             </ul>
           )}
         </Section>

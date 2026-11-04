@@ -54,6 +54,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
                 {k.documents[0] && <p className="break-all text-xs text-ink/55">Fingerprint (SHA-256) {k.documents[0].sha256}</p>}
               </div>
             ) : k.signingRequests.length === 0 ? <p className="text-[15px] text-ink/70">Not sent yet. Send it for signature and the customer gets one email with one signature to make.</p> : null}
+            {k.signingRequests.length > 0 && <div className="mt-3 flex flex-wrap gap-2"><a className={btn} href={`/contracts/${k.id}/document`}>View the agreement as sent</a></div>}
             {k.signingRequests.length > 0 && (
               <ul className={k.status === "completed" ? "mt-4 border-t border-[#eceeec] pt-3" : ""}>{k.signingRequests.map((r) => <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eceeec] py-2 text-[15px] last:border-0"><span className="font-medium">{r.signerName}</span><span className="flex items-center gap-2 text-ink/70"><Status label={r.status} kind={r.status === "signed" ? "good" : r.status === "pending" ? "warn" : "bad"} />{fmtDateTime(r.signature?.signedAt ?? r.createdAt)}</span>{r.declineReason && <span className="basis-full text-sm">“{r.declineReason}”</span>}</li>)}</ul>
             )}

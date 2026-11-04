@@ -16,11 +16,13 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
   const [sel, setSel] = useState(0);
   const input = useRef<HTMLInputElement>(null);
 
+  const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const key = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setOpen((o) => !o); } if (e.key === "Escape") setOpen(false); };
-    window.addEventListener("keydown", key); return () => window.removeEventListener("keydown", key);
+    const key = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); input.current?.focus(); input.current?.select(); } };
+    const away = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener("keydown", key); document.addEventListener("mousedown", away);
+    return () => { window.removeEventListener("keydown", key); document.removeEventListener("mousedown", away); };
   }, []);
-  useEffect(() => { if (open) { setQ(""); setGroups([]); setSel(0); setTimeout(() => input.current?.focus(), 20); document.body.style.overflow = "hidden"; } else document.body.style.overflow = ""; return () => { document.body.style.overflow = ""; }; }, [open]);
   useEffect(() => {
     if (q.trim().length < 2) { setGroups([]); return; }
     const ctl = new AbortController();
@@ -30,11 +32,12 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
 
   const quick: Item[] = useMemo(() => [...actions.map((a) => ({ href: a.href, title: a.label, kind: "action" })), ...[["/", "Today"], ["/agreements", "Agreements"], ["/tickets", "Tickets"], ["/customers", "Companies"], ["/projects", "Projects"], ["/calendar", "Calendar"], ["/board", "Team Board"]].map(([href, title]) => ({ href, title: `Go to ${title}`, kind: "go" }))], [actions]);
   const flat: Item[] = q.trim().length < 2 ? quick : groups.flatMap((g) => g.items.map((i) => ({ ...i, kind: g.kind })));
-  const go = (href: string) => { setOpen(false); router.push(href); };
+  const go = (href: string) => { setOpen(false); setQ(""); input.current?.blur(); router.push(href); };
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setSel((s) => Math.min(flat.length - 1, s + 1)); }
     if (e.key === "ArrowUp") { e.preventDefault(); setSel((s) => Math.max(0, s - 1)); }
     if (e.key === "Enter" && flat[sel]) { e.preventDefault(); go(flat[sel].href); }
+    if (e.key === "Escape") { setOpen(false); input.current?.blur(); }
   };
   let n = -1;
   const row = (i: Item) => { n++; const idx = n; const Icon = ICON[i.kind] ?? Search; return (
@@ -44,24 +47,19 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
       {sel === idx && <CornerDownLeft size={14} className="text-muted" aria-hidden />}</button></li>); };
 
   return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} className="relative mx-auto hidden h-9 w-full max-w-lg items-center gap-2 rounded-lg border border-line bg-soft px-3 text-left text-sm text-muted hover:border-edge sm:flex" aria-label="Search, or press Command K">
-        <Search size={16} aria-hidden /><span className="flex-1">Search companies, tickets, projects</span><kbd className="rounded border border-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-muted">⌘K</kbd>
-      </button>
+    <div ref={box} className="relative mx-auto hidden w-full max-w-lg sm:block">
+      <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+      <label htmlFor="cmd-q" className="sr-only">Search</label>
+      <input id="cmd-q" ref={input} value={q} onChange={(e) => { setQ(e.target.value); setSel(0); setOpen(true); }} onFocus={() => setOpen(true)} onKeyDown={onKey} autoComplete="off" role="combobox" aria-expanded={open} aria-controls="cmd-list"
+        placeholder="Search companies, tickets, projects" className="h-9 w-full rounded-lg border border-line bg-soft pl-9 pr-12 text-sm outline-none placeholder:text-muted hover:border-edge focus:border-ink/40 focus:bg-white" />
+      {!open && <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-muted">⌘K</kbd>}
       {open && (
-        <div className="fixed inset-0 z-[60] flex items-start justify-center bg-ink/40 px-3 pt-[10dvh]" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-          <div role="dialog" aria-label="Search" className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-white shadow-[0_24px_70px_rgba(0,0,0,.28)]">
-            <div className="flex items-center gap-2 border-b border-line px-4"><Search size={17} className="text-muted" aria-hidden /><label htmlFor="cmd-q" className="sr-only">Search</label>
-              <input id="cmd-q" ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} autoComplete="off" placeholder="Search, or choose something to do" className="h-12 w-full bg-transparent text-[15px] outline-none focus-visible:outline-none placeholder:text-muted" /></div>
-            <div className="max-h-[55dvh] overflow-y-auto p-2">
-              {q.trim().length < 2 ? <><p className="px-3 pb-1 pt-2 text-xs font-bold text-muted">Quick actions</p><ul>{quick.map(row)}</ul></>
-                : groups.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted">No results for “{q}”. Try a reference number or part of a name.</p>
-                : groups.map((g) => <div key={g.title}><p className="px-3 pb-1 pt-2 text-xs font-bold text-muted">{g.title}</p><ul>{g.items.map((i) => row({ ...i, kind: g.kind }))}</ul></div>)}
-            </div>
-            <div className="flex items-center justify-between border-t border-line bg-soft px-4 py-2 text-[12px] text-muted"><span>↑ ↓ to move, Enter to open</span><span>Esc to close</span></div>
-          </div>
+        <div id="cmd-list" className="absolute inset-x-0 top-full z-[60] mt-2 max-h-[min(26rem,70dvh)] overflow-y-auto rounded-xl border border-line bg-white p-1.5 shadow-[0_12px_36px_rgba(14,19,17,.14)]">
+          {q.trim().length < 2 ? <ul>{quick.map(row)}</ul>
+            : groups.length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted">Nothing found for “{q}”. Try a reference number or part of a name.</p>
+            : groups.map((g) => <div key={g.title}><p className="px-3 pb-1 pt-2 text-xs font-semibold text-muted">{g.title}</p><ul>{g.items.map((i) => row({ ...i, kind: g.kind }))}</ul></div>)}
         </div>
       )}
-    </>
+    </div>
   );
 }

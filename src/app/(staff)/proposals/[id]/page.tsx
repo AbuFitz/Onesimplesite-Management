@@ -48,7 +48,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
       {sp.existing && <p role="status" className="mb-4 text-sm text-moss">{p.customer.displayName} already has an agreement in progress, so we opened it rather than starting a second one.</p>}
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
       {sp.sent && <p role="status" className="mb-4 text-sm text-moss">Agreement sent. The customer receives one email with the signing link.</p>}
-      {contract && <p className="mb-4 text-sm"><Link className="underline" href={`/contracts/${contract.id}`}>Open signed copy and status ({contract.reference})</Link> ({contract.status.replace("_", " ")})</p>}
+      {contract && <p className="mb-4 flex flex-wrap items-center gap-3 text-sm"><Link className="btn" href={`/contracts/${contract.id}/document`}>View the agreement as sent</Link><Link className="underline" href={`/contracts/${contract.id}`}>Status and signed copy ({contract.reference}, {contract.status.replace("_", " ")})</Link></p>}
       <div className="grid gap-10 lg:grid-cols-2">
         <section aria-labelledby="ed">
           <h2 id="ed" className="mb-3">{editable ? "The agreement" : "Sent version (read-only)"}</h2>
