@@ -20,6 +20,7 @@ export function PriceLines({ lines }: { lines: Line[] }) {
           </div>
         ))}
       </div>
+      <p className="mt-2 text-[13px] text-muted">Tick <strong>Repeats</strong> for the monthly care plan, so it is charged every month and any free months apply to it. Leave it unticked for one-off prices. Unticking the care plan would add it to the website fee.</p>
       {count < MAX && <button type="button" className="mt-2 text-sm underline" onClick={() => setCount(count + 1)}>Add another item</button>}
     </fieldset>
   );
