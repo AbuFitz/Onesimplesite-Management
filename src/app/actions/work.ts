@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { requireStaff } from "@/modules/identity/session";
 import { transitionProject, postUpdate, requestAsset, addTask } from "@/modules/projects/service";
-import { createEvent, cancelEvent } from "@/modules/calendar/service";
+import { createEvent, cancelEvent, updateEvent } from "@/modules/calendar/service";
 import { createNote, saveNote, archiveNote } from "@/modules/notes/service";
 import { DomainError } from "@/lib/errors";
 import { londonToUtc } from "@/lib/london";
@@ -48,6 +48,20 @@ export async function createEventAction(fd: FormData) {
   redirect("/calendar");
 }
 const EVENT_TYPES = ["internal_meeting", "client_call", "review", "focus", "other"] as const;
+export async function updateEventAction(fd: FormData) {
+  const ctx = await requireStaff("calendar.write");
+  const id = String(fd.get("id")), date = String(fd.get("date") ?? ""), allDay = fd.get("allDay") === "on";
+  const time = allDay ? "00:00" : String(fd.get("time") ?? "09:00"), mins = allDay ? 1440 : Math.min(1440, Math.max(5, Number(fd.get("minutes")) || 60));
+  const view = ["week", "month"].includes(String(fd.get("view"))) ? `&view=${fd.get("view")}` : "", scope = fd.get("scope") === "team" ? "&scope=team" : "";
+  const to = (q = "") => `/calendar?day=${date}${view}${scope}${q}`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return redirect(`/calendar?error=${encodeURIComponent("Pick a date and time.")}`);
+  const type = (EVENT_TYPES as readonly string[]).includes(String(fd.get("type"))) ? String(fd.get("type")) : "internal_meeting";
+  try {
+    const start = londonToUtc(date, time);
+    await updateEvent(ctx, id, Number(fd.get("version")), { title: fd.get("title"), type, startsAt: start, endsAt: new Date(start.getTime() + mins * 60_000), location: fd.get("location") || undefined, customerId: String(fd.get("customerId") ?? "") || "" });
+  } catch (e) { return redirect(to(`&edit=${id}&error=${encodeURIComponent(msg(e))}`)); }
+  redirect(to(`&updated=1`));
+}
 export async function quickEventAction(fd: FormData) {
   const ctx = await requireStaff("calendar.write");
   const date = String(fd.get("date") ?? ""), allDay = fd.get("allDay") === "on";

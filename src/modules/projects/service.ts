@@ -133,6 +133,14 @@ export async function setTaskDone(ctx: StaffCtx, taskId: string, done: boolean) 
   await db.task.update({ where: { id: taskId }, data: { doneAt: done ? new Date() : null } });
 }
 
+export async function removeAssetRequest(ctx: StaffCtx, assetId: string) {
+  if (!can(ctx.role, "project.write")) throw forbidden();
+  const a = await db.assetRequest.findFirst({ where: { id: assetId, workspaceId: ctx.workspaceId }, select: { projectId: true } });
+  if (!a) throw notFound();
+  await own(ctx, a.projectId);
+  await db.assetRequest.delete({ where: { id: assetId } });
+}
+
 export async function markAssetReceived(ctx: StaffCtx, assetId: string, received: boolean) {
   if (!can(ctx.role, "project.write")) throw forbidden();
   const a = await db.assetRequest.findFirst({ where: { id: assetId, workspaceId: ctx.workspaceId }, select: { id: true, projectId: true } });

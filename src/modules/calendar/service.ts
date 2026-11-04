@@ -39,6 +39,19 @@ export async function createEvent(ctx: StaffCtx, raw: unknown) {
   });
 }
 
+/** Move or rename an event. Bumps the ICS sequence so a re-downloaded file replaces the old one. */
+export async function updateEvent(ctx: StaffCtx, id: string, expectedVersion: number, raw: unknown) {
+  if (!can(ctx.role, "calendar.write")) throw forbidden();
+  const i = eventInput.parse(raw);
+  if (i.endsAt <= i.startsAt) throw new DomainError("validation", "End must be after start.");
+  await db.$transaction(async (tx) => {
+    if (i.customerId && !(await tx.customer.findFirst({ where: { id: i.customerId, workspaceId: ctx.workspaceId }, select: { id: true } }))) throw notFound("Company not found.");
+    const r = await tx.calendarEvent.updateMany({ where: { id, workspaceId: ctx.workspaceId, version: expectedVersion, status: "scheduled" }, data: { title: i.title, type: i.type, startsAt: i.startsAt, endsAt: i.endsAt, location: i.location || null, customerId: i.customerId || null, icsSequence: { increment: 1 }, version: { increment: 1 } } });
+    if (r.count === 0) throw stale();
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "event.updated", targetType: "event", targetId: id, customerId: i.customerId || null });
+  });
+}
+
 /** Cancelling keeps the row (needed for ICS CANCEL) and bumps the sequence. */
 export async function cancelEvent(ctx: StaffCtx, id: string, expectedVersion: number) {
   if (!can(ctx.role, "calendar.write")) throw forbidden();

@@ -55,7 +55,7 @@ export async function sendToProjectAction(fd: FormData) {
   const c = await requireClient();
   const id = String(fd.get("projectId")), asset = String(fd.get("assetId") || "") || null;
   try { await clientSendToProject(c, id, asset, { text: fd.get("text"), files: await readUploads(fd, "files", { extra: true }) }); }
-  catch (e) { return redirect(`/projects/${id}?error=${encodeURIComponent(msg(e))}${asset ? `&open=${asset}` : ""}`); }
+  catch (e) { return redirect(`/portal/projects/${id}?error=${encodeURIComponent(msg(e))}${asset ? `&open=${asset}` : ""}`); }
   revalidatePath(`/projects/${id}`);
-  redirect(`/projects/${id}?sent=1`);
+  redirect(`/portal/projects/${id}?sent=1`);
 }

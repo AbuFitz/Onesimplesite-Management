@@ -79,6 +79,7 @@ export async function setOpportunityStage(ctx: StaffCtx, id: string, stage: "new
 
 // ───────── Customer details: filled in by the team, required before an agreement can be sent ─────────
 const detailsInput = z.object({
+  displayName: z.string().trim().min(1, "Enter the company name.").max(120).optional(),
   kind: z.enum(["business", "sole_trader", "individual"]).default("business"),
   legalName: z.string().trim().max(200).optional(),
   companyNumber: z.string().trim().max(40).optional(),
@@ -94,7 +95,7 @@ export async function updateCustomerDetails(ctx: StaffCtx, id: string, expectedV
   await db.$transaction(async (tx) => {
     const r = await tx.customer.updateMany({
       where: { id, workspaceId: ctx.workspaceId, version: expectedVersion },
-      data: { kind: i.kind, legalName: i.legalName || null, companyNumber: i.companyNumber || null, vatNumber: i.vatNumber || null, billingAddress: i.billingAddress || null, website: i.website || null, phone: i.phone || null, version: { increment: 1 } },
+      data: { ...(i.displayName ? { displayName: i.displayName } : {}), kind: i.kind, legalName: i.legalName || null, companyNumber: i.companyNumber || null, vatNumber: i.vatNumber || null, billingAddress: i.billingAddress || null, website: i.website || null, phone: i.phone || null, version: { increment: 1 } },
     });
     if (r.count === 0) throw stale();
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "customer.details_updated", targetType: "customer", targetId: id, customerId: id });

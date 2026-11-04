@@ -13,10 +13,10 @@ export async function removePhotoAction() { const ctx = await requireStaff(); aw
 
 export async function uploadClientPhotoAction(fd: FormData) {
   const c = await requireClient();
-  try { await setClientPhoto(c.userId, fd.get("photo") as File | null); } catch (e) { redirect(`/account?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't save that picture.")}`); }
-  redirect("/account?photo=1");
+  try { await setClientPhoto(c.userId, fd.get("photo") as File | null); } catch (e) { redirect(`/portal/account?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't save that picture.")}`); }
+  redirect("/portal/account?photo=1");
 }
-export async function removeClientPhotoAction() { const c = await requireClient(); await removeClientPhoto(c.userId); redirect("/account?photo=0"); }
+export async function removeClientPhotoAction() { const c = await requireClient(); await removeClientPhoto(c.userId); redirect("/portal/account?photo=0"); }
 
 export async function uploadLogoAction(fd: FormData) {
   const ctx = await requireStaff("customer.write");

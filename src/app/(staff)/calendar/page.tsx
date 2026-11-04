@@ -5,7 +5,7 @@ import { can } from "@/modules/identity/permissions";
 import { requireStaff } from "@/modules/identity/session";
 import { listEvents } from "@/modules/calendar/service";
 import { cancelEventAction } from "@/app/actions/work";
-import { AddEventDialog } from "@/components/add-event-dialog";
+import { AddEventDialog, type EditEvent } from "@/components/add-event-dialog";
 
 export const metadata = { title: "Calendar" };
 
@@ -32,7 +32,7 @@ const kind = (t: string) => KIND[t] ?? KIND.other;
 
 type Mark = { kind: "project" | "task"; id: string; label: string; sub?: string };
 
-export default async function Calendar({ searchParams }: { searchParams: Promise<{ scope?: string; error?: string; day?: string; view?: string; add?: string; added?: string }> }) {
+export default async function Calendar({ searchParams }: { searchParams: Promise<{ scope?: string; error?: string; day?: string; view?: string; add?: string; added?: string; edit?: string; updated?: string }> }) {
   const ctx = await requireStaff();
   const sp = await searchParams;
   const scope = sp.scope === "team" ? "team" : "mine";
@@ -66,9 +66,9 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   for (const e of events) { const k = dayKey(e.startsAt); byDay.set(k, [...(byDay.get(k) ?? []), e]); }
 
   const canWrite = can(ctx.role, "calendar.write");
-  const q = (o: { day?: string; view?: string; add?: boolean }) => {
+  const q = (o: { day?: string; view?: string; add?: boolean; edit?: string }) => {
     const p = new URLSearchParams(); if (scope === "team") p.set("scope", "team");
-    p.set("view", o.view ?? view); p.set("day", o.day ?? selected); if (o.add) p.set("add", "1");
+    p.set("view", o.view ?? view); p.set("day", o.day ?? selected); if (o.add) p.set("add", "1"); if (o.edit) p.set("edit", o.edit);
     return `/calendar?${p}`;
   };
   const here = q({});
@@ -103,6 +103,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
           {!cancelled && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               <a className="btn btn-quiet !min-h-10 text-[13px] sm:!min-h-8" href={`/calendar/${e.id}/ics`}><Download size={13} aria-hidden /> Add to my calendar</a>
+              {canWrite && e.status === "scheduled" && <Link href={q({ day: dayKey(e.startsAt), edit: e.id })} replace scroll={false} className="btn btn-quiet !min-h-10 text-[13px] sm:!min-h-8">Edit</Link>}
               {canWrite && e.status === "scheduled" && <form action={cancelEventAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="version" value={e.version} /><input type="hidden" name="back" value={here} /><button className="btn btn-quiet !min-h-10 text-[13px] sm:!min-h-8"><X size={13} aria-hidden /> Cancel</button></form>}
             </div>
           )}
@@ -118,6 +119,8 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
     </Link></li>
   );
 
+  const editing = sp.edit ? events.find((e) => e.id === sp.edit && e.status === "scheduled") : undefined;
+  const editData: EditEvent | undefined = editing ? { id: editing.id, version: editing.version, title: editing.title, type: editing.type, date: dayKey(editing.startsAt), time: timeOf(editing.startsAt), minutes: Math.round((editing.endsAt.getTime() - editing.startsAt.getTime()) / 60000), allDay: editing.endsAt.getTime() - editing.startsAt.getTime() >= 23 * 3600e3, location: editing.location ?? "", customerId: editing.customerId ?? "" } : undefined;
   const isToday = selected === today;
   return (
     <>
@@ -131,8 +134,8 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
           {canWrite && <Link href={q({ add: true })} replace scroll={false} className="btn !min-h-10 sm:!min-h-9"><Plus size={16} aria-hidden /> Add<span className="max-sm:hidden"> event</span></Link>}
         </div>
       </div>
-      {sp.added && <p role="status" className="mb-3 rounded-lg bg-[#dff5ea] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">Event added.</p>}
-      {sp.error && !sp.add && <p role="alert" className="mb-3 rounded-lg bg-[#fdecea] px-3 py-2 text-sm font-semibold text-[#a12a1f]">{sp.error}</p>}
+      {(sp.added || sp.updated) && <p role="status" className="mb-3 rounded-lg bg-[#dff5ea] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">{sp.updated ? "Event updated." : "Event added."}</p>}
+      {sp.error && !sp.add && !sp.edit && <p role="alert" className="mb-3 rounded-lg bg-[#fdecea] px-3 py-2 text-sm font-semibold text-[#a12a1f]">{sp.error}</p>}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-4">
@@ -236,7 +239,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         </aside>
       </div>
 
-      {canWrite && <AddEventDialog open={sp.add === "1"} closeHref={here} day={selected} view={view} scope={scope} companies={companies.map((b) => ({ id: b.id, name: b.displayName }))} error={sp.add ? sp.error : undefined} />}
+      {canWrite && <AddEventDialog open={sp.add === "1" || !!editData} edit={editData} closeHref={here} day={selected} view={view} scope={scope} companies={companies.map((b) => ({ id: b.id, name: b.displayName }))} error={sp.add || sp.edit ? sp.error : undefined} />}
     </>
   );
 }

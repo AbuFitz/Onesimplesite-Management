@@ -13,7 +13,7 @@ const PRIVACY = `## Who we are
 
 ## What we collect
 1.1 About you: your name, email address, phone number and job title.
-1.1 About your business: its name, address, company number and what it does.
+1.1 About your company: its name, address, company number and what it does.
 1.1 Your account: your sign-in email, a hashed (unreadable) password, and technical details of each sign-in, such as the time, device and network address.
 1.1 Your work with us: your projects, the files and messages you send us, support tickets, and the agreements you sign, including your signature and the time and technical details recorded when you sign.
 1.1 Payments: amounts due and paid and their dates. Card details are entered on our payment provider's secure page and are never seen or stored by us.

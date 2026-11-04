@@ -26,8 +26,8 @@ export async function clientSendToProject(c: ClientCtx, projectId: string, asset
   await db.$transaction(async (tx) => {
     if (raw.files.length) await saveUploads(tx, { workspaceId: p.workspaceId, customerId: p.customerId, projectId: p.id, folder: `From you · ${label}`.slice(0, 60), internal: false, by: "client", name: who }, raw.files);
     if (asset) await tx.assetRequest.update({ where: { id: asset.id }, data: { receivedAt: new Date(), respondedAt: new Date(), response: body ? [asset.response, body].filter(Boolean).join("\n\n") : asset.response } });
-    const owner = p.ownerId ?? (await tx.staffMembership.findFirst({ where: { workspaceId: p.workspaceId, status: "active" }, select: { id: true }, orderBy: { createdAt: "asc" } }))?.id ?? null;
-    await tx.task.create({ data: { workspaceId: p.workspaceId, projectId: p.id, customerId: p.customerId, title: `${who} sent: ${label}${raw.files.length ? ` (${raw.files.length} file${raw.files.length > 1 ? "s" : ""})` : ""}${!asset && body ? ` — ${body.slice(0, 80)}` : ""}`, assigneeId: owner } });
+    const owner = p.ownerId ?? (await tx.staffMembership.findFirst({ where: { workspaceId: p.workspaceId, status: "active" }, select: { id: true }, orderBy: [{ role: "asc" }, { createdAt: "asc" }] }))?.id ?? null;
+    await tx.task.create({ data: { workspaceId: p.workspaceId, projectId: p.id, customerId: p.customerId, title: `${who} sent: ${label}${raw.files.length ? ` (${raw.files.length} file${raw.files.length > 1 ? "s" : ""})` : ""}${!asset && body ? ` — ${body.slice(0, 80)}` : ""}`, assigneeId: owner, dueDate: new Date(new Date().toISOString().slice(0, 10)) } });
     await audit(tx, { workspaceId: p.workspaceId, actor: { userId: c.userId, label: who }, action: "project.client_sent", targetType: "project", targetId: p.id, customerId: p.customerId, detail: { label, files: raw.files.length, text: !!body } });
   });
 }

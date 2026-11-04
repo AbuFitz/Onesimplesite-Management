@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
 import { requireStaff } from "@/modules/identity/session";
-import { setProjectType, seedStageTasks, setTaskDone, markAssetReceived, addProjectFiles, setProjectFileShared, deleteProjectFile } from "@/modules/projects/service";
+import { setProjectType, seedStageTasks, setTaskDone, markAssetReceived, removeAssetRequest, addProjectFiles, setProjectFileShared, deleteProjectFile } from "@/modules/projects/service";
 import { readUploads } from "@/modules/files/service";
 import { DomainError } from "@/lib/errors";
 
@@ -17,6 +17,7 @@ async function run(fd: FormData, fn: (ctx: Awaited<ReturnType<typeof requireStaf
 }
 export async function seedTasksAction(fd: FormData) { return run(fd, (c) => seedStageTasks(c, String(fd.get("id")))); }
 export async function toggleTaskAction(fd: FormData) { return run(fd, (c) => setTaskDone(c, String(fd.get("taskId")), fd.get("done") === "1")); }
+export async function removeAssetAction(fd: FormData) { return run(fd, (c) => removeAssetRequest(c, String(fd.get("assetId")))); }
 export async function receiveAssetAction(fd: FormData) { return run(fd, (c) => markAssetReceived(c, String(fd.get("assetId")), fd.get("received") === "1")); }
 export async function uploadProjectFilesAction(fd: FormData) { return run(fd, async (c) => addProjectFiles(c, String(fd.get("id")), await readUploads(fd, "files", { extra: true }), { folder: String(fd.get("folder") ?? ""), shared: fd.get("shared") === "on" })); }
 export async function shareFileAction(fd: FormData) { return run(fd, (c) => setProjectFileShared(c, String(fd.get("fileId")), fd.get("shared") === "1")); }

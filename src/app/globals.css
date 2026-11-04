@@ -93,7 +93,7 @@ textarea.field { min-height: 7rem; line-height: 1.5; }
 .pill-neutral { background: #e2e6e3; color: #2b332f; }
 
 /* Staff workspace: grey app frame, white working panel (large screens) */
-@media (min-width: 1024px) { .panel { background: #fff; border: 1px solid var(--color-line); border-radius: 12px; margin: .75rem; min-height: calc(100dvh - 5.25rem); box-shadow: 0 1px 2px rgba(14,19,17,.04); } }
+@media (min-width: 1024px) { .panel { background: #fff; border: 1px solid var(--color-line); border-radius: 12px; margin: .75rem; width: auto; min-height: calc(100dvh - 5.25rem); box-shadow: 0 1px 2px rgba(14,19,17,.04); } }
 
 .scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .sr-only-focusable:focus { position: static; }
