@@ -4,6 +4,7 @@ import { hasPlaceholders, normalizeNewlines } from "@/documents/parse";
 import { LEGAL, LEGAL_KINDS } from "./legal-docs";
 import { starterBody } from "./legal-starters";
 import { LEGAL_SET_VERSION } from "./legal-text";
+import { createHash } from "node:crypto";
 
 /**
  * Publishes the current set of customer legal documents (the wording in legal-text.ts and legal-starters.ts) without anyone pressing a button.
@@ -14,8 +15,10 @@ export async function syncLegalDocs(workspaceId: string, by = "Auto-publish") {
   const w = await db.workspace.findUnique({ where: { id: workspaceId }, select: { settings: true, legalName: true, companyNumber: true, registeredAddress: true } });
   if (!w) return { published: [] as string[], skipped: "no workspace" };
   const settings = (w.settings ?? {}) as Record<string, unknown>;
-  if (settings.legalSync === LEGAL_SET_VERSION) return { published: [] as string[], skipped: "up to date" };
   const facts = { legalName: w.legalName, companyNumber: w.companyNumber, registeredAddress: w.registeredAddress };
+  // The marker follows the wording itself, so changing the text in code publishes the new set once, and unchanged wording is never touched.
+  const marker = `${LEGAL_SET_VERSION}:${createHash("sha256").update(LEGAL_KINDS.map((k) => k + normalizeNewlines(starterBody(k, facts))).join("\n")).digest("hex").slice(0, 12)}`;
+  if (settings.legalSync === marker) return { published: [] as string[], skipped: "up to date" };
   const published: string[] = [], waiting: string[] = [];
   for (const kind of LEGAL_KINDS) {
     const body = normalizeNewlines(starterBody(kind, facts)).trim();
@@ -32,6 +35,6 @@ export async function syncLegalDocs(workspaceId: string, by = "Auto-publish") {
       published.push(kind);
     } catch { waiting.push(kind); /* someone else published at the same moment: next run will see it */ }
   }
-  if (!waiting.length) await db.workspace.update({ where: { id: workspaceId }, data: { settings: { ...settings, legalSync: LEGAL_SET_VERSION } as never } });
+  if (!waiting.length) await db.workspace.update({ where: { id: workspaceId }, data: { settings: { ...settings, legalSync: marker } as never } });
   return { published, waiting };
 }

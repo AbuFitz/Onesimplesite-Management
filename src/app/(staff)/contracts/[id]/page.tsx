@@ -1,5 +1,5 @@
 import { plainStatus, KIND_LABEL, isMonthly } from "@/modules/billing/service";
-import { markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction } from "@/app/actions/billing";
+import { markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction, setPlanOfferAction } from "@/app/actions/billing";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -79,14 +79,22 @@ export default async function ContractPage({ params, searchParams }: { params: P
           <Panel title="Payments" icon={CreditCard} tone="lilac">
             {k.billingIntents.length === 0 ? <p className="text-[15px] text-ink/70">Payments appear here once the agreement is signed.</p> : (
               <>
-                <ul className="space-y-3">{k.billingIntents.map((b) => { const st = plainStatus(b.kind, b.status, b.cancelsAt); return (
+                <ul className="space-y-3">{k.billingIntents.map((b) => { const st = plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt); return (
                   <li key={b.id} className="rounded-xl border border-[#e3e7e3] bg-[#fafaf8] p-3">
                     <div className="flex items-start justify-between gap-3"><p className="font-semibold">{b.description ?? KIND_LABEL[b.kind] ?? b.kind}</p><p className="font-bold">{money(b.amountMinor, b.currency)}{isMonthly(b.kind) ? <span className="text-sm font-medium text-ink/60"> /mo</span> : ""}</p></div>
                     <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm"><span className={`rounded-md px-2 py-0.5 font-semibold ${TONE[st.tone]}`}>{st.label}</span>{b.paidAt && <span className="text-ink/65">{b.paidVia === "stripe" ? "by card" : "by bank or other"}</span>}</p>
+                    {isMonthly(b.kind) && b.trialMonths > 0 && <p className="mt-1.5 text-[13px] font-semibold text-[#0a5a3d]">{b.promoLabel ?? "Offer"}: {b.trialMonths} month{b.trialMonths === 1 ? "" : "s"} free{b.trialEndsAt ? `, first payment ${fmtDate(b.trialEndsAt)}` : " from the day they start the plan"}</p>}
+                    {!isMonthly(b.kind) && b.promoLabel && <p className="mt-1.5 text-[13px] font-semibold text-[#0a5a3d]">{b.promoLabel} applied to this fee</p>}
                     {receiptsBy.get(b.id)?.map((r) => <p key={r.id} className="mt-1.5 text-[13px]"><a className="font-semibold underline" href={`/api/receipts/${r.id}`} target="_blank" rel="noreferrer">Receipt {r.ref}</a> <span className="text-ink/65">· {fmtDate(r.paidAt)}</span></p>)}
                     <div className="mt-2 flex flex-wrap gap-2">
                       {isMonthly(b.kind) && b.stripeSubscriptionId && ["active", "past_due"].includes(b.status) && !b.cancelsAt && <form action={cancelPlanAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Stops the monthly payments after the month they've already paid for">Cancel the monthly plan</button></form>}
                       {b.status === "pending" && !isMonthly(b.kind) && <form action={markPaidAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn}>Mark as paid (bank)</button></form>}
+                      {isMonthly(b.kind) && b.status === "pending" && <details className="w-full rounded-lg border border-line bg-white px-3 py-1"><summary className="min-h-9 cursor-pointer py-1.5 text-[13px] font-semibold">{b.trialMonths > 0 ? "Change the free period" : "Give free months"}</summary>
+                        <form action={setPlanOfferAction} className="mb-2 mt-1 flex flex-wrap items-end gap-2"><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} />
+                          <div><label className="label" htmlFor={`m-${b.id}`}>Free months</label><select id={`m-${b.id}`} name="months" className="field !min-h-10" defaultValue={String(b.trialMonths)}>{[0, 1, 2, 3, 6, 12].map((n) => <option key={n} value={n}>{n === 0 ? "None" : `${n} month${n === 1 ? "" : "s"}`}</option>)}</select></div>
+                          <div><label className="label" htmlFor={`l-${b.id}`}>Called</label><input id={`l-${b.id}`} name="label" className="field !min-h-10" defaultValue={b.promoLabel ?? ""} placeholder="Launch offer" maxLength={60} /></div>
+                          <button className={btn}>Save</button></form>
+                        <p className="mb-2 text-[12.5px] text-ink/65">Only before they start the plan. They are taken through checkout as normal, their card is saved, and nothing is charged until the free months end.</p></details>}
                       {b.status === "pending" && <form action={cancelChargeAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn}>Cancel this charge</button></form>}
                     </div>
                   </li>); })}</ul>

@@ -16,7 +16,7 @@ export type EmailData = {
   backup_reminder: { to: string; lastBackup: string; link: string };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
   payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string; receiptRef?: string; receiptId?: string };
-  plan_started: { to: string; name: string; ref: string; amount: string; link: string; receiptRef?: string; receiptId?: string };
+  plan_started: { to: string; name: string; ref: string; amount: string; link: string; freeUntil?: string; receiptRef?: string; receiptId?: string };
   payment_failed: { to: string; name: string; ref: string; what: string; amount: string; link: string };
   payment_notice: { to: string; event: "paid" | "plan_started" | "failed" | "cancelled"; business: string; ref: string; what: string; amount: string; link: string };
   access_request_notice: { to: string; business: string; requester: string; name: string; email: string; level: string; billing: boolean; reason: string; link: string };
@@ -67,12 +67,12 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
     node: (
       <Layout preview={`Your plan is set up at ${d.amount} a month.`}>
         <H>Your monthly plan is live</H>
-        <P>Hi {d.name.split(" ")[0]}, your first payment went through and your plan is now active. It renews every month and you can change your card or cancel from the Billing page.</P>
+        <P>Hi {d.name.split(" ")[0]}, {d.freeUntil ? `your plan is now active and the free period has started. Your card has been saved and you pay nothing until ${d.freeUntil}, when ${d.amount} is first taken.` : "your first payment went through and your plan is now active."} It renews every month and you can change your card or cancel from the Billing page.</P>
         <Facts rows={[["Plan price", `${d.amount} a month`], ["Order", d.ref]]} />
         <Action href={d.link}>Manage your plan</Action>
       </Layout>
     ),
-    text: `Your monthly plan is live\n\nHi ${d.name.split(" ")[0]}, your plan (${d.amount} a month, order ${d.ref}) is now active. Manage it any time: ${d.link}`,
+    text: `Your monthly plan is live\n\nHi ${d.name.split(" ")[0]}, your plan (${d.amount} a month, order ${d.ref}) is now active.${d.freeUntil ? ` You pay nothing until ${d.freeUntil}, when ${d.amount} is first taken.` : ""} Manage it any time: ${d.link}`,
   }),
   payment_failed: (d) => ({
     subject: `We couldn't take your payment (${d.ref})`,

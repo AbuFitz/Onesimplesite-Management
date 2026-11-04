@@ -42,6 +42,7 @@ export async function recordContractCompletion(ctx: StaffCtx, contractId: string
   });
 }
 
+import { promoFrom } from "@/modules/billing/promo";
 import { PROJECT_TYPES } from "@/modules/projects/service";
 
 type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
@@ -58,8 +59,11 @@ export async function runCompletionWorkflow(tx: Tx, contractId: string) {
       data: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, reference, name: c.title, scopeSnapshot: c.scopeSnapshot, stage: "planned", workType: workTypeOf((c.proposalVersion?.requirements as { projectType?: string } | null)?.projectType) },
     });
   }
-  if (c.oneOffMinor > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "one_off" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "one_off", amountMinor: c.oneOffMinor, currency: c.currency }, update: {} });
-  if (c.recurringMinor > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "recurring_setup" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "recurring_setup", amountMinor: c.recurringMinor, currency: c.currency }, update: {} });
+  // An offer on the order (a discount on the website fee, free months on the plan) is applied here, once, so what they pay matches what they signed.
+  const promo = promoFrom((c.proposalVersion?.requirements ?? {}) as Record<string, string | undefined>);
+  const oneOff = Math.max(0, c.oneOffMinor - (promo?.discountMinor ?? 0));
+  if (oneOff > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "one_off" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "one_off", amountMinor: oneOff, currency: c.currency, ...(promo?.discountMinor ? { promoLabel: promo.label, description: `Website (${promo.label}: £${(promo.discountMinor / 100).toFixed(2)} off)` } : {}) }, update: {} });
+  if (c.recurringMinor > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "recurring_setup" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "recurring_setup", amountMinor: c.recurringMinor, currency: c.currency, trialMonths: promo?.freeMonths ?? 0, promoLabel: promo?.freeMonths ? promo.label : null }, update: {} });
   const oppId = c.proposalVersion?.proposal.opportunityId;
   if (oppId) await tx.opportunity.updateMany({ where: { id: oppId, stage: { not: "won" } }, data: { stage: "won", version: { increment: 1 } } });
   await tx.customer.updateMany({ where: { id: c.customerId, lifecycle: "prospect" }, data: { lifecycle: "active" } });

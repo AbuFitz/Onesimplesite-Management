@@ -19,7 +19,7 @@ kv: Service provider | OneSimpleSite LTD, trading as OneSimpleSite
 kv: Company number | 17552675 (registered in England and Wales)
 kv: Registered office | 3F Foxhill, Watford, WD24 6SX
 kv: VAT status | Not VAT registered
-kv: Email | Hello@onesimplesite.co.uk
+kv: Email | {{general_email}}
 kv: Website | https://onesimplesite.co.uk/
 kv: Effective date | 4 November 2026
 kv: Version | 1.4
@@ -160,7 +160,7 @@ We will not exclude downtime caused by our own failure merely by describing it a
 6.2 Support Hours
 Our standard support hours are:
 Monday to Friday, 9:00 am to 5:00 pm UK time, excluding public holidays.
-Support requests should be sent to Hello@onesimplesite.co.uk or, where we provide one, submitted through the OneSimpleSite client portal.
+Support requests should be sent to {{support_email}} or, where we provide one, submitted through the OneSimpleSite client portal.
 24-hour emergency support is available exclusively for Priority 1 (P1) critical incidents, including complete website outages or suspected serious security compromises. Priority 1 incidents can be reported at any time, 24 hours a day, 7 days a week.
 All other support requests will be handled during our standard business hours. Out-of-hours support for Priority 2, Priority 3 and Priority 4 incidents is not included unless expressly agreed in writing.
 Support under this clause 6 is provided for websites that we host or maintain under an active Service Plan and for which no undisputed Fees are overdue. Support for other websites, or after the Services have ended, is additional work under clause 13.1.
@@ -176,9 +176,9 @@ Response targets are service objectives rather than guaranteed repair times. Res
 6.4 Incident Reporting
 If you experience a website issue, technical fault or suspected security incident, you can report it to OneSimpleSite through the available support channels.
 Incidents can be reported by:
-- Sending an email to Hello@onesimplesite.co.uk.
+- Sending an email to {{support_email}}.
 - Where we provide one, raising a support ticket through the OneSimpleSite client portal.
-- Using the designated emergency contact details for Priority 1 incidents: Hello@onesimplesite.co.uk, with "P1 URGENT" in the subject line.
+- Using the designated emergency contact details for Priority 1 incidents: {{emergency_contact}}, with "P1 URGENT" in the subject line.
 For Priority 1 incidents outside standard business hours, please use the designated emergency contact method to ensure the incident can be escalated appropriately.
 Where available, raising a ticket through the client portal is also available for reporting incidents and tracking their progress.
 When reporting an incident, please include the affected website address, a description of the issue, when it began and any relevant screenshots or error messages.
@@ -302,7 +302,7 @@ We are not liable for temporary loss of functionality or availability that reaso
 14.1 Monthly Service Cancellation
 You may cancel your ongoing monthly hosting or Care Plan services by providing at least 30 days' written notice.
 OneSimpleSite does not charge a cancellation fee or early termination penalty for cancelling monthly services.
-Cancellation requests should be sent to Hello@onesimplesite.co.uk. We will confirm receipt within 2 Business Days.
+Cancellation requests should be sent to {{cancellations_email}}. We will confirm receipt within 2 Business Days.
 The 30-day notice period will begin when we receive your written cancellation request, and the services will end on the last day of that period or on any later date you specify. Services and applicable recurring charges will continue during the notice period. We will refund any Fees you have paid in advance for a period after the services end.
 Any outstanding invoices or charges for services already provided remain payable.
 Where hosting and the Care Plan are separate services, you may cancel either service independently, subject to the applicable arrangements in your Quotation or Service Plan. Where the Care Plan depends on our hosting your website, cancelling the hosting also ends the Care Plan on the same date.
@@ -335,7 +335,7 @@ After hosting ends, we will keep your website files and data for 30 days so that
 ## Consumer Cancellation Rights
 This section applies to Customers who qualify as Consumers under applicable law.
 Where a qualifying contract is concluded online or away from our business premises, you may have a statutory right under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013 to cancel within 14 days after entering into the service contract, subject to applicable legal requirements and exceptions.
-To cancel, send us a clear statement of your decision to cancel, for example by email to Hello@onesimplesite.co.uk. You may use the model cancellation form, which we will provide on request, but you do not have to.
+To cancel, send us a clear statement of your decision to cancel, for example by email to {{cancellations_email}}. You may use the model cancellation form, which we will provide on request, but you do not have to.
 We will provide the pre-contract information and cancellation instructions required by law.
 If you ask us to begin services during the statutory cancellation period, we will obtain your express request where required. If you then cancel, you may be required to pay a proportionate amount for services properly performed up to cancellation, where the law permits.
 We will refund any sums due to you without undue delay and in any event within 14 days after we are informed of your decision to cancel.
@@ -368,7 +368,7 @@ This clause does not excuse a failure to pay Fees that are due. If such circumst
 This clause does not remove rights that cannot lawfully be excluded.
 
 ## Complaints and Dispute Resolution
-If you have a complaint, please contact: Hello@onesimplesite.co.uk. Please provide your name, website address, relevant invoice or Quotation reference and details of the issue.
+If you have a complaint, please contact: {{complaints_email}}. Please provide your name, website address, relevant invoice or Quotation reference and details of the issue.
 We will review your complaint and aim to respond within five Business Days. If further investigation is needed, we will keep you reasonably informed.
 If you are a Consumer and we cannot resolve your complaint through our complaints process, we will tell you in writing that we cannot settle the complaint, give you the name and website address of an alternative dispute resolution (ADR) provider that is competent to deal with it, and tell you whether we are willing to use that provider.
 Both parties will attempt to resolve disputes through good-faith discussions for at least 14 days after one party gives the other written notice of the dispute, before commencing formal proceedings, except where urgent legal action is necessary. This does not prevent us from taking action to recover sums that are due and undisputed.
@@ -387,7 +387,7 @@ These Terms, together with the accepted Quotation, Service Plan and applicable d
 Any change to the agreed services or material contractual terms must be agreed in accordance with the contract and applicable law, and, except under clause 19, must be recorded in writing by both parties (email is sufficient).
 We may use subcontractors to provide the services and remain responsible for their work. We may transfer our rights and obligations under the contract to another person if the services continue to be provided with equivalent care and skill. You may not transfer your rights or obligations without our written consent.
 Only the parties to the contract may enforce it. No one else has any right to enforce any of its terms under the Contracts (Rights of Third Parties) Act 1999.
-Notices must be in writing. Notices to us must be sent to Hello@onesimplesite.co.uk, and formal legal notices may also be sent to our registered office. Notices to you may be sent to the email address in your Quotation or most recent invoice, or to your postal address. An email is treated as received on the next Business Day after it is sent, unless the sender receives a delivery failure message.
+Notices must be in writing. Notices to us must be sent to {{legal_email}}, and formal legal notices may also be sent to our registered office. Notices to you may be sent to the email address in your Quotation or most recent invoice, or to your postal address. An email is treated as received on the next Business Day after it is sent, unless the sender receives a delivery failure message.
 Nothing in the contract makes either party the partner, agent or employee of the other. The contract is in English, and the English version prevails over any translation. The contract may be accepted electronically and in counterparts, and an electronic signature is valid.
 
 ## Governing Law and Jurisdiction
@@ -398,11 +398,12 @@ If you are a Business Customer, the courts of England and Wales have exclusive j
 OneSimpleSite LTD, trading as OneSimpleSite
 kv: Company number | 17552675 (registered in England and Wales)
 kv: Registered office and address | 3F Foxhill, Watford, WD24 6SX
-kv: Email | Hello@onesimplesite.co.uk
-kv: Support | Hello@onesimplesite.co.uk
-kv: Emergency P1 support | Hello@onesimplesite.co.uk (subject line "P1 URGENT")
-kv: Cancellations | Hello@onesimplesite.co.uk
-kv: Legal notices | Hello@onesimplesite.co.uk
+kv: Email | {{general_email}}
+kv: Support | {{support_email}}
+kv: Emergency P1 support | {{emergency_contact}} (put "P1 URGENT" in the subject line)
+kv: Cancellations | {{cancellations_email}}
+kv: Complaints | {{complaints_email}}
+kv: Legal notices | {{legal_email}}
 kv: Website | https://onesimplesite.co.uk/
 
 ## Acceptance of Terms
@@ -417,7 +418,8 @@ export const SERVICE_LEVEL_AGREEMENT = `This Service Level Agreement is clause 6
 kv: Hosting availability target | 99.9% per calendar month, unless your Service Plan says otherwise (clause 6.1)
 kv: Standard support hours | Monday to Friday, 9:00 am to 5:00 pm UK time, excluding public holidays (clause 6.2)
 kv: Emergency support | 24 hours a day, 7 days a week, for Priority 1 incidents only (clause 6.2)
-kv: Report an incident | Hello@onesimplesite.co.uk, or a ticket in the client portal. For Priority 1 put "P1 URGENT" in the subject line (clause 6.4)
+kv: Report an incident | {{support_email}}, or a ticket in the client portal (clause 6.4)
+kv: Priority 1 emergencies | {{emergency_contact}}, with "P1 URGENT" in the subject line (clause 6.4)
 | Priority | What it means | Initial response target |
 | Priority 1: Critical | Website completely unavailable, or suspected serious security compromise | Within 1 hour, at any time |
 | Priority 2: High | Major functionality unavailable without a reasonable workaround | Within 1 Business Day |
@@ -434,5 +436,5 @@ kv: Included Revisions | Up to three website revisions per calendar month. Unuse
 kv: Billing | Monthly in advance from the Care Plan start date. Part months are pro rata (clause 4.2)
 kv: Hosting | Provided or arranged by OneSimpleSite as described in your Quotation or Service Plan (clause 5)
 kv: Backups | Taken at least weekly and kept for at least 14 days, covering website files and databases, unless your Service Plan says otherwise (clause 7.3)
-kv: Cancelling | 30 days' written notice to Hello@onesimplesite.co.uk. No cancellation fee (clause 14.1)
+kv: Cancelling | 30 days' written notice to {{cancellations_email}}. No cancellation fee (clause 14.1)
 note: Any offer on your order, such as free months on the monthly plan, is shown in your order above. Where it differs from these Terms, the order applies (clause 1).`;

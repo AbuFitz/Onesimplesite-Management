@@ -44,7 +44,7 @@ describe("agreement pack", () => {
     const r = await sendAgreement(ctx, p.id, { name: "Casey", email: "casey@harbour.test" });
     const req = await db.signingRequest.findUniqueOrThrow({ where: { id: r.requestId } });
     const t = req.contentText;
-    for (const must of ["Your service plan", "Standard Care Plan", "£29.00 per month", "Special terms for this order", "The first month of the care plan is free.", "## Services Agreement", "## Service Level Agreement", "## Hosting and Care Plan Terms", "Version | 1.4", "This Service Level Agreement is clause 6", "Hosting and Care Plan Terms", "Daily, kept for 14 days", "99.9%", "Monday to Friday, 9:00 am to 5:00 pm UK time", "£39.00 per month"])
+    for (const must of ["Your service plan", "Standard Care Plan", "£29.00 per month", "Special terms for this order", "The first month of the care plan is free.", "## Services Agreement", "## Service Level Agreement", "## Hosting and Care Plan Terms", "Version | 1.4", "This Service Level Agreement is clause 6", "Hosting and Care Plan Terms", "support@onesimplesite.co.uk", "urgent@onesimplesite.co.uk", "legal@onesimplesite.co.uk", "complaints@onesimplesite.co.uk", "Daily, kept for 14 days", "99.9%", "Monday to Friday, 9:00 am to 5:00 pm UK time", "£39.00 per month"])
       expect(t, must).toContain(must);
     expect(t).not.toMatch(/\{\{\w+\}\}/); // every value is filled
     expect(t).toContain("OneSimpleSite LTD, trading as OneSimpleSite");

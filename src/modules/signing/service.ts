@@ -1,3 +1,4 @@
+import { promoFrom, monthsWords } from "@/modules/billing/promo";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { db, type Tx } from "@/lib/db";
@@ -232,6 +233,7 @@ export function composeAgreement(c: ComposeIn) {
   const per = c.recurringPeriod ? `per ${c.recurringPeriod}` : "recurring";
   const included = [...lines_(req.features), ...lines_(req.integrations)];
   const notes = lines_(req.notes), pay = lines_(req.payment), specials = lines_(c.special);
+  const promo = promoFrom(req);
   const row = (k: string, v: string | undefined) => (v?.trim() ? [`kv: ${k} | ${cell(v)}`] : []);
   let section = 0;
   // Headings are numbered by the document parser; the count is kept here so clauses carry the right number.
@@ -255,8 +257,10 @@ export function composeAgreement(c: ComposeIn) {
     "| Item | Description | Amount |",
     ...c.lines.map((l) => `| ${cell(l.description)}${l.quantity > 1 ? ` x ${l.quantity}` : ""} | ${l.recurring ? `Recurring, ${per}` : "One-off"} | ${m(l.quantity * l.unitMinor)}${l.recurring ? ` ${per}` : ""} |`),
     `| Total (one-off) |  | ${m(c.oneOffMinor)} |`,
+    ...(promo?.discountMinor && c.oneOffMinor > 0 ? [`| ${cell(promo.label)}: discount on the website fee |  | −${m(Math.min(promo.discountMinor, c.oneOffMinor))} |`, `| Website fee to pay |  | ${m(Math.max(0, c.oneOffMinor - promo.discountMinor))} |`] : []),
     ...(c.recurringMinor > 0 ? [`| Total (recurring) |  | ${m(c.recurringMinor)} ${per} |`] : []),
     "",
+    ...(promo?.freeMonths && c.recurringMinor > 0 ? [`note: ${promo.label}: the first ${monthsWords(promo.freeMonths)} of your monthly plan ${promo.freeMonths === 1 ? "is" : "are"} free. You set the plan up with your card as normal, you are not charged during the free period, and the first payment of ${m(c.recurringMinor)} is taken ${monthsWords(promo.freeMonths)} after the day the plan starts. You can cancel under clause 14.1 of the Terms before then and pay nothing.`] : []),
     c.provider.vatNumber ? "note: Amounts exclude VAT, which is added at the current rate. Invoices are issued separately for the amounts and dates below." : `note: VAT is not charged because ${c.provider.legalName} is not VAT-registered. Invoices are issued separately for the amounts and dates below.`,
     ...clauses(pay),
   );

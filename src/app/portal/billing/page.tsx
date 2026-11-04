@@ -29,9 +29,9 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
       {items.length > 0 && (
         <section className="tile bg-white" aria-label="Payments">
           <ul className="divide-y divide-line">
-            {items.map((b) => { const s = plainStatus(b.kind, b.status, b.cancelsAt); const canPay = b.status === "pending" || b.status === "past_due"; return (
+            {items.map((b) => { const s = plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt); const canPay = b.status === "pending" || b.status === "past_due"; return (
               <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div><p className="font-bold">{b.description ?? KIND_LABEL[b.kind] ?? "Payment"}</p><p className="text-sm text-muted">{chargeOf(b).title} · {chargeOf(b).reference}{b.paidAt ? ` · paid ${fmtDate(b.paidAt)}` : ""}</p></div>
+                <div><p className="font-bold">{b.description ?? KIND_LABEL[b.kind] ?? "Payment"}</p><p className="text-sm text-muted">{chargeOf(b).title} · {chargeOf(b).reference}{b.paidAt ? ` · ${isMonthly(b.kind) ? "started" : "paid"} ${fmtDate(b.paidAt)}` : ""}</p>{isMonthly(b.kind) && b.trialMonths > 0 && b.status !== "cancelled" && <p className="mt-1 inline-block rounded-lg bg-mint px-2.5 py-1 text-sm font-semibold">{b.promoLabel ?? "Offer"}: {b.trialMonths} month{b.trialMonths === 1 ? "" : "s"} free{b.trialEndsAt ? ` · first payment ${fmtDate(b.trialEndsAt)}` : " from the day you start"}</p>}{!isMonthly(b.kind) && b.promoLabel && <p className="mt-1 inline-block rounded-lg bg-mint px-2.5 py-1 text-sm font-semibold">{b.promoLabel} applied</p>}</div>
                 <div className="flex items-center gap-3">
                   <p className="text-lg font-bold">{money(b.amountMinor, b.currency)}{isMonthly(b.kind) && <span className="text-sm font-medium text-muted"> / month</span>}</p>
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${TONE[s.tone]}`}>{s.label}</span>

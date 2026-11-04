@@ -3,6 +3,7 @@ import { audit, enqueue } from "@/lib/audit";
 import type { Tx } from "@/lib/db";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { ensureReceipt } from "./receipt";
+import { addMonths, trialDays } from "./promo";
 import { reportProblem } from "@/lib/problems";
 import { portalLink, manageLink } from "@/lib/env";
 import { stripe, stripeReady, stripeSubId } from "@/lib/stripe";
@@ -18,9 +19,10 @@ export const KIND_LABEL: Record<string, string> = { one_off: "Website", deposit:
 export const isMonthly = (kind: string) => kind === "recurring_setup";
 
 /** Status in plain words. */
-export function plainStatus(kind: string, status: string, cancelsAt?: Date | null): { label: string; tone: "due" | "ok" | "warn" | "off" } {
+export function plainStatus(kind: string, status: string, cancelsAt?: Date | null, trialEndsAt?: Date | null): { label: string; tone: "due" | "ok" | "warn" | "off" } {
   if (cancelsAt && (status === "active" || status === "past_due")) return { label: `Ends ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(cancelsAt)}`, tone: "warn" };
   if (status === "paid") return { label: "Paid", tone: "ok" };
+  if (status === "active" && trialEndsAt && trialEndsAt > new Date()) return { label: `Free until ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(trialEndsAt)}`, tone: "ok" };
   if (status === "active") return { label: "Active", tone: "ok" };
   if (status === "past_due") return { label: "Payment failed", tone: "warn" };
   if (status === "cancelled") return { label: "Cancelled", tone: "off" };
@@ -65,7 +67,7 @@ export async function startPayment(c: ClientCtx, intentId: string): Promise<stri
     mode: monthly ? "subscription" : "payment", customer, line_items: [line], payment_method_types: ["card"],
     success_url: portalLink("/billing?paid=1"), cancel_url: portalLink("/billing"),
     client_reference_id: b.id, metadata: { intentId: b.id, contract: chargeOf(b).reference },
-    ...(monthly ? { subscription_data: { metadata: { intentId: b.id } } } : { payment_intent_data: { metadata: { intentId: b.id }, description: `${chargeOf(b).reference} ${KIND_LABEL[b.kind] ?? ""}` } }),
+    ...(monthly ? { subscription_data: { metadata: { intentId: b.id }, ...(b.trialMonths > 0 ? { trial_period_days: trialDays(new Date(), b.trialMonths) } : {}) }, ...(b.trialMonths > 0 ? { payment_method_collection: "always" } : {}) } : { payment_intent_data: { metadata: { intentId: b.id }, description: `${chargeOf(b).reference} ${KIND_LABEL[b.kind] ?? ""}` } }),
   });
   };
   let s: { id: string; url: string };
@@ -92,7 +94,7 @@ const day = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "long", t
 type Mailable = { id: string; workspaceId: string; customerId: string; contractId: string | null; ticketId?: string | null; kind: string; amountMinor: number; currency: string; description: string | null };
 
 /** Emails the customer (whoever paid, else their main contact) and tells the team. Deduped per charge and event. */
-async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "failed" | "cancelled", hint: { email?: string | null; name?: string | null } = {}, key = "", rc?: { key: string; method: "card" | "bank" | "other"; stripeRef?: string | null }) {
+async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "failed" | "cancelled", hint: { email?: string | null; name?: string | null } = {}, key = "", rc?: { key: string; method: "card" | "bank" | "other"; stripeRef?: string | null }, trialEndsAt?: Date | null) {
   const [cu, k, primary] = await Promise.all([
     tx.customer.findUniqueOrThrow({ where: { id: b.customerId }, select: { displayName: true } }),
     b.contractId ? tx.contract.findUniqueOrThrow({ where: { id: b.contractId }, select: { reference: true } }) : tx.ticket.findUniqueOrThrow({ where: { id: b.ticketId! }, select: { reference: true } }),
@@ -106,7 +108,7 @@ async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "
   if (to && event !== "cancelled") {
     const link = portalLink("/billing");
     if (event === "paid") await enqueue(tx, b.workspaceId, "email.payment_received", `pay.paid:${dk}`, { to, name, ref: k.reference, what, amount, paidOn: day(new Date()), link, ...(receipt ? { receiptId: receipt.id, receiptRef: receipt.ref } : {}) });
-    else if (event === "plan_started") await enqueue(tx, b.workspaceId, "email.plan_started", `pay.plan:${dk}`, { to, name, ref: k.reference, amount, link, ...(receipt ? { receiptId: receipt.id, receiptRef: receipt.ref } : {}) });
+    else if (event === "plan_started") await enqueue(tx, b.workspaceId, "email.plan_started", `pay.plan:${dk}`, { to, name, ref: k.reference, amount, link, ...(trialEndsAt ? { freeUntil: day(trialEndsAt) } : {}), ...(receipt ? { receiptId: receipt.id, receiptRef: receipt.ref } : {}) });
     else await enqueue(tx, b.workspaceId, "email.payment_failed", `pay.failed:${dk}`, { to, name, ref: k.reference, what, amount, link });
   }
   await enqueue(tx, b.workspaceId, "email.payment_notice", `pay.notice:${dk}`, { to: "internal", event, business: cu.displayName, ref: k.reference, what, amount, link: manageLink(b.contractId ? `/contracts/${b.contractId}` : `/support/${b.ticketId}`) });
@@ -144,6 +146,20 @@ export async function cancelCharge(ctx: StaffCtx, id: string) {
   await db.$transaction(async (tx) => {
     await tx.billingIntent.update({ where: { id }, data: { status: "cancelled" } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.cancelled", targetType: "billing_intent", targetId: id, customerId: b.customerId });
+  });
+}
+
+/** Give a company free months at the start of their monthly plan, before they start it (for example after they signed, or a promise made on a call). */
+export async function setPlanOffer(ctx: StaffCtx, id: string, months: number, label: string) {
+  needWrite(ctx);
+  if (!Number.isInteger(months) || months < 0 || months > 12) throw new DomainError("validation", "Choose between 0 and 12 free months.");
+  const b = await db.billingIntent.findFirst({ where: { id, workspaceId: ctx.workspaceId } });
+  if (!b) throw notFound();
+  if (!isMonthly(b.kind)) throw new DomainError("conflict", "Free months only apply to the monthly plan.");
+  if (b.status !== "pending") throw new DomainError("conflict", "The plan has already started or been cancelled, so it's too late to add free months. A credit can be given in Stripe instead.");
+  await db.$transaction(async (tx) => {
+    await tx.billingIntent.update({ where: { id }, data: { trialMonths: months, promoLabel: months > 0 ? (label.trim().slice(0, 60) || "Special offer") : null } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.offer_set", targetType: "billing_intent", targetId: id, customerId: b.customerId, visibility: "client", detail: { months, label } });
   });
 }
 
@@ -188,8 +204,8 @@ type Obj = Record<string, unknown> & { id?: string; metadata?: Record<string, st
 export async function applyStripeEvent(type: string, o: Obj, workspaceId: string) {
   const intentId = o.metadata?.intentId;
   const who = { email: ((o as { customer_details?: { email?: string } }).customer_details?.email ?? (o as { customer_email?: string }).customer_email) || null, name: (o as { customer_details?: { name?: string } }).customer_details?.name || null };
-  const record = (b: Mailable, action: string, event: "paid" | "plan_started" | "failed" | "cancelled", hint = who, key = "", rc?: { key: string; method: "card" | "bank" | "other"; stripeRef?: string | null }) =>
-    db.$transaction(async (tx) => { await audit(tx, { workspaceId, actor: null, action, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } }); await payEmails(tx, b, event, hint, key, rc); });
+  const record = (b: Mailable, action: string, event: "paid" | "plan_started" | "failed" | "cancelled", hint = who, key = "", rc?: { key: string; method: "card" | "bank" | "other"; stripeRef?: string | null }, trialEndsAt?: Date | null) =>
+    db.$transaction(async (tx) => { await audit(tx, { workspaceId, actor: null, action, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor, ...(trialEndsAt ? { freeUntil: trialEndsAt.toISOString() } : {}) } }); await payEmails(tx, b, event, hint, key, rc, trialEndsAt); });
   if (type === "checkout.session.completed" && intentId) {
     const b = await db.billingIntent.findFirst({ where: { id: intentId, workspaceId } });
     if (!b) return;
@@ -197,9 +213,10 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
     if (!paid) return; // delayed payment methods report later
     const monthly = isMonthly(b.kind);
     if (b.status === (monthly ? "active" : "paid")) return;
-    await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: stripeSubId(o) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null } });
+    const trialEndsAt = monthly && b.trialMonths > 0 ? addMonths(new Date(), b.trialMonths) : null;
+    await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: stripeSubId(o) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null, ...(trialEndsAt ? { trialEndsAt } : {}) } });
     if (b.ticketId) await db.ticket.update({ where: { id: b.ticketId }, data: { chargeStatus: "paid" } });
-    await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid", who, "", { key: `cs:${o.id}`, method: "card", stripeRef: (o.payment_intent as string) ?? null });
+    await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid", who, "", trialEndsAt ? undefined : { key: `cs:${o.id}`, method: "card", stripeRef: (o.payment_intent as string) ?? null }, trialEndsAt);
     return;
   }
   const sub = type.startsWith("customer.subscription.") ? o.id : type.startsWith("invoice.") ? stripeSubId(o) : undefined;

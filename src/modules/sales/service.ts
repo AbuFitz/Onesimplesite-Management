@@ -25,7 +25,7 @@ export const REQUIREMENT_FIELDS = [
   ["payment", "Payment schedule for this order (amounts and dates)"], ["notes", "Other requirements or exclusions"],
 ] as const;
 // The plan is not wording: it is the id of the care plan being sold, stored with the requirements so it is frozen with the quote.
-const requirementsInput = z.object({ ...Object.fromEntries(REQUIREMENT_FIELDS.map(([k]) => [k, z.string().trim().max(5000).optional()])), plan: z.string().uuid().optional(), projectType: z.string().max(40).optional() }).partial();
+const requirementsInput = z.object({ ...Object.fromEntries(REQUIREMENT_FIELDS.map(([k]) => [k, z.string().trim().max(5000).optional()])), plan: z.string().uuid().optional(), projectType: z.string().max(40).optional(), promoLabel: z.string().trim().max(60).optional(), promoFreeMonths: z.enum(["1", "2", "3", "6", "12"]).optional(), promoDiscount: z.string().regex(/^\d{1,6}(\.\d{1,2})?$/, "Enter the discount as a number of pounds.").optional() }).partial();
 export type Requirements = z.infer<typeof requirementsInput>;
 
 export const draftInput = z.object({

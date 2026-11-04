@@ -1,0 +1,1 @@
+ALTER TABLE "BillingIntent" ADD COLUMN "trialMonths" INTEGER NOT NULL DEFAULT 0, ADD COLUMN "trialEndsAt" TIMESTAMP(3), ADD COLUMN "promoLabel" TEXT;
