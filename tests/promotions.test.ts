@@ -112,3 +112,15 @@ describe("free months that simply end", () => {
     await expect(continueFreePlan(x.staff, plan.id)).rejects.toThrow(/isn't a free care period/);
   });
 });
+
+describe("a care plan that is free and then ends is never shown as a charge", () => {
+  it("shows £0 and 'free, then it ends' in the price table, the totals and the plan section", () => {
+    const t = composeAgreement({ reference: "OSS-OF-1", title: "Website", dateLabel: "4 November 2026", validUntilLabel: "4 December 2026", currency: "GBP", oneOffMinor: 34000, recurringMinor: 2900, recurringPeriod: "month", lines: [{ description: "Website design and build", quantity: 1, unitMinor: 34000, recurring: false }, { description: "Standard Care Plan", quantity: 1, unitMinor: 2900, recurring: true }], scope: "x", requirements: { promoFreeMonths: "1", promoFreeEnds: "stop", promoLabel: "New Customer" }, provider: { legalName: "OneSimpleSite LTD", companyNumber: "1", registeredAddress: "x", vatNumber: null }, client: { legalName: "Poke Ltd", kind: "company", companyNumber: null, billingAddress: "x", vatNumber: null }, plan: { name: "Standard Care Plan", monthlyMinor: 2900, revisionsPerMonth: 3, backupFrequency: "Daily", backupRetention: "14 days" }, docs: { terms: { number: 2, body: SERVICES_AGREEMENT } }, vars: {} } as never);
+    expect(t).toContain("| Standard Care Plan | Care plan, optional | Free for the first 1 month, then it ends |");
+    expect(t).toContain("| Total (recurring) |  | £0.00 (free for the first 1 month, then it ends) |");
+    expect(t).toContain("kv: Monthly price | Free for the first 1 month, then it ends. £29.00 per month only if you ask us to continue");
+    expect(t).not.toContain("£29.00 per month |");                       // no table cell still reads as a £29 charge
+    const paid = composeAgreement({ reference: "OSS-OF-1", title: "Website", dateLabel: "x", validUntilLabel: "x", currency: "GBP", oneOffMinor: 34000, recurringMinor: 2900, recurringPeriod: "month", lines: [{ description: "Standard Care Plan", quantity: 1, unitMinor: 2900, recurring: true }], scope: "x", requirements: { promoFreeMonths: "1" }, provider: { legalName: "A", companyNumber: "1", registeredAddress: "x", vatNumber: null }, client: { legalName: "B", kind: "company", companyNumber: null, billingAddress: "x", vatNumber: null }, docs: { terms: { number: 2, body: SERVICES_AGREEMENT } }, vars: {} } as never);
+    expect(paid).toContain("| Total (recurring) |  | £29.00 per month |");     // the normal free-trial-then-paid version is unchanged
+  });
+});

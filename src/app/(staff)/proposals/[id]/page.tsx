@@ -13,6 +13,7 @@ import { ONBOARDING_LABEL } from "@/modules/support/options";
 import { RecordHeader, Status, ErrorSummary, money, fmtDateTime } from "@/components/ui";
 import { ProposalFields } from "@/components/proposal-fields";
 import Link from "next/link";
+import { promoFrom } from "@/modules/billing/promo";
 
 export const metadata = { title: "Agreement" };
 export default async function ProposalPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string; sent?: string; existing?: string }> }) {
@@ -70,7 +71,9 @@ export default async function ProposalPage({ params, searchParams }: { params: P
         <section aria-labelledby="pv" className="space-y-6">
           <div><h2 id="pv" className="mb-2">Price</h2>
             <p>One-off: <strong>{money(cur.oneOffMinor)}</strong></p>
-            <p>Recurring: <strong>{money(cur.recurringMinor)}</strong>{cur.recurringPeriod ? ` / ${cur.recurringPeriod}` : ""}</p>
+            {(() => { const pr = promoFrom((cur.requirements ?? {}) as Record<string, string | undefined>, cur.oneOffMinor); return pr?.endsAfter && cur.recurringMinor > 0
+              ? <p>Recurring: <strong>£0.00</strong> <span className="text-sm text-muted">free for {pr.freeMonths} month{pr.freeMonths === 1 ? "" : "s"}, then it ends. {money(cur.recurringMinor)} / {cur.recurringPeriod ?? "month"} only if they ask to continue.</span></p>
+              : <p>Recurring: <strong>{money(cur.recurringMinor)}</strong>{cur.recurringPeriod ? ` / ${cur.recurringPeriod}` : ""}</p>; })()}
             <p className="hint">Valid until {cur.validUntil ? fmtDateTime(cur.validUntil) : "set when sent (30 days)"}</p></div>
           {editable && can(ctx.role, "proposal.send") && (
             <form action={sendAgreementAction} id="send" className="scroll-mt-24 space-y-3 border-t border-line pt-4"><input type="hidden" name="id" value={p.id} />

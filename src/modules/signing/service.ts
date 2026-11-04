@@ -237,6 +237,9 @@ export function composeAgreement(c: ComposeIn) {
   const payable = Math.max(0, c.oneOffMinor - (promo?.discountMinor ?? 0));
   const depositPct = Number(req.depositPercent) || 0;
   const deposit = depositPct > 0 && payable > 0 ? { pct: depositPct, now: Math.round((payable * depositPct) / 100), later: payable - Math.round((payable * depositPct) / 100) } : null;
+  // Free months that simply end: the plan is shown as free and ending, never as a charge, so the price table cannot be misread.
+  const freeEnds = !!(promo?.endsAfter && promo.freeMonths > 0 && c.recurringMinor > 0);
+  const freeWords = promo ? `Free for the first ${monthsWords(promo.freeMonths)}, then it ends` : "";
   const offerText = promo ? [promo.discountMinor > 0 && c.oneOffMinor > 0 ? `${discountWords(promo, m)} the website fee, so ${m(payable)} to pay instead of ${m(c.oneOffMinor)}` : "", promo.freeMonths > 0 && c.recurringMinor > 0 ? (promo.endsAfter ? `the first ${monthsWords(promo.freeMonths)} of your care plan free, with no payment details needed, and then it simply ends unless you ask us to continue` : `the first ${monthsWords(promo.freeMonths)} of your monthly plan free`) : ""].filter(Boolean).join(", and ") : "";
   const row = (k: string, v: string | undefined) => (v?.trim() ? [`kv: ${k} | ${cell(v)}`] : []);
   let section = 0;
@@ -262,10 +265,10 @@ export function composeAgreement(c: ComposeIn) {
   out.push(
     "", h("Price"),
     "| Item | Description | Amount |",
-    ...c.lines.map((l) => `| ${cell(l.description)}${l.quantity > 1 ? ` x ${l.quantity}` : ""} | ${l.recurring ? `Recurring, ${per}` : "One-off"} | ${m(l.quantity * l.unitMinor)}${l.recurring ? ` ${per}` : ""} |`),
+    ...c.lines.map((l) => `| ${cell(l.description)}${l.quantity > 1 ? ` x ${l.quantity}` : ""} | ${l.recurring ? (freeEnds ? "Care plan, optional" : `Recurring, ${per}`) : "One-off"} | ${l.recurring && freeEnds ? freeWords : `${m(l.quantity * l.unitMinor)}${l.recurring ? ` ${per}` : ""}`} |`),
     `| Total (one-off) |  | ${m(c.oneOffMinor)} |`,
     ...(promo?.discountMinor && c.oneOffMinor > 0 ? [`| ${cell(promo.label)}: ${promo.percent > 0 ? `${promo.percent}% ` : ""}discount on the website fee |  | -${m(promo.discountMinor)} |`, `| Website fee to pay |  | ${m(payable)} |`] : []),
-    ...(c.recurringMinor > 0 ? [`| Total (recurring) |  | ${m(c.recurringMinor)} ${per} |`] : []),
+    ...(c.recurringMinor > 0 ? [freeEnds ? `| Total (recurring) |  | ${m(0)} (${freeWords.toLowerCase()}) |` : `| Total (recurring) |  | ${m(c.recurringMinor)} ${per} |`] : []),
     "",
     ...(deposit ? [`note: How the website fee is paid: a deposit of ${deposit.pct}% (${m(deposit.now)}) is due when you sign, and the final payment of ${m(deposit.later)} is due before the website goes live.`] : []),
     ...(promo?.freeMonths && c.recurringMinor > 0 ? [promo.endsAfter
@@ -276,7 +279,7 @@ export function composeAgreement(c: ComposeIn) {
   );
   if (c.plan) {
     out.push("", h("Your service plan"),
-      `kv: Plan | ${cell(c.plan.name)}`, `kv: Monthly price | ${m(c.plan.monthlyMinor)} per month`, `kv: Website revisions | Up to ${c.plan.revisionsPerMonth} each calendar month`,
+      `kv: Plan | ${cell(c.plan.name)}`, `kv: Monthly price | ${freeEnds ? `${freeWords}. ${m(c.plan.monthlyMinor)} per month only if you ask us to continue` : `${m(c.plan.monthlyMinor)} per month`}`, `kv: Website revisions | Up to ${c.plan.revisionsPerMonth} each calendar month`,
       ...row("Backups", c.plan.backupFrequency ? `${c.plan.backupFrequency}${c.plan.backupRetention ? `, kept for ${c.plan.backupRetention}` : ""}` : undefined),
       ...row("Hosting availability target", c.vars.availability_target), ...row("Support hours", c.vars.support_hours));
   }
