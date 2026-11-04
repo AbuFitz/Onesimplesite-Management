@@ -294,6 +294,45 @@ export function composeAgreement(c: ComposeIn) {
   return fillVars(out.join("\n"), c.vars);
 }
 
+/** Gathers everything an agreement is made from. Sending and the team's preview both use it, so what the team previews is what the customer gets. */
+async function assemble(tx: Tx, ctx: StaffCtx, proposalId: string, signer: { name: string; email: string }) {
+  const company = await getCompany(ctx);
+  const p = await tx.proposal.findFirst({ where: { id: proposalId, workspaceId: ctx.workspaceId }, include: { customer: true } });
+  if (!p) throw notFound();
+  const blockers = [
+    ...companyMissing(company).map((m) => `our ${m} (Settings)`),
+    ...customerDetailsMissing(p.customer).map((m) => `the customer's ${m}`),
+  ];
+  const v = await tx.proposalVersion.findFirstOrThrow({ where: { proposalId, number: p.currentVersion }, include: { lines: { orderBy: { position: "asc" } } } });
+  const reqs = (v.requirements ?? {}) as Record<string, string | undefined>;
+  const plan = reqs.plan ? await tx.servicePlan.findFirst({ where: { id: reqs.plan, workspaceId: ctx.workspaceId } }) : null;
+  // The pack: our Services Agreement always; the SLA and hosting terms when the order has a care plan. Published versions only.
+  const draftOk = process.env.ALLOW_DRAFT_TERMS === "true";
+  const pick = async (kind: "terms" | "sla" | "hosting") =>
+    (await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind, status: "published" } })) ?? (draftOk ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind }, orderBy: { number: "desc" } }) : null);
+  const [terms, sla, hosting] = await Promise.all([pick("terms"), plan ? pick("sla") : null, plan ? pick("hosting") : null]);
+  const useDraft = [terms, sla, hosting].some((d) => d && d.status !== "published");
+  if (!terms) blockers.push("a published Services Agreement (Business settings, Legal documents)");
+  if (plan && !sla) blockers.push("a published Service Level Agreement (Business settings, Legal documents)");
+  if (plan && !hosting) blockers.push("published Hosting and Care Plan Terms (Business settings, Legal documents)");
+  const vars = await documentValues(ctx.workspaceId, plan?.id);
+  const unfilled = emptyVars([terms?.body, sla?.body, hosting?.body].filter(Boolean).join("\n"), vars).map(labelFor);
+  if (unfilled.length) blockers.push(`these details (Business settings, Plans and details): ${[...new Set(unfilled)].join(", ")}`);
+  const position = (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { jobTitle: true } }))?.jobTitle || "OneSimpleSite";
+  const compose = (reference: string, validUntil: Date) => composeAgreement({
+    reference, title: p.title, dateLabel: day(new Date()), validUntilLabel: day(v.validUntil ?? validUntil), currency: v.currency, oneOffMinor: v.oneOffMinor, recurringMinor: v.recurringMinor, recurringPeriod: v.recurringPeriod,
+    lines: v.lines, scope: v.scope, requirements: (v.requirements ?? {}) as Record<string, string | undefined>,
+    provider: { legalName: company.legalName ?? "[our company name]", companyNumber: company.companyNumber, registeredAddress: company.registeredAddress ?? "[our registered address]", vatNumber: company.vatNumber },
+    client: { legalName: p.customer.legalName ?? p.customer.displayName ?? "[customer name]", kind: p.customer.kind, companyNumber: p.customer.companyNumber, billingAddress: p.customer.billingAddress ?? "[customer address]", vatNumber: p.customer.vatNumber },
+    contact: { name: signer.name, email: signer.email },
+    issuedBy: { name: ctx.name, position },
+    docs: { terms: { number: terms!.number, body: terms!.body }, ...(sla ? { sla: { number: sla.number, body: sla.body } } : {}), ...(hosting ? { hosting: { number: hosting.number, body: hosting.body } } : {}) },
+    plan: plan ? { name: plan.name, monthlyMinor: plan.monthlyMinor, revisionsPerMonth: plan.revisionsPerMonth, backupFrequency: plan.backupFrequency, backupRetention: plan.backupRetention } : undefined,
+    special: v.terms || undefined, vars,
+  });
+  return { p, v, blockers, useDraft, terms, sla, hosting, plan, compose };
+}
+
 /**
  * Single customer step: freezes the proposal version, creates the contract and signing request in one
  * transaction, and emails ONE link. Signing it is the customer's acceptance, signature and consent to our Terms.
@@ -301,30 +340,10 @@ export function composeAgreement(c: ComposeIn) {
 export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unknown) {
   if (!can(ctx.role, "proposal.send")) throw forbidden();
   const i = sendInput.parse(raw);
-  const company = await getCompany(ctx);
   return db.$transaction(async (tx) => {
-    const p = await tx.proposal.findFirst({ where: { id: proposalId, workspaceId: ctx.workspaceId }, include: { customer: true } });
-    if (!p) throw notFound();
+    const { p, v, blockers, useDraft, terms, sla, hosting, plan, compose } = await assemble(tx, ctx, proposalId, i);
+    void plan;
     if (p.status !== "draft") throw new DomainError("conflict", "Only a draft proposal can be sent. Revise it to create a new version.");
-    const blockers = [
-      ...companyMissing(company).map((m) => `our ${m} (Settings)`),
-      ...customerDetailsMissing(p.customer).map((m) => `the customer's ${m}`),
-    ];
-    const v = await tx.proposalVersion.findFirstOrThrow({ where: { proposalId, number: p.currentVersion }, include: { lines: { orderBy: { position: "asc" } } } });
-    const reqs = (v.requirements ?? {}) as Record<string, string | undefined>;
-    const plan = reqs.plan ? await tx.servicePlan.findFirst({ where: { id: reqs.plan, workspaceId: ctx.workspaceId } }) : null;
-    // The pack: our Services Agreement always; the SLA and hosting terms when the order has a care plan. Published versions only.
-    const draftOk = process.env.ALLOW_DRAFT_TERMS === "true";
-    const pick = async (kind: "terms" | "sla" | "hosting") =>
-      (await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind, status: "published" } })) ?? (draftOk ? await tx.termsVersion.findFirst({ where: { workspaceId: ctx.workspaceId, kind }, orderBy: { number: "desc" } }) : null);
-    const [terms, sla, hosting] = await Promise.all([pick("terms"), plan ? pick("sla") : null, plan ? pick("hosting") : null]);
-    const useDraft = [terms, sla, hosting].some((d) => d && d.status !== "published");
-    if (!terms) blockers.push("a published Services Agreement (Business settings, Legal documents)");
-    if (plan && !sla) blockers.push("a published Service Level Agreement (Business settings, Legal documents)");
-    if (plan && !hosting) blockers.push("published Hosting and Care Plan Terms (Business settings, Legal documents)");
-    const vars = await documentValues(ctx.workspaceId, plan?.id);
-    const unfilled = emptyVars([terms?.body, sla?.body, hosting?.body].filter(Boolean).join("\n"), vars).map(labelFor);
-    if (unfilled.length) blockers.push(`these details (Business settings, Plans and details): ${[...new Set(unfilled)].join(", ")}`);
     if (blockers.length) throw new DomainError("validation", `Before sending, add: ${blockers.join("; ")}.`);
     const expiresAt = new Date(Date.now() + EXPIRY_DAYS * 864e5);
     await tx.proposalVersion.update({ where: { id: v.id }, data: { sentAt: new Date(), sentToEmail: i.email, validUntil: v.validUntil ?? expiresAt } });
@@ -333,17 +352,7 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
     // The order shares the quotation's number (OSS-QT-2026-047 becomes OSS-OF-2026-047). A revised quotation adds -R2, -R3...
     const base = /^OSS-QT-/.test(p.reference) ? p.reference.replace("OSS-QT-", "OSS-OF-") : await nextRef(tx, ctx.workspaceId, "order");
     const reference = p.currentVersion > 1 ? `${base}-R${p.currentVersion}` : base;
-    const contentText = composeAgreement({
-      reference, title: p.title, dateLabel: day(new Date()), validUntilLabel: day(v.validUntil ?? expiresAt), currency: v.currency, oneOffMinor: v.oneOffMinor, recurringMinor: v.recurringMinor, recurringPeriod: v.recurringPeriod,
-      lines: v.lines, scope: v.scope, requirements: (v.requirements ?? {}) as Record<string, string | undefined>,
-      provider: { legalName: company.legalName!, companyNumber: company.companyNumber, registeredAddress: company.registeredAddress!, vatNumber: company.vatNumber },
-      client: { legalName: p.customer.legalName!, kind: p.customer.kind, companyNumber: p.customer.companyNumber, billingAddress: p.customer.billingAddress!, vatNumber: p.customer.vatNumber },
-      contact: { name: i.name, email: i.email },
-      issuedBy: { name: ctx.name, position: (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { jobTitle: true } }))?.jobTitle || "OneSimpleSite" },
-      docs: { terms: { number: terms!.number, body: terms!.body }, ...(sla ? { sla: { number: sla.number, body: sla.body } } : {}), ...(hosting ? { hosting: { number: hosting.number, body: hosting.body } } : {}) },
-      plan: plan ? { name: plan.name, monthlyMinor: plan.monthlyMinor, revisionsPerMonth: plan.revisionsPerMonth, backupFrequency: plan.backupFrequency, backupRetention: plan.backupRetention } : undefined,
-      special: v.terms || undefined, vars,
-    });
+    const contentText = compose(reference, expiresAt);
     const contract = await tx.contract.create({
       data: { workspaceId: ctx.workspaceId, customerId: p.customerId, reference, title: p.title, status: "awaiting_signature", proposalVersionId: v.id, scopeSnapshot: `${v.scope}\n\n${v.terms}`.trim(), oneOffMinor: v.oneOffMinor, recurringMinor: v.recurringMinor, currency: v.currency, signingMode: "original_capture" },
     });
@@ -354,5 +363,17 @@ export async function sendAgreement(ctx: StaffCtx, proposalId: string, raw: unkn
     const alias = (await tx.staffMembership.findUnique({ where: { id: ctx.staffId }, select: { aliasEmail: true } }))?.aliasEmail;
     await enqueue(tx, ctx.workspaceId, "email.contract_request", `contract.request:${req.id}`, { ...(alias ? { replyTo: alias } : {}), to: i.email, signerName: i.name, title: p.title, ref: reference, business: p.customer.legalName ?? p.customer.displayName, link: portalLink(`/s/${token}`), expires: day(expiresAt) });
     return { contractId: contract.id, requestId: req.id, token, draftWording: useDraft };
+  });
+}
+
+/** What the customer will receive, built from the saved draft. Read-only: nothing is frozen, created or emailed. */
+export async function previewAgreement(ctx: StaffCtx, proposalId: string, signer?: { name: string; email: string }) {
+  if (!can(ctx.role, "customer.read")) throw forbidden();
+  return db.$transaction(async (tx) => {
+    const primary = await tx.contact.findFirst({ where: { customer: { proposals: { some: { id: proposalId } } }, workspaceId: ctx.workspaceId }, orderBy: { isPrimary: "desc" }, select: { name: true, email: true } });
+    const a = await assemble(tx, ctx, proposalId, signer ?? { name: primary?.name ?? "The customer", email: primary?.email ?? "" });
+    const expires = new Date(Date.now() + EXPIRY_DAYS * 864e5);
+    const reference = /^OSS-QT-/.test(a.p.reference) ? a.p.reference.replace("OSS-QT-", "OSS-OF-") : a.p.reference;
+    return { title: a.p.title, reference: a.p.currentVersion > 1 ? `${reference}-R${a.p.currentVersion}` : reference, business: a.p.customer.legalName ?? a.p.customer.displayName, contentText: a.compose(reference, expires), blockers: a.blockers, draftWording: a.useDraft, status: a.p.status, signerName: signer?.name ?? primary?.name ?? "The customer", signerEmail: signer?.email ?? primary?.email ?? "" };
   });
 }

@@ -66,6 +66,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
           {editable && can(ctx.role, "proposal.send") && (
             <form action={sendAgreementAction} className="space-y-3 border-t border-line pt-4"><input type="hidden" name="id" value={p.id} />
               <h2>Send for signature</h2>
+              <p className="text-sm"><Link className="btn btn-quiet" href={`/proposals/${p.id}/preview`}>Preview what they will see</Link> <a className="ml-2 text-sm underline" href={`/proposals/${p.id}/preview/pdf`} target="_blank" rel="noreferrer">PDF preview</a></p>
               <ul className="text-sm">{checks.map(([label, ok, href]) => <li key={label} className="py-0.5"><Status label={ok ? "ready" : "needed"} kind={ok ? "good" : "warn"} /> {label}{!ok && <> · <Link className="underline" href={href}>fix</Link></>}</li>)}</ul>
               <label className="label" htmlFor="sn">Signer name</label><input id="sn" name="name" className="field" defaultValue={primary?.name} required />
               <label className="label" htmlFor="to">Signer email (check carefully)</label><input id="to" name="email" type="email" className="field" defaultValue={primary?.email ?? ""} required />

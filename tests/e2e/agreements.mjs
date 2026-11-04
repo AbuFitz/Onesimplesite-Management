@@ -26,4 +26,11 @@ const first = pg.url();
 await pg.goto(`${M}/agreements/new?business=${biz}`); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/existing=1/);
 ok(pg.url().split("?")[0] === first.split("?")[0], "a second agreement for the same company opens the first instead");
 ok(await pg.locator("text=already has an agreement in progress").count() === 1, "and says why");
+// Preview before sending: the real agreement, a PDF, and nothing sent
+await pg.goto(first.split("?")[0]); await pg.click("text=Preview what they will see"); await pg.waitForURL(/\/preview$/);
+ok(await pg.locator("text=Nothing has been sent").count() === 1, "preview says nothing has been sent");
+ok((await pg.locator("article").first().innerText()).toLowerCase().includes("the project"), "preview shows the agreement document");
+ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "preview has no horizontal overflow on a phone");
+const pdf = await pg.evaluate(async (u) => { const r = await fetch(u); const t = new Uint8Array(await r.arrayBuffer()); return { s: r.status, h: String.fromCharCode(...t.slice(0, 5)) }; }, first.split("?")[0] + "/preview/pdf");
+ok(pdf.s === 200 && pdf.h === "%PDF-", "PDF preview downloads");
 await b.close(); console.log("ALL OK");
