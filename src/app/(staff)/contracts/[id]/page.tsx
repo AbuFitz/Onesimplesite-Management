@@ -2,6 +2,7 @@ import { plainStatus, KIND_LABEL, isMonthly, isScheduled } from "@/modules/billi
 import { continueFreePlanAction, requestFinalPaymentAction, markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction, setPlanOfferAction } from "@/app/actions/billing";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { promoFrom } from "@/modules/billing/promo";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
@@ -17,7 +18,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
   const sp = await searchParams;
   const k = await db.contract.findFirst({
     where: { id, workspaceId: ctx.workspaceId },
-    include: { customer: { include: { contacts: { where: { isPrimary: true }, take: 1 } } }, project: true, billingIntents: true, proposalVersion: { select: { proposalId: true, number: true, proposal: { select: { status: true } } } }, signingRequests: { orderBy: { createdAt: "desc" }, include: { signature: true } }, documents: { select: { sha256: true, createdAt: true } } },
+    include: { customer: { include: { contacts: { where: { isPrimary: true }, take: 1 } } }, project: true, billingIntents: true, proposalVersion: { select: { proposalId: true, number: true, requirements: true, proposal: { select: { status: true } } } }, signingRequests: { orderBy: { createdAt: "desc" }, include: { signature: true } }, documents: { select: { sha256: true, createdAt: true } } },
   });
   if (!k) notFound();
   const pc = k.customer.contacts[0];
@@ -29,6 +30,8 @@ export default async function ContractPage({ params, searchParams }: { params: P
   const stateTone = k.status === "completed" ? "green" : k.status === "declined" || k.status === "voided" ? "rose" : "amber";
   const stateText = ({ completed: "Signed", awaiting_signature: "Waiting to sign", draft: "Not sent yet", declined: "Declined", voided: "Withdrawn" } as Record<string, string>)[k.status] ?? k.status.replaceAll("_", " ");
   const btn = "btn btn-quiet !min-h-11 sm:!min-h-9";
+  const offer = promoFrom((k.proposalVersion?.requirements ?? {}) as Record<string, string | undefined>, k.oneOffMinor);
+  const freeEnds = !!(offer?.endsAfter && k.recurringMinor > 0);
   return (
     <>
       <RecordHeader back={{ href: `/customers/${k.customerId}`, label: k.customer.displayName }} title={k.title} status={<Status label={stateText} kind={k.status === "completed" ? "good" : k.status === "declined" || k.status === "voided" ? "bad" : "warn"} />} meta={<span>{k.reference}</span>} />
@@ -38,7 +41,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SummaryTile label="Status" value={stateText} sub={k.completedAt ? fmtDate(k.completedAt) : undefined} tone={stateTone} />
         <SummaryTile label="Website" value={money(k.oneOffMinor, k.currency)} sub="one-off" tone="blue" />
-        <SummaryTile label="Monthly plan" value={k.recurringMinor ? money(k.recurringMinor, k.currency) : "None"} sub={k.recurringMinor ? "every month" : "website only"} tone="lilac" />
+        <SummaryTile label="Monthly plan" value={k.recurringMinor ? (freeEnds ? "Free" : money(k.recurringMinor, k.currency)) : "None"} sub={k.recurringMinor ? (freeEnds ? `${offer!.freeMonths} month${offer!.freeMonths === 1 ? "" : "s"}, then it ends` : "every month") : "website only"} tone="lilac" />
         <SummaryTile label="Company" value={<Link className="underline decoration-ink/30 underline-offset-2" href={`/customers/${k.customerId}`}>{k.customer.displayName}</Link>} sub={pc ? pc.name : undefined} />
       </div>
 

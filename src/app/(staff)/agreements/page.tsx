@@ -4,9 +4,11 @@ import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { RecordHeader, Status, Empty, timeAgo, money } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
+import { promoFrom } from "@/modules/billing/promo";
 
 export const metadata = { title: "Agreements" };
 const SHOW = [["all", "All"], ["draft", "Being written"], ["awaiting", "Waiting for signature"], ["signed", "Signed"], ["closed", "Declined or expired"]] as const;
+const plan = (one: number, rec: number, req: unknown) => `${money(one)}${rec ? (promoFrom((req ?? {}) as Record<string, string | undefined>, one)?.endsAfter ? " + free care plan" : ` + ${money(rec)}/mo`) : ""}`;
 type Row = { key: string; href: string; title: string; company: string; companyId: string; ref: string; group: "draft" | "awaiting" | "signed" | "closed"; label: string; kind: "good" | "warn" | "bad" | "neutral"; at: Date; amount: string };
 
 /** Every agreement in one place, from first draft to signed copy. Not tickets: an agreement is a document that gets signed. */
@@ -16,8 +18,8 @@ export default async function Agreements({ searchParams }: { searchParams: Promi
   const show = SHOW.find(([id]) => id === sp.show)?.[0] ?? "all";
   const q = sp.q?.trim().toLowerCase(), company = sp.c?.trim() || "";
   const [contracts, proposals] = await Promise.all([
-    db.contract.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, proposalVersion: { select: { proposalId: true, supersededAt: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
-    db.proposal.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, versions: { select: { number: true, oneOffMinor: true, recurringMinor: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
+    db.contract.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, proposalVersion: { select: { proposalId: true, supersededAt: true, requirements: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
+    db.proposal.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, versions: { select: { number: true, oneOffMinor: true, recurringMinor: true, requirements: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
   ]);
   // A signed or waiting contract stands in for its proposal. A withdrawn one does not: the proposal is back to being written, so it must stay visible.
   const live = contracts.filter((c) => !["voided", "declined", "expired"].includes(c.status));
@@ -27,12 +29,12 @@ export default async function Agreements({ searchParams }: { searchParams: Promi
   const all: Row[] = [
     ...shown.map((c): Row => {
       const done = c.status === "completed", waiting = c.status === "awaiting_signature" || c.status === "draft";
-      return { key: c.id, href: `/contracts/${c.id}`, title: c.title, company: c.customer.displayName, companyId: c.customerId, ref: c.reference, group: done ? "signed" : waiting ? "awaiting" : "closed", label: done ? "Signed" : waiting ? "Waiting for signature" : c.status === "declined" ? "Declined" : c.status === "expired" ? "Expired" : "Cancelled", kind: done ? "good" : waiting ? "warn" : "bad", at: c.completedAt ?? c.updatedAt, amount: `${money(c.oneOffMinor)}${c.recurringMinor ? ` + ${money(c.recurringMinor)}/mo` : ""}` };
+      return { key: c.id, href: `/contracts/${c.id}`, title: c.title, company: c.customer.displayName, companyId: c.customerId, ref: c.reference, group: done ? "signed" : waiting ? "awaiting" : "closed", label: done ? "Signed" : waiting ? "Waiting for signature" : c.status === "declined" ? "Declined" : c.status === "expired" ? "Expired" : "Cancelled", kind: done ? "good" : waiting ? "warn" : "bad", at: c.completedAt ?? c.updatedAt, amount: plan(c.oneOffMinor, c.recurringMinor, c.proposalVersion?.requirements) };
     }),
     ...proposals.filter((p) => p.status === "draft" || !covered.has(p.id)).map((p): Row => {
       const v = p.versions.find((x) => x.number === p.currentVersion);
       const draft = p.status === "draft", sent = p.status === "sent";
-      return { key: p.id, href: `/proposals/${p.id}`, title: p.title, company: p.customer.displayName, companyId: p.customerId, ref: p.reference, group: draft ? "draft" : sent ? "awaiting" : "closed", label: draft ? "Being written" : sent ? "Waiting for signature" : p.status, kind: draft ? "neutral" : sent ? "warn" : "bad", at: p.updatedAt, amount: v ? `${money(v.oneOffMinor)}${v.recurringMinor ? ` + ${money(v.recurringMinor)}/mo` : ""}` : "" };
+      return { key: p.id, href: `/proposals/${p.id}`, title: p.title, company: p.customer.displayName, companyId: p.customerId, ref: p.reference, group: draft ? "draft" : sent ? "awaiting" : "closed", label: draft ? "Being written" : sent ? "Waiting for signature" : p.status, kind: draft ? "neutral" : sent ? "warn" : "bad", at: p.updatedAt, amount: v ? plan(v.oneOffMinor, v.recurringMinor, v.requirements) : "" };
     }),
   ];
   const only = (skipShow = false) => all.filter((r) => (skipShow || show === "all" || r.group === show) && (!company || r.companyId === company) && (!q || `${r.title} ${r.company} ${r.ref}`.toLowerCase().includes(q)));

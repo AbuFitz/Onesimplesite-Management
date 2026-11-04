@@ -14,7 +14,8 @@ export async function todayData(workspaceId: string, opts: { staffId: string; se
     db.ticket.groupBy({ by: ["status"], where: { workspaceId: w }, _count: true }),
     db.ticket.findMany({ where: { workspaceId: w, createdAt: { gte: weekAgo } }, select: { createdAt: true } }),
     db.billingIntent.findMany({ where: { workspaceId: w, status: { in: ["paid", "active"] }, paidAt: { gte: sixMonths } }, select: { paidAt: true, amountMinor: true } }),
-    db.billingIntent.aggregate({ where: { workspaceId: w, kind: "recurring_setup", status: "active" }, _sum: { amountMinor: true }, _count: true }),
+    // A free care period that simply ends is not income, so it is left out of the monthly total.
+    db.billingIntent.aggregate({ where: { workspaceId: w, kind: "recurring_setup", status: "active", OR: [{ paidVia: null }, { paidVia: { not: "free" } }] }, _sum: { amountMinor: true }, _count: true }),
     db.billingIntent.aggregate({ where: { workspaceId: w, status: "pending", NOT: { kind: "recurring_setup" } }, _sum: { amountMinor: true }, _count: true }),
     db.billingIntent.count({ where: { workspaceId: w, status: "past_due" } }),
     db.opportunity.groupBy({ by: ["stage"], where: { workspaceId: w }, _count: true }),

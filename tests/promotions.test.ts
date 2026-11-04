@@ -4,6 +4,7 @@ import { composeAgreement } from "@/modules/signing/service";
 import { promoFrom, addMonths, trialDays } from "@/modules/billing/promo";
 import { runCompletionWorkflow } from "@/modules/contracts/service";
 import { startPayment, applyStripeEvent, setPlanOffer, plainStatus, continueFreePlan } from "@/modules/billing/service";
+import { todayData } from "@/modules/today/service";
 import { SERVICES_AGREEMENT } from "@/modules/settings/legal-text";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
@@ -100,6 +101,13 @@ describe("free months that simply end", () => {
     expect(plan.trialEndsAt!.getTime()).toBeGreaterThan(Date.now() + 27 * 864e5); expect(plan.cancelsAt).toEqual(plan.trialEndsAt);
     expect(plainStatus("recurring_setup", plan.status, plan.cancelsAt, plan.trialEndsAt, true).label).toMatch(/^Free until .*, then ends$/);
     expect(await db.receipt.count({ where: { customerId: x.c.id } })).toBe(0);                         // nothing was paid, so no receipt
+  });
+
+  it("is not counted as monthly income on the Today page, and shows as free on the order and in the list", async () => {
+    const x = await freeWorld();
+    const m = await db.staffMembership.findFirstOrThrow({ where: { workspaceId: x.w.id } });
+    const t = await todayData(x.w.id, { staffId: m.id, seeBusiness: true });
+    expect(t!.money.monthlyMinor).toBe(0); expect(t!.money.plans).toBe(0);
   });
 
   it("reminds the team a week before it ends, once, and can carry on as a paid plan", async () => {
