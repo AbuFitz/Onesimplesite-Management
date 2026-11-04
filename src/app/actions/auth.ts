@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { staffAuth, portalAuth, provisioningAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sha256 } from "@/lib/tokens";
+import { safeNext } from "@/lib/next-path";
 import { origins } from "@/lib/env";
 
 async function isPortalHost() {
@@ -40,7 +41,7 @@ export async function login(_: unknown, fd: FormData) {
   } catch {
     return { error: portal ? "Email or password is incorrect." : "Username, email or password is incorrect." }; // same message for unknown user and bad password
   }
-  redirect(portal ? "/overview" : "/");   // anyone who is required to set up two-step sign-in is taken to the guided setup from here
+  redirect(safeNext(fd.get("next")) ?? (portal ? "/overview" : "/"));   // anyone who is required to set up two-step sign-in is taken to the guided setup from here
 }
 
 export async function verifyMfa(_: unknown, fd: FormData) {
@@ -55,7 +56,7 @@ export async function verifyMfa(_: unknown, fd: FormData) {
   } catch {
     return { error: "That code didn't work. Check the 6 digits in your app, or use a backup code." };
   }
-  redirect(portal ? "/overview" : "/");
+  redirect(safeNext(fd.get("next")) ?? (portal ? "/overview" : "/"));
 }
 
 export async function acceptInvitation(_: unknown, fd: FormData) {

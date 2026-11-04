@@ -6,7 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { ErrorSummary } from "./ui";
 
 type LoginState = { error?: string; mfa?: boolean } | undefined;
-export function LoginForm({ staff = false }: { staff?: boolean }) {
+export function LoginForm({ staff = false, next }: { staff?: boolean; next?: string }) {
   const [s, act, pending] = useActionState(login, undefined as LoginState);
   const [m, mfaAct, mfaPending] = useActionState(verifyMfa, undefined as { error?: string } | undefined);
   const [canPasskey, setCanPasskey] = useState(false);
@@ -19,7 +19,7 @@ export function LoginForm({ staff = false }: { staff?: boolean }) {
     setPkError(""); setPkBusy(true);
     try {
       const r = await authClient(staff ? "staff" : "portal").signIn.passkey();
-      if (r?.error) setPkError("We couldn't use a passkey on this device. Sign in with your password instead."); else window.location.href = staff ? "/" : "/overview";
+      if (r?.error) setPkError("We couldn't use a passkey on this device. Sign in with your password instead."); else window.location.href = next ?? (staff ? "/" : "/overview");
     } catch { setPkError("We couldn't use a passkey on this device. Sign in with your password instead."); }
     setPkBusy(false);
   }
@@ -28,7 +28,7 @@ export function LoginForm({ staff = false }: { staff?: boolean }) {
     return (
       <form action={mfaAct} className="space-y-4">
         <ErrorSummary message={m?.error} />
-        <input type="hidden" name="backup" value={backup ? "1" : "0"} />
+        <input type="hidden" name="backup" value={backup ? "1" : "0"} /><input type="hidden" name="next" value={next ?? ""} />
         <p className="text-sm">{backup ? "Enter one of the backup codes you saved when you set up two-step sign-in. Each works once." : "Open your authenticator app and enter the 6-digit code for OneSimpleSite."}</p>
         <div><label className="label" htmlFor="code">{backup ? "Backup code" : "Authenticator code"}</label>
           <input id="code" name="code" className={`field ${backup ? "" : "!text-xl tracking-[0.3em]"}`} inputMode={backup ? "text" : "numeric"} pattern={backup ? undefined : "[0-9 ]*"} maxLength={backup ? 24 : 7} autoComplete="one-time-code" autoFocus required /></div>
@@ -45,6 +45,7 @@ export function LoginForm({ staff = false }: { staff?: boolean }) {
   return (
     <div className="space-y-4">
       <form action={act} className="space-y-4">
+        <input type="hidden" name="next" value={next ?? ""} />
         <ErrorSummary message={s?.error} />
         <div><label className="label" htmlFor="email">{staff ? "Username or email" : "Email"}</label>
           <input id="email" name="email" type={staff ? "text" : "email"} className="field" autoComplete="username webauthn" autoCapitalize="none" spellCheck={false} placeholder={staff ? "first.surname" : undefined} required /></div>

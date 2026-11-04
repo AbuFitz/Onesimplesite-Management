@@ -1,5 +1,6 @@
 import { headers, cookies } from "next/headers";
 import { after } from "next/server";
+import { safeNext } from "@/lib/next-path";
 import { redirect } from "next/navigation";
 import { staffAuth, portalAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -28,9 +29,14 @@ export async function getStaff() {
 /** For the guided setup page only: a signed-in person who is still required to set up two-step sign-in. */
 export async function getStaffNeedingSetup() { const r = await staffSession(); return r?.pending ? r.ctx : null; }
 
+async function loginUrl() {
+  const n = safeNext((await headers()).get("x-next-path"));
+  return n && n !== "/" ? `/login?next=${encodeURIComponent(n)}` : "/login";
+}
+
 export async function requireStaff(cap?: Cap) {
   const c = await getStaff();
-  if (!c) redirect((await getStaffNeedingSetup()) ? "/setup-security" : "/login");
+  if (!c) redirect((await getStaffNeedingSetup()) ? "/setup-security" : await loginUrl());
   if (cap && !can(c.role, cap)) redirect("/denied");
   return c;
 }
@@ -51,6 +57,6 @@ export async function getClientNeedingSetup() { const r = await clientSession();
 
 export async function requireClient() {
   const c = await getClient();
-  if (!c) redirect((await getClientNeedingSetup()) ? "/setup-security" : "/login");
+  if (!c) redirect((await getClientNeedingSetup()) ? "/setup-security" : await loginUrl());
   return c;
 }
