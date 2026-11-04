@@ -47,22 +47,26 @@ export async function createEventAction(fd: FormData) {
   } catch (e) { return back("/calendar/new", e); }
   redirect("/calendar");
 }
+const EVENT_TYPES = ["internal_meeting", "client_call", "review", "focus", "other"] as const;
 export async function quickEventAction(fd: FormData) {
   const ctx = await requireStaff("calendar.write");
-  const date = String(fd.get("date") ?? ""), time = String(fd.get("time") ?? "09:00"), mins = Math.min(1440, Math.max(5, Number(fd.get("minutes")) || 60));
-  const month = String(fd.get("month") ?? date.slice(0, 7));
-  const to = (q = "") => `/calendar?month=${month}&day=${date}${q}`;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return redirect(to(`&error=${encodeURIComponent("Pick a date and time.")}`));
+  const date = String(fd.get("date") ?? ""), allDay = fd.get("allDay") === "on";
+  const time = allDay ? "00:00" : String(fd.get("time") ?? "09:00"), mins = allDay ? 1440 : Math.min(1440, Math.max(5, Number(fd.get("minutes")) || 60));
+  const view = ["agenda", "week", "month"].includes(String(fd.get("view"))) ? `&view=${fd.get("view")}` : "", scope = fd.get("scope") === "team" ? "&scope=team" : "";
+  const to = (q = "") => `/calendar?day=${date}${view}${scope}${q}`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return redirect(`/calendar?add=1&error=${encodeURIComponent("Pick a date and time.")}`);
+  const type = (EVENT_TYPES as readonly string[]).includes(String(fd.get("type"))) ? String(fd.get("type")) : "internal_meeting";
   try {
     const start = londonToUtc(date, time);
-    await createEvent(ctx, { title: fd.get("title"), type: "internal_meeting", startsAt: start, endsAt: new Date(start.getTime() + mins * 60_000), location: fd.get("location") || undefined, attendeeIds: [] });
-  } catch (e) { return redirect(to(`&error=${encodeURIComponent(msg(e))}`)); }
-  redirect(to());
+    await createEvent(ctx, { title: fd.get("title"), type, startsAt: start, endsAt: new Date(start.getTime() + mins * 60_000), location: fd.get("location") || undefined, customerId: String(fd.get("customerId") ?? "") || "", attendeeIds: [] });
+  } catch (e) { return redirect(to(`&add=1&error=${encodeURIComponent(msg(e))}`)); }
+  redirect(to(`&added=1`));
 }
 export async function cancelEventAction(fd: FormData) {
   const ctx = await requireStaff("calendar.write");
-  try { await cancelEvent(ctx, String(fd.get("id")), Number(fd.get("version"))); } catch (e) { return back("/calendar", e); }
-  redirect("/calendar");
+  const back2 = /^\/calendar[?\w=&-]*$/.test(String(fd.get("back") ?? "")) ? String(fd.get("back")) : "/calendar";
+  try { await cancelEvent(ctx, String(fd.get("id")), Number(fd.get("version"))); } catch (e) { return back(back2, e); }
+  redirect(back2);
 }
 
 export async function createNoteAction(fd: FormData) {
