@@ -8,7 +8,8 @@ const BODY = "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', H
 const DISPLAY = "'Funnel Display', 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
 const INK = "#0E1311", MOSS = "#0C6A49", SPRING = "#4FD9A0", BONE = "#F1F0EA", MINT = "#EAF7F1", MUTED = "#4d5652", RULE = "#e3e5e0";
 
-const css = `
+// Built when an email is rendered, never when this file loads: the font addresses come from configuration, which does not exist during the build.
+const css = () => `
 @font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(${portalLink("/brand/fonts/hanken-grotesk-latin-wght-normal.woff2")}) format('woff2'); }
 @font-face { font-family: 'Funnel Display'; font-style: normal; font-weight: 300 800; font-display: swap; src: url(${portalLink("/brand/fonts/funnel-display-latin-wght-normal.woff2")}) format('woff2'); }
 a { text-decoration-skip-ink: auto; }
@@ -18,7 +19,7 @@ a { text-decoration-skip-ink: auto; }
 export function Layout({ preview, children }: { preview: string; children: ReactNode }) {
   return (
     <Html lang="en-GB">
-      <Head><meta name="color-scheme" content="light only" /><meta name="supported-color-schemes" content="light only" /><style>{css}</style></Head>
+      <Head><meta name="color-scheme" content="light only" /><meta name="supported-color-schemes" content="light only" /><style>{css()}</style></Head>
       <Preview>{preview}</Preview>
       <Body style={{ margin: 0, padding: 0, backgroundColor: BONE, fontFamily: BODY, color: INK }}>
         <Container style={{ maxWidth: 600, margin: "0 auto", padding: "28px 12px 36px" }}>
