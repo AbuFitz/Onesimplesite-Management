@@ -9,7 +9,7 @@ const INK = rgb(0.055, 0.075, 0.067), MOSS = rgb(0.047, 0.416, 0.286), GREY = rg
 const hex = (h: string) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
 
 // Standard PDF fonts only cover WinAnsi; replace anything else so generation never throws.
-const safe = (s: string) => s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-").replace(/…/g, "...").replace(/•/g, "-").replace(/[^\x09\x0A\x20-\x7E\xA0-\xFF]/g, "?");
+const safe = (s: string) => s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—−]/g, "-").replace(/…/g, "...").replace(/•/g, "-").replace(/[^\x09\x0A\x20-\x7E\xA0-\xFF]/g, "?");
 
 function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const out: string[] = [];

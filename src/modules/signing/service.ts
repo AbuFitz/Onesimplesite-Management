@@ -250,6 +250,9 @@ export function composeAgreement(c: ComposeIn) {
     `party: Prepared for | ${c.client.legalName} | ${[c.contact?.name, c.contact?.email && `Email: ${c.contact.email}`, c.client.companyNumber && `Company no. ${c.client.companyNumber}`, cell(c.client.billingAddress), c.client.vatNumber && `VAT no. ${c.client.vatNumber}`].filter(Boolean).join(" ; ")}`,
     "",
     `kv: Order number | ${c.reference}`, `kv: Date | ${c.dateLabel}`, `kv: Valid until | ${c.validUntilLabel}`,
+    // The offer and the deposit are on the first page, so nobody has to hunt for what was agreed.
+    ...(promo ? [`kv: Your offer | ${cell(`${promo.label}: ${[promo.discountMinor > 0 && c.oneOffMinor > 0 ? `${m(Math.min(promo.discountMinor, c.oneOffMinor))} off the website fee, so ${m(payable)} to pay instead of ${m(c.oneOffMinor)}` : "", promo.freeMonths > 0 && c.recurringMinor > 0 ? `the first ${monthsWords(promo.freeMonths)} of your monthly plan free` : ""].filter(Boolean).join(", and ")}`)}`] : []),
+    ...(deposit ? [`kv: Deposit when you sign | ${m(deposit.now)} (${deposit.pct}% of ${m(payable)}), then ${m(deposit.later)} before the website goes live`] : []),
     "", h("The project"),
     `kv: Project name | ${cell(c.title)}`, ...row("Summary", c.scope), ...row("Pages", req.pages), ...row("Domain and hosting", req.domainHosting), ...row("Content", req.contentBy), ...row("Timeline", req.timeline),
   ];
@@ -260,7 +263,7 @@ export function composeAgreement(c: ComposeIn) {
     "| Item | Description | Amount |",
     ...c.lines.map((l) => `| ${cell(l.description)}${l.quantity > 1 ? ` x ${l.quantity}` : ""} | ${l.recurring ? `Recurring, ${per}` : "One-off"} | ${m(l.quantity * l.unitMinor)}${l.recurring ? ` ${per}` : ""} |`),
     `| Total (one-off) |  | ${m(c.oneOffMinor)} |`,
-    ...(promo?.discountMinor && c.oneOffMinor > 0 ? [`| ${cell(promo.label)}: discount on the website fee |  | −${m(Math.min(promo.discountMinor, c.oneOffMinor))} |`, `| Website fee to pay |  | ${m(Math.max(0, c.oneOffMinor - promo.discountMinor))} |`] : []),
+    ...(promo?.discountMinor && c.oneOffMinor > 0 ? [`| ${cell(promo.label)}: discount on the website fee |  | -${m(Math.min(promo.discountMinor, c.oneOffMinor))} |`, `| Website fee to pay |  | ${m(Math.max(0, c.oneOffMinor - promo.discountMinor))} |`] : []),
     ...(c.recurringMinor > 0 ? [`| Total (recurring) |  | ${m(c.recurringMinor)} ${per} |`] : []),
     "",
     ...(deposit ? [`note: How the website fee is paid: a deposit of ${deposit.pct}% (${m(deposit.now)}) is due when you sign, and the final payment of ${m(deposit.later)} is due before the website goes live.`] : []),

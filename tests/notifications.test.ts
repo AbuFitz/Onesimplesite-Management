@@ -25,7 +25,9 @@ describe("choosing which emails are sent", () => {
     expect(resolveDelivery({}, "email.payment_notice", { event: "failed" })).toBe("instant");
     expect(resolveDelivery({}, "email.signing_notice", {})).toBe("instant");
     expect(resolveDelivery({}, "email.ticket_received", {})).toBe("off");
-    for (const required of ["email.payment_received", "email.invitation", "email.contract_request", "email.signing_confirmation", "email.ticket_reply", "email.change_request_quote", "email.password_reset", "email.payment_failed"]) expect(resolveDelivery({}, required, {})).toBeNull();
+    expect(resolveDelivery({}, "email.payment_received", {})).toBe("instant");      // on by default, can be switched off once Stripe sends its own
+    expect(resolveDelivery({ "email.payment_received": "off" }, "email.payment_received", {})).toBe("off");
+    for (const required of ["email.invitation", "email.contract_request", "email.signing_confirmation", "email.ticket_reply", "email.change_request_quote", "email.password_reset", "email.payment_failed"]) expect(resolveDelivery({}, required, {})).toBeNull();
   });
   it("a choice is honoured, an invalid one is ignored, and 'off' beats the urgent exception", () => {
     expect(resolveDelivery({ "email.ticket_notice": "instant" }, "email.ticket_notice", { priority: "low" })).toBe("instant");

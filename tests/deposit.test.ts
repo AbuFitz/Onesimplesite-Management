@@ -13,6 +13,14 @@ describe("deposit on signing", () => {
     expect(composeAgreement({ ...base, requirements: {} } as never)).not.toContain("deposit of");
   });
 
+  it("puts the offer and deposit on the first page and uses a plain minus the PDF can draw", () => {
+    const t = composeAgreement({ ...base, requirements: { depositPercent: "50", promoDiscount: "200", promoFreeMonths: "1", promoLabel: "New Customer" } } as never);
+    const first = t.slice(0, t.indexOf("## The project"));
+    expect(first).toContain("kv: Your offer | New Customer: £200.00 off the website fee, so £1,000.00 to pay instead of £1,200.00, and the first 1 month of your monthly plan free");
+    expect(first).toContain("kv: Deposit when you sign | £500.00 (50% of £1,000.00), then £500.00 before the website goes live");
+    expect(t).toContain("| -£200.00 |"); expect(t).not.toContain("−£");
+  });
+
   it("creates the deposit and final payment when the order completes, and no single website fee", async () => {
     const w = await db.workspace.create({ data: { name: `dp-${Math.random()}` } });
     const c = await db.customer.create({ data: { workspaceId: w.id, reference: `OSS-CU-${Math.random().toString(36).slice(2, 8)}`, displayName: "Harbour Bakery" } });
