@@ -64,7 +64,7 @@ export async function startPayment(c: ClientCtx, intentId: string): Promise<stri
     const customer = await stripeCustomer(b.customerId, c.email || undefined, c.name ?? "", fresh);
   const line = { quantity: 1, price_data: { currency: b.currency.toLowerCase(), unit_amount: b.amountMinor, product_data: { name: `${b.description ?? KIND_LABEL[b.kind] ?? "OneSimpleSite"} (${chargeOf(b).reference})` }, ...(monthly ? { recurring: { interval: "month" } } : {}) } };
     return stripe<{ id: string; url: string }>("/checkout/sessions", {
-    mode: monthly ? "subscription" : "payment", customer, line_items: [line], payment_method_types: ["card"],
+    mode: monthly ? "subscription" : "payment", customer, line_items: [line],
     success_url: portalLink("/billing?paid=1"), cancel_url: portalLink("/billing"),
     client_reference_id: b.id, metadata: { intentId: b.id, contract: chargeOf(b).reference },
     ...(monthly ? { subscription_data: { metadata: { intentId: b.id }, ...(b.trialMonths > 0 ? { trial_period_days: trialDays(new Date(), b.trialMonths) } : {}) }, ...(b.trialMonths > 0 ? { payment_method_collection: "always" } : {}) } : { payment_intent_data: { metadata: { intentId: b.id }, description: `${chargeOf(b).reference} ${KIND_LABEL[b.kind] ?? ""}` } }),
