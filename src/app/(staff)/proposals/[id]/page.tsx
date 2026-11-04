@@ -39,6 +39,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
     ["Published Services Agreement", !!published || draftOk, "/settings/legal/terms"],
     ...(planId ? ([["Published Service Level Agreement", !!sla || draftOk, "/settings/legal/sla"], ["Published Hosting and Care Plan Terms", !!hosting || draftOk, "/settings/legal/hosting"]] as [string, boolean, string][]) : []),
     ["Plan and contact details filled in", needed.length === 0, "/settings/plans"],
+    ...(Number((cur.requirements as Record<string, string | undefined> | null)?.promoFreeMonths) > 0 && cur.recurringMinor <= 0 ? ([["A care plan for the free months to apply to (pick one under Price)", false, `/proposals/${p.id}`]] as [string, boolean, string][]) : []),
   ];
   const ready = checks.every(([, ok]) => ok);
   return (

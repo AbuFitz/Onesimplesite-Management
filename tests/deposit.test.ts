@@ -41,3 +41,10 @@ describe("deposit on signing", () => {
     expect(bills.map((b) => [b.kind, b.amountMinor])).toEqual([["balance", 70000], ["deposit", 30000]]);
   });
 });
+
+describe("free months with nothing to apply to", () => {
+  it("shows no empty offer line, and the preview says a plan is needed", async () => {
+    const t = composeAgreement({ ...base, recurringMinor: 0, lines: [{ description: "Website", quantity: 1, unitMinor: 120000, recurring: false }], requirements: { promoFreeMonths: "1", promoLabel: "New Customer" } } as never);
+    expect(t).not.toContain("kv: Your offer");
+  });
+});

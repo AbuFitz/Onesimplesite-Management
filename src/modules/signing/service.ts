@@ -237,6 +237,7 @@ export function composeAgreement(c: ComposeIn) {
   const payable = Math.max(0, c.oneOffMinor - (promo?.discountMinor ?? 0));
   const depositPct = Number(req.depositPercent) || 0;
   const deposit = depositPct > 0 && payable > 0 ? { pct: depositPct, now: Math.round((payable * depositPct) / 100), later: payable - Math.round((payable * depositPct) / 100) } : null;
+  const offerText = promo ? [promo.discountMinor > 0 && c.oneOffMinor > 0 ? `${discountWords(promo, m)} the website fee, so ${m(payable)} to pay instead of ${m(c.oneOffMinor)}` : "", promo.freeMonths > 0 && c.recurringMinor > 0 ? (promo.endsAfter ? `the first ${monthsWords(promo.freeMonths)} of your care plan free, with no payment details needed, and then it simply ends unless you ask us to continue` : `the first ${monthsWords(promo.freeMonths)} of your monthly plan free`) : ""].filter(Boolean).join(", and ") : "";
   const row = (k: string, v: string | undefined) => (v?.trim() ? [`kv: ${k} | ${cell(v)}`] : []);
   let section = 0;
   // Headings are numbered by the document parser; the count is kept here so clauses carry the right number.
@@ -251,7 +252,7 @@ export function composeAgreement(c: ComposeIn) {
     "",
     `kv: Order number | ${c.reference}`, `kv: Date | ${c.dateLabel}`, `kv: Valid until | ${c.validUntilLabel}`,
     // The offer and the deposit are on the first page, so nobody has to hunt for what was agreed.
-    ...(promo ? [`kv: Your offer | ${cell(`${promo.label}: ${[promo.discountMinor > 0 && c.oneOffMinor > 0 ? `${discountWords(promo, m)} the website fee, so ${m(payable)} to pay instead of ${m(c.oneOffMinor)}` : "", promo.freeMonths > 0 && c.recurringMinor > 0 ? (promo.endsAfter ? `the first ${monthsWords(promo.freeMonths)} of your care plan free, with no payment details needed, and then it simply ends unless you ask us to continue` : `the first ${monthsWords(promo.freeMonths)} of your monthly plan free`) : ""].filter(Boolean).join(", and ")}`)}`] : []),
+    ...(offerText ? [`kv: Your offer | ${cell(`${promo!.label}: ${offerText}`)}`] : []),
     ...(deposit ? [`kv: Deposit when you sign | ${m(deposit.now)} (${deposit.pct}% of ${m(payable)}), then ${m(deposit.later)} before the website goes live`] : []),
     "", h("The project"),
     `kv: Project name | ${cell(c.title)}`, ...row("Summary", c.scope), ...row("Pages", req.pages), ...row("Domain and hosting", req.domainHosting), ...row("Content", req.contentBy), ...row("Timeline", req.timeline),
@@ -306,6 +307,7 @@ async function assemble(tx: Tx, ctx: StaffCtx, proposalId: string, signer: { nam
     ...customerDetailsMissing(p.customer).map((m) => `the customer's ${m}`),
   ];
   const v = await tx.proposalVersion.findFirstOrThrow({ where: { proposalId, number: p.currentVersion }, include: { lines: { orderBy: { position: "asc" } } } });
+  if ((Number((v.requirements as { promoFreeMonths?: string } | null)?.promoFreeMonths) || 0) > 0 && v.recurringMinor <= 0) blockers.push("a care plan (or another repeating item) for the free months to apply to, or take the free months off");
   const reqs = (v.requirements ?? {}) as Record<string, string | undefined>;
   const plan = reqs.plan ? await tx.servicePlan.findFirst({ where: { id: reqs.plan, workspaceId: ctx.workspaceId } }) : null;
   // The pack: our Services Agreement always; the SLA and hosting terms when the order has a care plan. Published versions only.
