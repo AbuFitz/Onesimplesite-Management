@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { requireStaff } from "@/modules/identity/session";
-import { addPerson, updatePerson, invitePerson, setAccess, sendPasswordReset, revokeAccess, removePerson, approveRequest, declineRequest } from "@/modules/people/service";
+import { setPrimaryContact, addPerson, updatePerson, invitePerson, setAccess, sendPasswordReset, revokeAccess, removePerson, approveRequest, declineRequest } from "@/modules/people/service";
 import { flushEmails } from "@/lib/flush-email";
 import { DomainError } from "@/lib/errors";
 
@@ -17,7 +17,14 @@ async function run(fd: FormData, ok: string, fn: (ctx: Awaited<ReturnType<typeof
   redirect(to(cid, `done=${encodeURIComponent(ok)}`));
 }
 
-export async function addPersonAction(fd: FormData) { return run(fd, "Person added.", (c) => addPerson(c, String(fd.get("customerId")), { name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone") || undefined, position: fd.get("position") || undefined })); }
+export async function addPersonAction(fd: FormData) {
+  const invite = fd.get("invite") === "on";
+  return run(fd, invite ? "Person added and invited to the portal." : "Person added.", async (c) => {
+    const p = await addPerson(c, String(fd.get("customerId")), { name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone") || undefined, position: fd.get("position") || undefined });
+    if (invite) await invitePerson(c, p.id, level(fd));
+  });
+}
+export async function makeMainContactAction(fd: FormData) { return run(fd, "Main contact changed.", (c) => setPrimaryContact(c, String(fd.get("contactId")))); }
 export async function updatePersonAction(fd: FormData) { return run(fd, "Saved.", (c) => updatePerson(c, String(fd.get("contactId")), { name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone") || undefined, position: fd.get("position") || undefined })); }
 export async function invitePersonAction(fd: FormData) { return run(fd, "Invitation sent.", (c) => invitePerson(c, String(fd.get("contactId")), level(fd))); }
 export async function setAccessAction(fd: FormData) { return run(fd, "Access updated.", (c) => setAccess(c, String(fd.get("contactId")), level(fd))); }

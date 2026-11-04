@@ -8,6 +8,7 @@ import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
 import { memberCan, levelLabel, type AccessLevel } from "@/modules/portal/access";
+import { tidyPhone } from "@/lib/phone";
 import { inviteClientContact } from "@/modules/crm/invite";
 
 const LEVELS = ["admin", "member", "viewer"] as const;
@@ -44,7 +45,7 @@ export async function listPeople(ctx: StaffCtx, customerId: string): Promise<Per
 const personInput = z.object({
   name: z.string().trim().min(2, "Enter their name.").max(120),
   email: z.string().trim().toLowerCase().email("Enter a valid email address.").max(200),
-  phone: z.string().trim().max(40).optional().transform((v) => v || null),
+  phone: z.string().trim().max(40).optional().transform((v, ctx) => { const t = tidyPhone(v); if (t === null) { ctx.addIssue({ code: "custom", message: "That phone number doesn't look right. Check the digits." }); return null; } return t || null; }),
   position: z.string().trim().max(80).optional().transform((v) => v || null),
 });
 const accessInput = z.object({ role: z.enum(LEVELS).default("member"), billing: z.coerce.boolean().default(false) });
@@ -78,6 +79,17 @@ export async function updatePerson(ctx: StaffCtx, contactId: string, raw: unknow
   await db.$transaction(async (tx) => {
     await tx.contact.update({ where: { id: c.id }, data: i });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: by(ctx), action: "person.updated", targetType: "contact", targetId: c.id, customerId: c.customerId });
+  });
+}
+
+/** Who we call first. Exactly one person per company. */
+export async function setPrimaryContact(ctx: StaffCtx, contactId: string) {
+  write(ctx);
+  const c = await contactOf(ctx, contactId);
+  await db.$transaction(async (tx) => {
+    await tx.contact.updateMany({ where: { customerId: c.customerId, isPrimary: true }, data: { isPrimary: false } });
+    await tx.contact.update({ where: { id: c.id }, data: { isPrimary: true } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: by(ctx), action: "person.made_main_contact", targetType: "contact", targetId: c.id, customerId: c.customerId });
   });
 }
 
@@ -219,5 +231,21 @@ export async function declineRequest(ctx: StaffCtx, id: string, reason?: string)
     await tx.accessRequest.update({ where: { id }, data: { status: "declined", decidedByName: ctx.name, decidedAt: new Date(), declineReason: note || null } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: by(ctx), action: "access.declined", targetType: "access_request", targetId: id, customerId: r.customerId });
     if (r.requestedByEmail) await enqueue(tx, ctx.workspaceId, "email.access_request_decision", `access.decision:${id}`, { to: r.requestedByEmail, name: r.requestedByName, business: cu.displayName, person: r.name, approved: false, note, link: portalLink("/people") });
+  });
+}
+
+
+const meInput = z.object({
+  name: z.string().trim().min(2, "Enter your name.").max(120),
+  phone: personInput.shape.phone,
+  position: z.string().trim().max(80).optional().transform((v) => v || null),
+});
+/** A customer updates their own name, phone and position. Their email is their login, so it changes through us. */
+export async function updateMyDetails(c: ClientCtx, raw: unknown) {
+  const i = meInput.parse(raw);
+  const email = c.email ? lc(c.email) : "";
+  await db.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: c.userId }, data: { name: i.name } });
+    if (email) await tx.contact.updateMany({ where: { customerId: { in: c.memberships.map((m) => m.customerId) }, email: { equals: email, mode: "insensitive" } }, data: { name: i.name, phone: i.phone, position: i.position } });
   });
 }

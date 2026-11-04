@@ -4,6 +4,8 @@ import { ChangePasswordForm } from "@/components/password-forms";
 import { requireClient } from "@/modules/identity/session";
 import { levelLabel } from "@/modules/portal/access";
 import { Avatar } from "@/components/ui";
+import { MyDetailsForm } from "@/components/my-details-form";
+import { db } from "@/lib/db";
 import { PhotoUpload } from "@/components/photo-upload";
 import { removeClientPhotoAction } from "@/app/actions/photo";
 
@@ -12,6 +14,7 @@ export const metadata = { title: "Settings" };
 export default async function Account({ searchParams }: { searchParams: Promise<{ error?: string; photo?: string }> }) {
   const c = await requireClient();
   const sp = await searchParams;
+  const me = c.email ? await db.contact.findFirst({ where: { customerId: { in: c.memberships.map((m) => m.customerId) }, email: { equals: c.email, mode: "insensitive" } }, select: { phone: true, position: true } }) : null;
   return (
     <div className="space-y-4">
       <section className="tile bg-lilac !p-7 sm:!p-10">
@@ -23,6 +26,11 @@ export default async function Account({ searchParams }: { searchParams: Promise<
         {sp.photo === "1" && <p role="status" className="mt-2 text-sm font-semibold text-moss">Picture saved.</p>}
         {sp.error && <p role="alert" className="mt-2 text-sm font-semibold text-[#7a2e12]">{sp.error}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-3"><PhotoUpload client /><form action={removeClientPhotoAction}><button className="btn btn-quiet">Remove picture</button></form></div>
+      </section>
+
+      <section className="tile bg-white" aria-labelledby="det"><h2 id="det" className="text-2xl">Your details</h2>
+        <p className="mb-4 mt-1 text-sm text-muted">Keep these right so we know who we're talking to.</p>
+        <MyDetailsForm name={c.name ?? ""} email={c.email ?? ""} phone={me?.phone ?? ""} position={me?.position ?? ""} />
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">

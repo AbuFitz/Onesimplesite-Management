@@ -59,6 +59,8 @@ export async function acceptInvitation(_: unknown, fd: FormData) {
   const inv = await db.invitation.findUnique({ where: { tokenHash: sha256(token) } });
   // Staff were named by whoever invited them, so they are not asked again.
   if (inv?.kind === "staff") name = (await db.staffMembership.findFirst({ where: { workspaceId: inv.workspaceId, email: inv.email }, select: { displayName: true } }))?.displayName ?? name;
+  // Customers were named when they were added, so they are not asked again either.
+  if (inv?.kind === "client" && inv.customerId) name = (await db.contact.findFirst({ where: { customerId: inv.customerId, email: { equals: inv.email, mode: "insensitive" } }, select: { name: true } }))?.name ?? name;
   if (!name) return { error: "Enter your name." };
   if (!inv || inv.acceptedAt || inv.revokedAt || inv.expiresAt <= new Date()) return { error: "This invitation has expired or was already used. Ask for a new one." };
   // They already have a login (a team member testing, or a customer of another company): add this company to it. Their password is never changed here.

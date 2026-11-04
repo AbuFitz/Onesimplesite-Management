@@ -116,7 +116,7 @@ export async function updateDetailsAction(fd: FormData) {
   const ctx = await requireStaff("customer.write");
   const id = String(fd.get("id"));
   try {
-    await updateCustomerDetails(ctx, id, Number(fd.get("version")), { displayName: fd.get("displayName") || undefined, kind: fd.get("kind") || "business", legalName: fd.get("legalName") || undefined, companyNumber: fd.get("companyNumber") || undefined, vatNumber: fd.get("vatNumber") || undefined, billingAddress: fd.get("billingAddress") || undefined, website: fd.get("website") || undefined, phone: fd.get("phone") || undefined });
+    await updateCustomerDetails(ctx, id, Number(fd.get("version")), { displayName: fd.get("displayName") || undefined, kind: fd.get("kind") || "business", legalName: fd.get("legalName") || undefined, companyNumber: fd.get("companyNumber") || undefined, vatNumber: fd.get("vatNumber") || undefined, addressLine1: fd.get("addressLine1") || undefined, addressLine2: fd.get("addressLine2") || undefined, town: fd.get("town") || undefined, postcode: fd.get("postcode") || undefined, website: fd.get("website") || undefined, phone: fd.get("phone") || undefined });
   } catch (e) { return back(`/customers/${id}/details`, e); }
   redirect(`/customers/${id}?details=saved`);
 }

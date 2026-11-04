@@ -211,6 +211,9 @@ model Customer {
   businessType  String? // what kind of business: Food and drink, Trades...
   stripeCustomerId String?
   town          String?
+  addressLine1  String?
+  addressLine2  String?
+  postcode      String?
   lifecycle     Lifecycle @default(prospect)
   atRisk        Boolean   @default(false)
   ownerId       String?   @db.Uuid // StaffMembership

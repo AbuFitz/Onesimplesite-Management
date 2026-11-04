@@ -3,6 +3,8 @@ import { requireStaff } from "@/modules/identity/session";
 import { getCustomer, customerDetailsMissing } from "@/modules/crm/service";
 import { updateDetailsAction } from "@/app/actions/crm";
 import { RecordHeader, ErrorSummary, Avatar } from "@/components/ui";
+import { AddressFields } from "@/components/address-fields";
+import { parseAddress } from "@/lib/address";
 import { PhotoUpload } from "@/components/photo-upload";
 import { removeLogoAction } from "@/app/actions/photo";
 
@@ -13,6 +15,7 @@ export default async function Details({ params, searchParams }: { params: Promis
   const c = await getCustomer(ctx, id);
   if (!c) notFound();
   const missing = customerDetailsMissing(c);
+  const addr = c.addressLine1 || c.postcode ? { addressLine1: c.addressLine1, addressLine2: c.addressLine2, town: c.town, postcode: c.postcode } : parseAddress(c.billingAddress, c.town);
   return (
     <>
       <RecordHeader back={{ href: `/customers/${c.id}`, label: c.displayName }} title="Company details" meta="Used as the “Client” on agreements" />
@@ -28,7 +31,7 @@ export default async function Details({ params, searchParams }: { params: Promis
         <div><label className="label" htmlFor="legalName">Legal name (company name, or full name for an individual)</label><input id="legalName" name="legalName" className="field" defaultValue={c.legalName ?? ""} /></div>
         <div><label className="label" htmlFor="companyNumber">Company number (companies only)</label><input id="companyNumber" name="companyNumber" className="field" defaultValue={c.companyNumber ?? ""} /></div>
         <div><label className="label" htmlFor="vatNumber">VAT number (only if VAT registered)</label><input id="vatNumber" name="vatNumber" className="field" defaultValue={c.vatNumber ?? ""} /></div>
-        <div><label className="label" htmlFor="billingAddress">Registered / billing address</label><textarea id="billingAddress" name="billingAddress" className="field" autoComplete="street-address" defaultValue={c.billingAddress ?? ""} /></div>
+        <AddressFields defaults={addr} legend="Registered / billing address" />
         <div><label className="label" htmlFor="website">Website</label><input id="website" name="website" inputMode="url" className="field" defaultValue={c.website ?? ""} /></div>
         <div><label className="label" htmlFor="phone">Phone</label><input id="phone" name="phone" type="tel" className="field" defaultValue={c.phone ?? ""} /></div>
         <button className="btn">Save details</button>

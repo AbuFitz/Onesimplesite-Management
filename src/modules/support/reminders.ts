@@ -13,13 +13,18 @@ const H = 3_600_000, D = 24 * H;
  * - Team: one list of tickets a customer is waiting on us for, at most once a day.
  * - Customer: a nudge at 3 days, a final warning at 7, and at 10 days the ticket is marked sorted (they can reopen it by replying).
  */
+/** Reads every row a page at a time, so a busy system never skips tickets past the first 500. */
+async function pages<T extends { id: string }>(fetch: (cursor?: string) => Promise<T[]>): Promise<T[]> {
+  const out: T[] = []; let cursor: string | undefined;
+  for (;;) { const rows = await fetch(cursor); out.push(...rows); if (rows.length < 500) return out; cursor = rows[rows.length - 1].id; }
+}
 export async function runTicketReminders(now = new Date()) {
   let team = 0, nudged = 0, closed = 0;
   // --- Waiting on us
-  const open = await db.ticket.findMany({
+  const open = await pages((cursor) => db.ticket.findMany({
     where: { status: { in: ["open", "customer_replied"] }, category: { not: "onboarding" } },
-    include: { customer: { select: { displayName: true } } }, take: 500,
-  });
+    include: { customer: { select: { displayName: true } } }, orderBy: { id: "asc" }, take: 500, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  }));
   const byWorkspace = new Map<string, typeof open>();
   for (const t of open) {
     const since = t.lastCustomerAt ?? t.createdAt;
@@ -38,7 +43,7 @@ export async function runTicketReminders(now = new Date()) {
     team += list.length;
   }
   // --- Waiting on the customer
-  const waiting = await db.ticket.findMany({ where: { status: "waiting_customer", lastStaffAt: { not: null } }, include: { contact: { select: { name: true, email: true } } }, take: 500 });
+  const waiting = await pages((cursor) => db.ticket.findMany({ where: { status: "waiting_customer", lastStaffAt: { not: null } }, include: { contact: { select: { name: true, email: true } } }, orderBy: { id: "asc" }, take: 500, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) }));
   for (const t of waiting) {
     const days = (+now - +t.lastStaffAt!) / D;
     const sent = t.remindedAt && +t.remindedAt > +t.lastStaffAt! ? (+t.remindedAt - +t.lastStaffAt!) / D : null;   // how many days in when we last nudged

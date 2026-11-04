@@ -1,3 +1,4 @@
+import { greeting as hello } from "@/lib/greeting";
 import Link from "next/link";
 import { Plus, Ticket, PenLine, CreditCard, Repeat, CalendarDays, CheckSquare, FolderKanban, Trophy, Building2 } from "lucide-react";
 import { db } from "@/lib/db";
@@ -29,8 +30,7 @@ export default async function Today() {
     seeBusiness ? db.contract.findMany({ where: { workspaceId: w, status: "completed", completedAt: { gte: new Date(Date.now() - 14 * 864e5) } }, orderBy: { completedAt: "desc" }, take: 4, include: { customer: true } }) : [],
     db.project.findMany({ where: { workspaceId: w, stage: { notIn: ["completed", "cancelled", "launched"] }, ...mineOnly }, orderBy: { updatedAt: "desc" }, take: 5, select: { id: true, name: true, stage: true, dueDate: true, customer: { select: { displayName: true } } } }),
   ]);
-  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: "Europe/London" }).format(new Date()));
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting = hello();
   const STEP = { planned: 0.1, awaiting_assets: 0.2, design: 0.4, development: 0.6, qa: 0.75, client_review: 0.85, ready_to_launch: 0.95 } as Record<string, number>;
   const quick = [["/tickets/new", "New ticket", Ticket], ["/customers/new", "Add a company", Building2], ["/calendar/new", "Add an event", CalendarDays]] as const;
 

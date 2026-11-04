@@ -1,4 +1,5 @@
 "use client";
+import { AddressFields } from "./address-fields";
 import { useActionState, useState } from "react";
 import { registerBusinessAction } from "@/app/actions/register";
 import { KINDS } from "@/modules/crm/kinds";
@@ -30,10 +31,9 @@ export function RegisterForm() {
           {kind === "business" && <div><label className="label" htmlFor="rb-c">Company number</label><input id="rb-c" name="companyNumber" className="field" inputMode="numeric" autoComplete="off" /></div>}
           {kind !== "business" && <div><label className="label" htmlFor="rb-l2">{person ? "Full name for agreements" : "Full legal name for agreements"}</label><input id="rb-l2" name="legalName" className="field" autoComplete="off" /></div>}
           <div><label className="label" htmlFor="rb-t">What do they do?</label><select id="rb-t" name="businessType" className="field" defaultValue=""><option value="">Not sure</option>{CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label className="label" htmlFor="rb-to">Town or city</label><input id="rb-to" name="town" className="field" autoComplete="off" placeholder="e.g. Bristol" /></div>
           <div><label className="label" htmlFor="rb-w">Their current website <span className="font-normal text-muted">(if they have one)</span></label><input id="rb-w" name="website" className="field" inputMode="url" placeholder="www.example.co.uk" /></div>
           <div><label className="label" htmlFor="rb-p">Company phone <span className="font-normal text-muted">(optional)</span></label><input id="rb-p" name="phone" className="field" type="tel" /></div>
-          <div className="sm:col-span-2"><label className="label" htmlFor="rb-a">Address <span className="font-normal text-muted">(needed before an agreement is sent, can be added later)</span></label><textarea id="rb-a" name="billingAddress" className="field" rows={2} autoComplete="street-address" /></div>
+          <AddressFields />
           <div><label className="label" htmlFor="rb-s">How did they find us?</label><select id="rb-s" name="source" className="field" defaultValue=""><option value="">Not sure</option>{SOURCES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
       </section>

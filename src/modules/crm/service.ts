@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { checkAddress, printedAddress, hasAddress, normalisePostcode, parseAddress } from "@/lib/address";
 import { db } from "@/lib/db";
 import { audit, nextRef } from "@/lib/audit";
 import { DomainError, forbidden, stale } from "@/lib/errors";
@@ -84,18 +85,24 @@ const detailsInput = z.object({
   legalName: z.string().trim().max(200).optional(),
   companyNumber: z.string().trim().max(40).optional(),
   vatNumber: z.string().trim().max(40).optional(),
-  billingAddress: z.string().trim().max(500).optional(),
+  billingAddress: z.string().trim().max(500).optional(), // older callers: one box; split into parts below
+  addressLine1: z.string().trim().max(120).optional(), addressLine2: z.string().trim().max(120).optional(), town: z.string().trim().max(80).optional(), postcode: z.string().trim().max(10).optional(),
   website: z.string().trim().max(200).optional(),
   phone: z.string().trim().max(40).optional(),
 });
 
 export async function updateCustomerDetails(ctx: StaffCtx, id: string, expectedVersion: number, raw: unknown) {
   if (!can(ctx.role, "customer.write")) throw forbidden();
-  const i = detailsInput.parse(raw);
+  const parsed = detailsInput.parse(raw);
+  const legacy = !hasAddress(parsed) && !!parsed.billingAddress; // one-box address from older callers: keep it as typed
+  const i = legacy ? { ...parsed, ...parseAddress(parsed.billingAddress, parsed.town) } : parsed;
+  const bad = legacy ? null : checkAddress(i); if (bad) throw new DomainError("validation", bad);
+  const postcode = i.postcode ? normalisePostcode(i.postcode) : null;
+  const billingAddress = legacy ? parsed.billingAddress! : printedAddress({ ...i, postcode }) || null;
   await db.$transaction(async (tx) => {
     const r = await tx.customer.updateMany({
       where: { id, workspaceId: ctx.workspaceId, version: expectedVersion },
-      data: { ...(i.displayName ? { displayName: i.displayName } : {}), kind: i.kind, legalName: i.legalName || null, companyNumber: i.companyNumber || null, vatNumber: i.vatNumber || null, billingAddress: i.billingAddress || null, website: i.website || null, phone: i.phone || null, version: { increment: 1 } },
+      data: { ...(i.displayName ? { displayName: i.displayName } : {}), kind: i.kind, legalName: i.legalName || null, companyNumber: i.companyNumber || null, vatNumber: i.vatNumber || null, billingAddress, addressLine1: i.addressLine1 || null, addressLine2: i.addressLine2 || null, town: i.town || null, postcode, website: i.website || null, phone: i.phone || null, version: { increment: 1 } },
     });
     if (r.count === 0) throw stale();
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "customer.details_updated", targetType: "customer", targetId: id, customerId: id });

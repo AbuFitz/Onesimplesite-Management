@@ -4,6 +4,7 @@ import { clientCanAny } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
 import { clientOverview, STAGE_COPY } from "@/modules/portal/service";
 import { clientTickets } from "@/modules/support/service";
+import { greeting, todayLabel } from "@/lib/greeting";
 import { fmtDate, timeAgo } from "@/components/ui";
 
 export const metadata = { title: "Home" };
@@ -17,7 +18,7 @@ export default async function PortalOverview() {
   const first = (c.name ?? "").split(" ")[0] || "there";
   const current = o.projects.find((p) => !["completed", "cancelled"].includes(p.stage));
   const mine = current ? o.assets.filter((x) => x.projectId === current.id) : o.assets;
-  const open = tickets.filter((t) => ["open", "in_progress", "waiting_customer"].includes(t.status));
+  const open = tickets.filter((t) => !["resolved", "closed"].includes(t.status)); // every ticket in the company that is still live, whoever raised it
   const needsYou = tickets.filter((t) => t.status === "waiting_customer");
   const step = current ? stepOf(current.stage) : 0;
 
@@ -25,7 +26,8 @@ export default async function PortalOverview() {
     <div className="space-y-4">
       <section className="tile relative overflow-hidden bg-spring !p-7 sm:!p-10" aria-labelledby="hi">
         <div className="absolute -right-10 -top-10 size-48 rounded-full bg-white/30" aria-hidden /><div className="absolute -bottom-16 right-16 size-40 rounded-full bg-ink/10" aria-hidden />
-        <h1 id="hi" className="relative text-[2.4rem] leading-none sm:text-6xl">Hi {first}</h1>
+        <p className="relative mb-2 text-sm font-semibold opacity-70">{todayLabel()}</p>
+        <h1 id="hi" className="relative text-[2.4rem] leading-none sm:text-6xl">{greeting()}, {first}</h1>
         <p className="relative mt-3 max-w-xl text-lg font-medium sm:text-xl">{needsYou.length ? `We replied on ${needsYou.length === 1 ? "a ticket" : `${needsYou.length} tickets`}. Have a look when you can.` : current ? STAGE_COPY[current.stage] : "Everything is up to date. Nice."}</p>
         <div className="relative mt-6 flex flex-wrap gap-3">{clientCanAny(c, "tickets") && <Link href="/help/new" className="btn btn-dark">Raise a ticket</Link>}<Link href="/documents" className="btn btn-quiet">Your documents</Link></div>
       </section>
@@ -44,6 +46,7 @@ export default async function PortalOverview() {
         <section className="tile tile-blush" aria-labelledby="tk">
           <LifeBuoy size={26} aria-hidden /><h2 id="tk" className="mt-3 text-xl">Get help</h2>
           <p className="mt-1 text-5xl font-bold font-[family-name:var(--font-display)]">{open.length}</p><p className="text-sm">open {open.length === 1 ? "ticket" : "tickets"}</p>
+          {open.length > 0 && <ul className="mt-3 space-y-1.5">{open.slice(0, 3).map((t) => <li key={t.id}><Link href={`/help/${t.id}`} className="block truncate rounded-xl bg-white/70 px-3 py-2 text-sm font-semibold hover:bg-white">{t.title}<span className="block text-xs font-normal text-muted">{t.contact ? `by ${t.contact.name}` : "by us"} · {timeAgo(t.updatedAt)}</span></Link></li>)}</ul>}
           <Link href="/help" className="mt-3 inline-flex items-center gap-1 text-sm font-bold">See tickets <ArrowRight size={15} aria-hidden /></Link>
         </section>
       </div>
@@ -54,7 +57,7 @@ export default async function PortalOverview() {
           {mine.length === 0 ? <p className="mt-2">Nothing right now. We'll tell you when something comes up.</p> : (
             <ul className="mt-3 space-y-2">{mine.slice(0, 4).map((x) => <li key={x.id} className="flex flex-wrap items-baseline justify-between gap-2 rounded-2xl bg-white/70 px-4 py-2.5"><span className="font-semibold">{x.label}</span>{x.dueDate && <span className="text-sm">by {fmtDate(x.dueDate)}</span>}</li>)}</ul>
           )}
-          {mine.length > 0 && <p className="mt-3 text-sm">Send these to your project contact. Please never email passwords.</p>}
+          {mine.length > 0 && <p className="mt-3 text-sm">Open your project to send them straight to us. Please never send passwords.</p>}
         </section>
         <section className="tile tile-lilac" aria-labelledby="docs">
           <FileText size={26} aria-hidden /><h2 id="docs" className="mt-3 text-xl">Your documents</h2>
