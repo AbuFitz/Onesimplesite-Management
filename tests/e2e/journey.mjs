@@ -50,7 +50,7 @@ ok(true, "comments appear under the post");
 staff.once("dialog", (d) => d.accept());
 await staff.click("button[aria-label='Delete this post']"); await staff.waitForURL(/\/board$/);
 ok(await staff.locator(`a:has-text("${postTitle}")`).count() === 0, "a deleted post is gone from the feed");
-await staff.goto(`${M}/calendar`); await staff.fill("#qe-t", "Team sync"); await staff.click("form button:has-text('Add event')"); await staff.waitForURL(/day=/);
+await staff.goto(`${M}/calendar?add=1`); await staff.waitForSelector("dialog[open]"); await staff.fill("#ev-t", "Team sync"); await staff.click("dialog button:has-text('Add event')"); await staff.waitForURL(/added=1/);
 ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar quick-add shows the event on the day");
 
 // 0c. The sample signing page behind the test emails: real page, nothing recorded
