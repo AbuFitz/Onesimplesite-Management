@@ -29,6 +29,16 @@ export async function checkStripeAction(): Promise<StripeCheck> {
   try { await stripe("/balance"); return { ok: true, mode, detail: "Stripe accepted the key." }; } catch (e) { return { ok: false, mode, detail: e instanceof Error ? e.message : "Stripe didn't answer." }; }
 }
 
+/** Sends today's summary of held notices now, instead of waiting for tomorrow morning. */
+export async function sendDigestNowAction() {
+  const ctx = await requireStaff("settings.write");
+  const { sendDailyDigest } = await import("@/modules/outbox/digest");
+  const { drainOutbox } = await import("@/modules/outbox/drain");
+  const r = await sendDailyDigest(ctx.workspaceId, { force: true });
+  await drainOutbox(50);
+  redirect(`/testing?queue=${encodeURIComponent(r.sent ? `Summary sent with ${"items" in r ? r.items : 0} items` : "Nothing is being held for the summary")}`);
+}
+
 /** Sends anything waiting in the email queue right now, and retries anything that failed. */
 export async function sendQueuedEmailsAction() {
   const ctx = await requireStaff("settings.write");

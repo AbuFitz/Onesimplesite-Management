@@ -6,5 +6,5 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!s) return new Response("Please sign in.", { status: 401 });
   const p = await staffPhoto((await params).id, s.workspaceId);
   if (!p) return new Response("None", { status: 404 });
-  return new Response(new Uint8Array(p.bytes), { headers: { "Content-Type": p.type, "X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=300" } });
+  return new Response(new Uint8Array(p.bytes), { headers: { "Content-Type": p.type, "X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=30, must-revalidate" } });
 }

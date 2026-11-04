@@ -28,7 +28,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
       <RecordHeader title="Team Board" meta="Updates, wins, questions and how-tos from the team" />
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="min-w-0">
-        {can(ctx.role, "notes.write") && <Composer name={ctx.name} />}
+        {can(ctx.role, "notes.write") && <Composer name={ctx.name} staffId={ctx.staffId} />}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <nav aria-label="Filter posts" className="flex flex-wrap gap-2">{FILTERS.map(([id, label]) => <Link key={id} href={href(id)} aria-current={filter === id ? "page" : undefined} className={`btn !min-h-11 sm:!min-h-9 ${filter === id ? "" : "btn-quiet"}`}>{label}</Link>)}</nav>
           <form role="search" className="flex gap-2"><input type="hidden" name="f" value={filter} /><label className="sr-only" htmlFor="bq">Search the board</label><input id="bq" name="q" defaultValue={sp.q} className="field !min-h-11 sm:!min-h-9 w-44 !text-sm" placeholder="Search" /></form>
@@ -39,7 +39,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
               <li key={p.id}>
                 <Link href={`/board/${p.id}`} className="block rounded-xl border border-[var(--card-line)] bg-white p-5 transition-colors hover:bg-[var(--color-soft)]">
                   <div className="flex items-center gap-3">
-                    <Avatar name={p.author.displayName} size={36} />
+                    <Avatar name={p.author.displayName} size={36} staffId={p.author.id} />
                     <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{p.author.displayName}{p.author.jobTitle && <span className="font-normal text-muted"> · {p.author.jobTitle}</span>}</p><p className="text-xs text-muted">{timeAgo(p.updatedAt)}</p></div>
                     <div className="flex items-center gap-2">{p.pinned && <span className="inline-flex items-center gap-1 rounded-full bg-[#fbf3d5] px-2 py-0.5 text-xs text-[#6b5200]"><Pin size={11} aria-hidden />Pinned</span>}<VisBadge v={p.visibility} /></div>
                   </div>

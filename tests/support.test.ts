@@ -26,7 +26,8 @@ describe("support tickets", () => {
     expect(t.reference).toMatch(/^OSS-TK-\d{4}-\d{4}$/);
     expect(t.priority).toBe("high"); expect(t.source).toBe("portal"); expect(t.contactId).toBe(a.person.id);
     const topics = (await db.outbox.findMany({ where: { workspaceId: w.id } })).map((o) => o.topic).sort();
-    expect(topics).toEqual(["email.ticket_notice", "email.ticket_received"]);
+    expect(topics).toEqual(["email.ticket_notice"]);   // the portal confirms on screen, so no "we got it" email by default
+    expect((await db.outbox.findMany({ where: { workspaceId: w.id } }))[0].status).toBe("held");   // and the team notice waits for the daily summary
   });
 
   it("a client nobody added as a contact still gets a person record", async () => {

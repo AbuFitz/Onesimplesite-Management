@@ -5,7 +5,7 @@ import { postAction, commentAction } from "@/app/actions/board";
 import { Avatar, ErrorSummary } from "./ui";
 
 /** Collapsed to one line until you click it, like posting on a social feed. */
-export function Composer({ name }: { name: string }) {
+export function Composer({ name, staffId }: { name: string; staffId?: string }) {
   const [s, act, pending] = useActionState(postAction, undefined as { error?: string; done?: boolean } | undefined);
   const [open, setOpen] = useState(false);
   const form = useRef<HTMLFormElement>(null);
@@ -13,7 +13,7 @@ export function Composer({ name }: { name: string }) {
   return (
     <form ref={form} action={act} className="mb-6 rounded-2xl border border-line bg-white p-4 shadow-[0_1px_2px_rgba(14,19,17,.04)]">
       <div className="flex items-start gap-3">
-        <Avatar name={name} />
+        <Avatar name={name} staffId={staffId} />
         <div className="min-w-0 flex-1">
           {!open ? (
             <button type="button" onClick={() => setOpen(true)} className="flex min-h-10 w-full items-center rounded-lg bg-soft px-4 text-left text-[15px] text-muted hover:bg-[#e8ece9]">Post something to the team…</button>
@@ -37,7 +37,7 @@ export function Composer({ name }: { name: string }) {
   );
 }
 
-export function CommentForm({ id, name }: { id: string; name: string }) {
+export function CommentForm({ id, name, staffId }: { id: string; name: string; staffId?: string }) {
   const [s, act, pending] = useActionState(commentAction, undefined as { error?: string; done?: boolean } | undefined);
   const form = useRef<HTMLFormElement>(null);
   const [text, setText] = useState("");
@@ -45,7 +45,7 @@ export function CommentForm({ id, name }: { id: string; name: string }) {
   return (
     <form ref={form} action={act} className="flex items-start gap-3">
       <input type="hidden" name="id" value={id} />
-      <Avatar name={name} size={32} />
+      <Avatar name={name} size={32} staffId={staffId} />
       <div className="min-w-0 flex-1 space-y-2">
         <ErrorSummary message={s?.error} />
         <label className="sr-only" htmlFor="cm-body">Write a comment</label>

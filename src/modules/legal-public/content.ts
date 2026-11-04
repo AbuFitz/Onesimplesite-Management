@@ -16,7 +16,7 @@ const PRIVACY = `## Who we are
 1.1 About your business: its name, address, company number and what it does.
 1.1 Your account: your sign-in email, a hashed (unreadable) password, and technical details of each sign-in, such as the time, device and network address.
 1.1 Your work with us: your projects, the files and messages you send us, support tickets, and the agreements you sign, including your signature and the time and technical details recorded when you sign.
-1.1 Payments: amounts due and paid and their dates. Card details are entered on Stripe's secure page and are never seen or stored by us.
+1.1 Payments: amounts due and paid and their dates. Card details are entered on our payment provider's secure page and are never seen or stored by us.
 1.1 Emails: a record of the emails we send you.
 
 ## Why we use it, and our lawful reasons
@@ -28,13 +28,11 @@ kv: To tell you about your project, documents and payments | Contract
 1.1 You need to give us the details above to use our services. Without them we cannot set up or run your account.
 
 ## Who we share it with
-1.1 We do not sell personal information. These companies help us run the service and may only use it on our instructions:
-- Supabase: stores our database.
-- Vercel: hosts the portals.
-- Resend: delivers our emails.
-- Stripe: takes card payments and runs monthly plans. Stripe is also a controller of the payment details you give it.
-1.1 We may also share information with professional advisers and accountants under confidentiality, or where the law requires it.
-1.1 Some of these companies may process information outside the UK. When they do, it is protected by an adequacy decision or by standard contractual safeguards approved under UK data protection law.
+1.1 We do not sell personal information. We share it only with:
+- Companies that provide services to us, such as secure hosting and storage, email delivery and card payments. They may only use it to provide that service to us, and are bound to keep it safe.
+- Our card payment provider, which handles your card details itself. We never see or store your full card number.
+- Professional advisers and accountants, who are bound by confidentiality, and anyone the law requires us to tell.
+1.1 Some of these providers may process information outside the UK. When they do, it is protected by an adequacy decision or by standard contractual safeguards approved under UK data protection law.
 
 ## How long we keep it
 kv: Account and business details | While you are a customer and for 6 years afterwards
@@ -63,7 +61,7 @@ kv: Security cookies | Protect sign-in and forms from misuse. They are removed w
 1.1 No advertising, tracking or analytics cookies, and we share no cookie data with advertisers.
 
 ## Cookies from other companies
-1.1 When you pay, you go to a secure page run by Stripe, which sets its own cookies to take payment safely and prevent fraud. See Stripe's cookie policy for details.
+1.1 When you pay, you go to a secure page run by our card payment provider, which sets its own cookies to take payment safely and prevent fraud. Its own cookie policy explains them.
 
 ## Your choices
 1.1 You can delete or block cookies in your browser settings. If you block the sign-in cookie you will not be able to sign in.
@@ -83,7 +81,7 @@ const TERMS = `## Your account
 1.1 Please do not send passwords or card numbers in tickets. If we need access to something, we will tell you a safe way to share it.
 
 ## Payments
-1.1 The portal shows what you owe and lets you pay by card through Stripe. What you owe, and when, is set out in your signed order.
+1.1 The portal shows what you owe and lets you pay by card on a secure payment page. What you owe, and when, is set out in your signed order.
 
 ## Availability
 1.1 We aim to keep the portal available but cannot promise it will always be uninterrupted or error free. We may pause it for maintenance. Support times are in your Service Level Agreement.

@@ -65,6 +65,8 @@ export async function maybeRunReminders() {
   if (Date.now() - last < 10 * 60_000) return;
   last = Date.now();
   await runTicketReminders();
+  const { sendDailyDigest } = await import("@/modules/outbox/digest");
+  for (const w of await db.workspace.findMany({ select: { id: true } })) await sendDailyDigest(w.id);
   const { drainOutbox } = await import("@/modules/outbox/drain");
   await drainOutbox();
 }

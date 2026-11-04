@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { enqueue } from "@/lib/audit";
 import { manageLink } from "@/lib/env";
 import { drainOutbox } from "@/modules/outbox/drain";
+import { sendDailyDigest } from "@/modules/outbox/digest";
 import { runTicketReminders } from "@/modules/support/reminders";
 import { lastExport, isBackupDue } from "@/modules/export/service";
 
@@ -24,5 +25,6 @@ export async function GET(req: Request) {
     }
   }
   const reminders = await runTicketReminders();
+  for (const w of await db.workspace.findMany({ select: { id: true } })) await sendDailyDigest(w.id);
   return Response.json({ ...(await drainOutbox(100)), reminders });
 }

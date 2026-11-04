@@ -1,4 +1,5 @@
 import type { Tx } from "./db";
+import { resolveDelivery, prefsFrom } from "@/modules/settings/notifications";
 
 export type Actor = { userId: string | null; label: string; staffId?: string | null; workspaceId: string };
 
@@ -33,6 +34,7 @@ const REFS = {
   ticket: { code: "TK", yearly: true, pad: 4 },
   dpa: { code: "DP", yearly: true, pad: 3 },
   change: { code: "CR", yearly: true, pad: 3 },
+  receipt: { code: "RC", yearly: true, pad: 4 },
 } as const;
 export type RefKind = keyof typeof REFS;
 export const londonYear = (d = new Date()) => Number(new Intl.DateTimeFormat("en-GB", { year: "numeric", timeZone: "Europe/London" }).format(d));
@@ -58,10 +60,18 @@ export async function nextReference(tx: Tx, workspaceId: string, name: string, p
 }
 
 export async function enqueue(tx: Tx, workspaceId: string, topic: string, dedupeKey: string, payload: object) {
+  // Some notices can be switched off or bundled into a daily summary (Settings, Notifications). Everything customers need is always sent.
+  let status = "pending";
+  if (topic.startsWith("email.")) {
+    const w = await tx.workspace.findUnique({ where: { id: workspaceId }, select: { settings: true } });
+    const mode = resolveDelivery(prefsFrom(w?.settings), topic, payload as Record<string, unknown>);
+    if (mode === "off") return;
+    if (mode === "digest") status = "held";
+  }
   // Unique (workspace, dedupeKey): replay of the same business event is a no-op.
   await tx.outbox.upsert({
     where: { workspaceId_dedupeKey: { workspaceId, dedupeKey } },
-    create: { workspaceId, topic, dedupeKey, payload },
+    create: { workspaceId, topic, dedupeKey, payload, status },
     update: {},
   });
 }

@@ -911,3 +911,24 @@ model AccessRequest {
   @@index([workspaceId, status])
   @@index([customerId, status])
 }
+
+/// Proof of a payment, kept so the customer can see and download it from their portal and the team can find it later.
+model Receipt {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  customerId  String   @db.Uuid
+  intentId    String   @db.Uuid
+  ref         String // OSS-RC-2026-0001
+  key         String // what this receipt is for, so it is only made once (checkout session, invoice, manual)
+  description String
+  amountMinor Int
+  currency    String   @default("GBP")
+  method      String // card | bank | other
+  paidAt      DateTime
+  stripeRef   String?
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, ref])
+  @@unique([intentId, key])
+  @@index([customerId, paidAt])
+}

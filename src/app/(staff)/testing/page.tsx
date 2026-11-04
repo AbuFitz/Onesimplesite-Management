@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
 import { EMAILS } from "@/modules/settings/email-samples";
 import { testClientStatus, TEST_CLIENT_NAME } from "@/modules/crm/test-client";
-import { createTestClientAction, resetTestClientAction, sendQueuedEmailsAction } from "@/app/actions/testing";
+import { createTestClientAction, resetTestClientAction, sendQueuedEmailsAction, sendDigestNowAction } from "@/app/actions/testing";
 import { SubmitButton } from "@/components/submit-button";
 import { EmailTestButton } from "@/components/email-test-button";
 import { StripeCheckButton } from "@/components/stripe-check";
@@ -40,6 +40,7 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
             <p className="font-semibold">Email queue</p>
             <p className="text-muted">{queue.pending} waiting to send · {queue.failed} failed · email is {queue.configured ? "switched on" : "not configured"}</p>
             {queue.recent.length > 0 && <ul className="mt-2 space-y-1 text-[13px] text-[#7a2e12]">{queue.recent.slice(0, 3).map((r) => <li key={r.id}>{r.lastError}</li>)}</ul>}
+            <form action={sendDigestNowAction} className="mt-3"><SubmitButton className="btn btn-quiet" pendingText="Sending…">Send the daily summary now</SubmitButton></form>
             <form action={sendQueuedEmailsAction} className="mt-3"><SubmitButton className="btn btn-quiet" pendingText="Sending…">Send waiting emails now</SubmitButton></form>
             {sp.queue && <p role="status" className="mt-2 text-moss">{sp.queue}</p>}
           </div>

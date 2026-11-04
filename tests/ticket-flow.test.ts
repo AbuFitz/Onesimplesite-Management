@@ -35,6 +35,10 @@ describe("ticket statuses", () => {
     expect(r.status).toBe("customer_replied");
     await updateSupportTicket(x.staff, t.id, { status: "resolved" });
     await updateSupportTicket(x.staff, t.id, { status: "resolved" });
+    expect(await outbox(x.w.id, "email.ticket_resolved")).toHaveLength(0);   // off by default: they can see the status in the portal
+    await db.workspace.update({ where: { id: x.w.id }, data: { settings: { notify: { "email.ticket_resolved": "instant" } } } });
+    await updateSupportTicket(x.staff, t.id, { status: "in_progress" });
+    await updateSupportTicket(x.staff, t.id, { status: "resolved" });
     expect(await outbox(x.w.id, "email.ticket_resolved")).toHaveLength(1);
     await clientReply(x.owner, t.id, "Actually it's still broken.");           // replying reopens it
     expect((await db.ticket.findUniqueOrThrow({ where: { id: t.id } })).status).toBe("customer_replied");

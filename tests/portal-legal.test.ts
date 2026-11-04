@@ -15,7 +15,8 @@ describe("portal legal pages (in code)", () => {
   });
   it("covers what UK GDPR requires us to tell people", () => {
     const b = LEGAL_PAGES.privacy.body;
-    for (const need of ["controller", "Contract", "Legitimate interests", "Supabase", "Vercel", "Resend", "Stripe", "outside the UK", "How long we keep it", "Your rights", "Information Commissioner", "automated", "need to give us"]) expect(b, need).toContain(need);
+    for (const need of ["controller", "Contract", "Legitimate interests", "services to us", "card payment provider", "outside the UK", "How long we keep it", "Your rights", "Information Commissioner", "automated", "need to give us"]) expect(b, need).toContain(need);
+    for (const brand of ["Supabase", "Vercel", "Resend", "Stripe"]) expect(b + LEGAL_PAGES.cookies.body + LEGAL_PAGES.terms.body, brand).not.toContain(brand);   // categories, not brand names
   });
   it("cookie notice only claims strictly necessary cookies", () => {
     expect(LEGAL_PAGES.cookies.body).toMatch(/strictly necessary/); expect(LEGAL_PAGES.cookies.body).toMatch(/No advertising, tracking or analytics/);

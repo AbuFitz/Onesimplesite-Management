@@ -25,7 +25,7 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
       <Link href="/board" className="mb-4 inline-flex min-h-9 items-center text-sm text-muted hover:text-ink">‹ Team Board</Link>
       <article className="rounded-xl border border-[var(--card-line)] bg-white p-5 sm:p-8">
         <header className="mb-5 flex flex-wrap items-center gap-3">
-          <Avatar name={author.displayName} size={40} />
+          <Avatar name={author.displayName} size={40} staffId={author.id} />
           <div className="min-w-0 flex-1"><p className="font-semibold">{author.displayName}{author.jobTitle && <span className="font-normal text-muted"> · {author.jobTitle}</span>}</p><p className="text-sm text-muted">Posted {timeAgo(post.createdAt)}</p></div>
           <VisBadge v={post.visibility} />
           {manage && write && (
@@ -47,7 +47,7 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
         <ul className="mb-5 space-y-4">
           {comments.map((c) => (
             <li key={c.id} className="flex items-start gap-3">
-              <Avatar name={c.author.displayName} size={32} />
+              <Avatar name={c.author.displayName} size={32} staffId={c.author.id} />
               <div className="min-w-0 flex-1 rounded-2xl bg-soft px-4 py-3">
                 <p className="text-sm"><span className="font-semibold">{c.author.displayName}</span> <span className="text-muted">· {timeAgo(c.createdAt)}</span></p>
                 <p className="mt-1 whitespace-pre-wrap break-words text-[15px]">{c.body}</p>
@@ -58,7 +58,7 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
             </li>
           ))}
         </ul>
-        {write && <CommentForm id={post.id} name={ctx.name} />}
+        {write && <CommentForm id={post.id} name={ctx.name} staffId={ctx.staffId} />}
       </section>
     </div>
   );

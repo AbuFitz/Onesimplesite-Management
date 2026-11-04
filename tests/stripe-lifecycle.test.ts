@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { db } from "@/lib/db";
 import { POST } from "@/app/api/stripe/webhook/route";
 import { drainOutbox } from "@/modules/outbox/drain";
+import { sendDailyDigest } from "@/modules/outbox/digest";
 
 const SECRET = "whsec_test_lifecycle";
 let saved: string | undefined;
@@ -66,8 +67,12 @@ describe("Stripe lifecycle through the real webhook and the outbox", () => {
     expect(receipt[0].to).toBe(`payer-${o.tag.toLowerCase()}@client.test`);
     expect(receipt[0].text).toContain("£1,200.00"); expect(receipt[0].text).toContain("Website"); expect(receipt[0].text).toContain("Hi Pat"); expect(receipt[0].html).toContain("/billing");
     for (const m of got) { expect(m.html + m.text).not.toMatch(/undefined|NaN|\[object|\{\{/); expect(m.html).toContain("<img"); }
-    const notice = got.filter((m) => m.subject.startsWith("Payment received: ") && m.to === "hello@onesimplesite.co.uk");
-    expect(notice).toHaveLength(1); expect(notice[0].text).toContain(o.c.displayName); expect(notice[0].html).toContain(`/contracts/${o.k.id}`);
+    // The team notice is held for the daily summary instead of emailing straight away.
+    expect(got.filter((m) => m.subject.startsWith("Payment received: ") && m.to === "hello@onesimplesite.co.uk")).toHaveLength(0);
+    expect(await db.outbox.count({ where: { workspaceId: o.w.id, topic: "email.payment_notice", status: "held" } })).toBe(1);
+    await sendDailyDigest(o.w.id, { force: true }); await drainOutbox(300);
+    const digest = mails().filter((m) => m.subject.startsWith("Your daily summary") && m.text.includes(o.c.displayName));
+    expect(digest).toHaveLength(1); expect(digest[0].text).toContain("Payment received"); expect(digest[0].text).toContain(`/contracts/${o.k.id}`);
   });
 
   it("monthly plan: starts, a failed payment emails the customer each time, recovers, then is cancelled; both Stripe invoice shapes work", async () => {
@@ -96,7 +101,10 @@ describe("Stripe lifecycle through the real webhook and the outbox", () => {
     expect(failed.length).toBe(2);
     expect(failed.every((m) => m.to === `hana-${o.tag.toLowerCase()}@client.test` && m.text.includes("£49.00") && m.html.includes("/billing"))).toBe(true);
     const team = got.filter((m) => m.to === "hello@onesimplesite.co.uk").map((m) => m.subject.split(":")[0]);
-    expect(team).toEqual(expect.arrayContaining(["Monthly plan started", "Payment failed", "Monthly plan cancelled"]));
+    expect(team.length).toBeGreaterThan(0); expect(team.every((t) => t === "Payment failed")).toBe(true);   // only failures are sent straight away
+    await sendDailyDigest(o.w.id, { force: true }); await drainOutbox(300);
+    const sum = mails().find((m) => m.subject.startsWith("Your daily summary") && m.text.includes(o.c.displayName))!;
+    expect(sum.text).toContain("Plan started"); expect(sum.text).toContain("Plan cancelled");
     expect(got.filter((m) => m.to !== "hello@onesimplesite.co.uk").every((m) => !/cancel/i.test(m.subject))).toBe(true);
     for (const m of got) expect(m.html + m.text).not.toMatch(/undefined|NaN|\[object|\{\{/);
   });
@@ -161,6 +169,6 @@ describe("cancelling a monthly plan is recorded", () => {
     expect(await status(o.plan.id)).toBe("cancelled");
     expect(await db.auditEvent.count({ where: { workspaceId: o.w.id, customerId: o.c.id, action: "billing.plan_cancelled" } })).toBe(1);
     await drainOutbox(300);
-    expect(mailsFor(o.ref).some((m) => m.subject.startsWith("Monthly plan cancelled") && m.to === "hello@onesimplesite.co.uk")).toBe(true);
+    expect(await db.outbox.count({ where: { workspaceId: o.w.id, topic: "email.payment_notice", status: "held" } })).toBeGreaterThan(0);   // the cancellation notice waits for the daily summary
   });
 });

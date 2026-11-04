@@ -78,3 +78,16 @@ export async function documentValues(workspaceId: string, planId?: string | null
 }
 export { fillVars };
 void DomainError; void getCompany;
+
+/** Saves which emails are sent straight away, bundled into the daily summary, or not emailed. Only known emails and modes are kept. */
+export async function saveNotifyPrefs(ctx: StaffCtx, raw: Record<string, unknown>) {
+  need(ctx);
+  const { NOTIFY_EVENTS } = await import("./notifications");
+  const clean: Record<string, string> = {};
+  for (const e of NOTIFY_EVENTS) { const v = raw[e.topic]; if (typeof v === "string" && (e.modes as string[]).includes(v) && v !== e.default) clean[e.topic] = v; }
+  await db.$transaction(async (tx) => {
+    const cur = ((await tx.workspace.findUniqueOrThrow({ where: { id: ctx.workspaceId }, select: { settings: true } })).settings ?? {}) as Record<string, unknown>;
+    await tx.workspace.update({ where: { id: ctx.workspaceId }, data: { settings: { ...cur, notify: clean } as never } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "settings.notifications_updated", targetType: "workspace", targetId: ctx.workspaceId, detail: clean });
+  });
+}

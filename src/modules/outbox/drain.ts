@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { sendMail, mailConfigured, type Mail } from "@/lib/mail";
 import { fmtFrom, SENDERS, type SenderKey } from "@/lib/sender-identities";
 import { internalNoticeTo } from "@/lib/env";
+import { buildReceiptPdf, companyForReceipt } from "@/modules/billing/receipt";
 import { renderEmail, type EmailData, type TemplateName } from "@/emails/templates";
 
 /**
@@ -45,6 +46,13 @@ async function handle(topic: string, key: string, p: Record<string, unknown>) {
     const r = await renderEmail(name, data);
     await sendMail({ from: fromOverride ?? fmtFrom(from), to, subject: r.subject, html: r.html, text: r.text, replyTo: replyOverride ?? SENDERS[from].replyTo, ...extra }, key);
   };
+  const receiptPdf = async (id: unknown) => {
+    if (typeof id !== "string") return undefined;
+    const r = await db.receipt.findUnique({ where: { id } });
+    if (!r) return undefined;
+    const cu = await db.customer.findUnique({ where: { id: r.customerId }, select: { displayName: true, billingAddress: true } });
+    return [{ filename: `${r.ref}.pdf`, content: await buildReceiptPdf(r, { business: cu?.displayName ?? "", billingAddress: cu?.billingAddress ?? null }, await companyForReceipt(r.workspaceId)) }];
+  };
   const finalPdf = async () => {
     const d = await db.contractDocument.findUnique({ where: { contractId_kind: { contractId: String(p.contractId), kind: "final_pdf" } } });
     return d ? [{ filename: `${String(p.ref)}-signed.pdf`, content: Buffer.from(d.bytes) }] : undefined;
@@ -55,8 +63,8 @@ async function handle(topic: string, key: string, p: Record<string, unknown>) {
     case "email.backup_reminder": return send("backup_reminder", p as EmailData["backup_reminder"], "noreply", internalNoticeTo());
     case "email.staff_invitation": return send("staff_invitation", p as EmailData["staff_invitation"], "noreply", String(p.to));
     case "email.invitation": return send("invitation", p as EmailData["invitation"], "noreply", String(p.to));
-    case "email.payment_received": return send("payment_received", p as EmailData["payment_received"], "support", String(p.to));
-    case "email.plan_started": return send("plan_started", p as EmailData["plan_started"], "support", String(p.to));
+    case "email.payment_received": return send("payment_received", p as EmailData["payment_received"], "support", String(p.to), { attachments: await receiptPdf(p.receiptId) });
+    case "email.plan_started": return send("plan_started", p as EmailData["plan_started"], "support", String(p.to), { attachments: await receiptPdf(p.receiptId) });
     case "email.payment_failed": return send("payment_failed", p as EmailData["payment_failed"], "support", String(p.to));
     case "email.payment_notice": return send("payment_notice", p as EmailData["payment_notice"], "noreply", internalNoticeTo());
     case "email.access_request_notice": return send("access_request_notice", p as EmailData["access_request_notice"], "noreply", internalNoticeTo());
@@ -66,6 +74,7 @@ async function handle(topic: string, key: string, p: Record<string, unknown>) {
     case "email.ticket_resolved": return send("ticket_resolved", p as EmailData["ticket_resolved"], "support", String(p.to));
     case "email.ticket_reminder": return send("ticket_reminder", p as EmailData["ticket_reminder"], "support", String(p.to));
     case "email.ticket_team_reminder": return send("ticket_team_reminder", p as EmailData["ticket_team_reminder"], "noreply", internalNoticeTo());
+    case "email.daily_digest": return send("daily_digest", p as EmailData["daily_digest"], "noreply", internalNoticeTo());
     case "email.ticket_received": return send("ticket_received", p as EmailData["ticket_received"], "support", String(p.to));
     case "email.ticket_notice": return send("ticket_notice", p as EmailData["ticket_notice"], "noreply", internalNoticeTo());
     case "email.ticket_reply": return send("ticket_reply", p as EmailData["ticket_reply"], "support", String(p.to));

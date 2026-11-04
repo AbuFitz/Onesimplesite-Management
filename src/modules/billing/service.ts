@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { audit, enqueue } from "@/lib/audit";
 import type { Tx } from "@/lib/db";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
+import { ensureReceipt } from "./receipt";
 import { portalLink, manageLink } from "@/lib/env";
 import { stripe, stripeReady, stripeSubId } from "@/lib/stripe";
 import { can } from "@/modules/identity/permissions";
@@ -76,7 +77,7 @@ const day = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "long", t
 type Mailable = { id: string; workspaceId: string; customerId: string; contractId: string | null; ticketId?: string | null; kind: string; amountMinor: number; currency: string; description: string | null };
 
 /** Emails the customer (whoever paid, else their main contact) and tells the team. Deduped per charge and event. */
-async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "failed" | "cancelled", hint: { email?: string | null; name?: string | null } = {}, key = "") {
+async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "failed" | "cancelled", hint: { email?: string | null; name?: string | null } = {}, key = "", rc?: { key: string; method: "card" | "bank" | "other"; stripeRef?: string | null }) {
   const [cu, k, primary] = await Promise.all([
     tx.customer.findUniqueOrThrow({ where: { id: b.customerId }, select: { displayName: true } }),
     b.contractId ? tx.contract.findUniqueOrThrow({ where: { id: b.contractId }, select: { reference: true } }) : tx.ticket.findUniqueOrThrow({ where: { id: b.ticketId! }, select: { reference: true } }),
@@ -86,10 +87,11 @@ async function payEmails(tx: Tx, b: Mailable, event: "paid" | "plan_started" | "
   const amount = money(b.amountMinor, b.currency);
   const to = hint.email || primary?.email, name = hint.name || primary?.name || "there";
   const dk = `${event}:${b.id}${key}`;
+  const receipt = rc && (event === "paid" || event === "plan_started") ? await ensureReceipt(tx, b, rc) : null;
   if (to && event !== "cancelled") {
     const link = portalLink("/billing");
-    if (event === "paid") await enqueue(tx, b.workspaceId, "email.payment_received", `pay.paid:${dk}`, { to, name, ref: k.reference, what, amount, paidOn: day(new Date()), link });
-    else if (event === "plan_started") await enqueue(tx, b.workspaceId, "email.plan_started", `pay.plan:${dk}`, { to, name, ref: k.reference, amount, link });
+    if (event === "paid") await enqueue(tx, b.workspaceId, "email.payment_received", `pay.paid:${dk}`, { to, name, ref: k.reference, what, amount, paidOn: day(new Date()), link, ...(receipt ? { receiptId: receipt.id, receiptRef: receipt.ref } : {}) });
+    else if (event === "plan_started") await enqueue(tx, b.workspaceId, "email.plan_started", `pay.plan:${dk}`, { to, name, ref: k.reference, amount, link, ...(receipt ? { receiptId: receipt.id, receiptRef: receipt.ref } : {}) });
     else await enqueue(tx, b.workspaceId, "email.payment_failed", `pay.failed:${dk}`, { to, name, ref: k.reference, what, amount, link });
   }
   await enqueue(tx, b.workspaceId, "email.payment_notice", `pay.notice:${dk}`, { to: "internal", event, business: cu.displayName, ref: k.reference, what, amount, link: manageLink(b.contractId ? `/contracts/${b.contractId}` : `/support/${b.ticketId}`) });
@@ -115,7 +117,7 @@ export async function markPaidManually(ctx: StaffCtx, id: string, via: "bank" | 
     await tx.billingIntent.update({ where: { id }, data: { status: "paid", paidAt: new Date(), paidVia: via } });
     if (b.ticketId) await tx.ticket.update({ where: { id: b.ticketId }, data: { chargeStatus: "paid" } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.paid_manually", targetType: "billing_intent", targetId: id, customerId: b.customerId, detail: { via, amountMinor: b.amountMinor } });
-    await payEmails(tx, b, "paid");
+    await payEmails(tx, b, "paid", {}, "", { key: "manual", method: via === "bank" ? "bank" : "other" });
   });
 }
 
@@ -171,8 +173,8 @@ type Obj = Record<string, unknown> & { id?: string; metadata?: Record<string, st
 export async function applyStripeEvent(type: string, o: Obj, workspaceId: string) {
   const intentId = o.metadata?.intentId;
   const who = { email: ((o as { customer_details?: { email?: string } }).customer_details?.email ?? (o as { customer_email?: string }).customer_email) || null, name: (o as { customer_details?: { name?: string } }).customer_details?.name || null };
-  const record = (b: Mailable, action: string, event: "paid" | "plan_started" | "failed" | "cancelled", hint = who, key = "") =>
-    db.$transaction(async (tx) => { await audit(tx, { workspaceId, actor: null, action, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } }); await payEmails(tx, b, event, hint, key); });
+  const record = (b: Mailable, action: string, event: "paid" | "plan_started" | "failed" | "cancelled", hint = who, key = "", rc?: { key: string; method: "card" | "bank" | "other"; stripeRef?: string | null }) =>
+    db.$transaction(async (tx) => { await audit(tx, { workspaceId, actor: null, action, targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } }); await payEmails(tx, b, event, hint, key, rc); });
   if (type === "checkout.session.completed" && intentId) {
     const b = await db.billingIntent.findFirst({ where: { id: intentId, workspaceId } });
     if (!b) return;
@@ -182,7 +184,7 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
     if (b.status === (monthly ? "active" : "paid")) return;
     await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: stripeSubId(o) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null } });
     if (b.ticketId) await db.ticket.update({ where: { id: b.ticketId }, data: { chargeStatus: "paid" } });
-    await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid");
+    await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid", who, "", { key: `cs:${o.id}`, method: "card", stripeRef: (o.payment_intent as string) ?? null });
     return;
   }
   const sub = type.startsWith("customer.subscription.") ? o.id : type.startsWith("invoice.") ? stripeSubId(o) : undefined;
@@ -200,6 +202,10 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
   }
   const next = type === "invoice.payment_failed" ? "past_due" : type === "invoice.paid" ? "active" : type === "customer.subscription.deleted" ? "cancelled"
     : type === "customer.subscription.updated" ? ({ active: "active", trialing: "active", past_due: "past_due", unpaid: "past_due", canceled: "cancelled" } as Record<string, string>)[o.status ?? ""] : undefined;
+  if (type === "invoice.paid" && (o as { billing_reason?: string }).billing_reason !== "subscription_create" && o.id) {
+    const inv = o as { id: string; amount_paid?: number; status_transitions?: { paid_at?: number } };
+    await db.$transaction((tx) => ensureReceipt(tx, b, { key: `in:${inv.id}`, method: "card", stripeRef: inv.id, amountMinor: inv.amount_paid || b.amountMinor, paidAt: inv.status_transitions?.paid_at ? new Date(inv.status_transitions.paid_at * 1000) : new Date() }));
+  }
   if (!next || next === b.status) return;
   await db.billingIntent.update({ where: { id: b.id }, data: { status: next } });
   // Each failed attempt is a new email; coming back to active after a failure is good news but Stripe's receipt covers it.

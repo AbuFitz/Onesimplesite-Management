@@ -21,6 +21,8 @@ export default async function ContractPage({ params, searchParams }: { params: P
   });
   if (!k) notFound();
   const pc = k.customer.contacts[0];
+  const receiptsBy = new Map<string, { id: string; ref: string; paidAt: Date }[]>();
+  for (const r of await db.receipt.findMany({ where: { intentId: { in: k.billingIntents.map((b) => b.id) } }, orderBy: { paidAt: "asc" }, select: { id: true, ref: true, paidAt: true, intentId: true } })) receiptsBy.set(r.intentId, [...(receiptsBy.get(r.intentId) ?? []), r]);
   const live = k.signingRequests.find((r) => r.status === "pending");
   const open = k.status === "draft" || k.status === "awaiting_signature";
   const TONE = { due: "bg-[#f8ecbf] text-[#5c4700]", ok: "bg-[#d7f3e6] text-[#0a5a3d]", warn: "bg-[#fbdccf] text-[#7a2e12]", off: "bg-[#ebe9e1] text-ink/70" } as const;
@@ -81,6 +83,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
                   <li key={b.id} className="rounded-xl border border-[#e3e7e3] bg-[#fafaf8] p-3">
                     <div className="flex items-start justify-between gap-3"><p className="font-semibold">{b.description ?? KIND_LABEL[b.kind] ?? b.kind}</p><p className="font-bold">{money(b.amountMinor, b.currency)}{isMonthly(b.kind) ? <span className="text-sm font-medium text-ink/60"> /mo</span> : ""}</p></div>
                     <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm"><span className={`rounded-md px-2 py-0.5 font-semibold ${TONE[st.tone]}`}>{st.label}</span>{b.paidAt && <span className="text-ink/65">{b.paidVia === "stripe" ? "by card" : "by bank or other"}</span>}</p>
+                    {receiptsBy.get(b.id)?.map((r) => <p key={r.id} className="mt-1.5 text-[13px]"><a className="font-semibold underline" href={`/api/receipts/${r.id}`} target="_blank" rel="noreferrer">Receipt {r.ref}</a> <span className="text-ink/65">· {fmtDate(r.paidAt)}</span></p>)}
                     <div className="mt-2 flex flex-wrap gap-2">
                       {isMonthly(b.kind) && b.stripeSubscriptionId && ["active", "past_due"].includes(b.status) && !b.cancelsAt && <form action={cancelPlanAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Stops the monthly payments after the month they've already paid for">Cancel the monthly plan</button></form>}
                       {b.status === "pending" && !isMonthly(b.kind) && <form action={markPaidAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn}>Mark as paid (bank)</button></form>}

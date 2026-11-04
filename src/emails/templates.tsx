@@ -14,8 +14,8 @@ export type EmailData = {
   password_changed: { to: string; name: string; when: string };
   backup_reminder: { to: string; lastBackup: string; link: string };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
-  payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string };
-  plan_started: { to: string; name: string; ref: string; amount: string; link: string };
+  payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string; receiptRef?: string; receiptId?: string };
+  plan_started: { to: string; name: string; ref: string; amount: string; link: string; receiptRef?: string; receiptId?: string };
   payment_failed: { to: string; name: string; ref: string; what: string; amount: string; link: string };
   payment_notice: { to: string; event: "paid" | "plan_started" | "failed" | "cancelled"; business: string; ref: string; what: string; amount: string; link: string };
   access_request_notice: { to: string; business: string; requester: string; name: string; email: string; level: string; billing: boolean; reason: string; link: string };
@@ -25,6 +25,7 @@ export type EmailData = {
   ticket_resolved: { to: string; name: string; ref: string; title: string; link: string };
   ticket_reminder: { to: string; name: string; ref: string; title: string; days: number; final: boolean; link: string };
   ticket_team_reminder: { to: string; items: { ref: string; business: string; title: string; hours: number; link: string }[] };
+  daily_digest: { to: string; day: string; total: number; groups: { title: string; lines: { text: string; link?: string }[] }[] };
   ticket_received: { to: string; name: string; ref: string; title: string; expect: string; link: string };
   ticket_notice: { to: string; ref: string; title: string; business: string; person: string; priority: string; excerpt: string; link: string; isReply?: boolean };
   ticket_reply: { to: string; name: string; staffName: string; ref: string; title: string; message: string; link: string };
@@ -53,12 +54,12 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       <Layout preview={`Thank you ${d.name.split(" ")[0]}. We've received ${d.amount}.`}>
         <H>Payment received. Thank you!</H>
         <P>Hi {d.name.split(" ")[0]}, we've received your payment. Nothing more to do on this one.</P>
-        <Facts rows={[["For", d.what], ["Amount", d.amount], ["Paid on", d.paidOn], ["Order", d.ref]]} />
+        <Facts rows={[["For", d.what], ["Amount", d.amount], ["Paid on", d.paidOn], ["Order", d.ref], ...(d.receiptRef ? ([["Receipt", d.receiptRef]] as [string, string][]) : [])]} />
         <Action href={d.link}>See your payments</Action>
-        <P>Stripe may also email you a card receipt. If anything looks wrong, just reply to this email.</P>
+        <P>{d.receiptRef ? "Your receipt is attached, and it's saved on your Billing page whenever you need it. " : ""}If anything looks wrong, just reply to this email.</P>
       </Layout>
     ),
-    text: `Payment received. Thank you!\n\nHi ${d.name.split(" ")[0]}, we've received ${d.amount} for ${d.what} (${d.ref}) on ${d.paidOn}. Nothing more to do on this one.\n\nSee your payments: ${d.link}`,
+    text: `Payment received. Thank you!\n\nHi ${d.name.split(" ")[0]}, we've received ${d.amount} for ${d.what} (${d.ref}) on ${d.paidOn}.${d.receiptRef ? ` Receipt ${d.receiptRef} is attached and saved on your Billing page.` : ""} Nothing more to do on this one.\n\nSee your payments: ${d.link}`,
   }),
   plan_started: (d) => ({
     subject: `Your monthly plan is live (${d.ref})`,
@@ -180,6 +181,19 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Waiting on us\n\n${d.items.map((i) => `${i.business} ${i.ref}: ${i.title} (${i.hours}h) ${i.link}`).join("\n")}`,
+  }),
+  daily_digest: (d) => ({
+    subject: `Your daily summary: ${d.total} ${d.total === 1 ? "thing" : "things"}`,
+    node: (
+      <Layout preview={`${d.total} updates from the last day`}>
+        <H>Your daily summary</H>
+        <P>Everything the team was told about since the last summary, in one place. The same items are in the app.</P>
+        {d.groups.map((g) => (
+          <div key={g.title}><P><strong>{g.title}</strong></P>{g.lines.map((l, i) => <P key={i}>{l.link ? <a href={l.link} style={{ color: "#0c6a49" }}>{l.text}</a> : l.text}</P>)}</div>
+        ))}
+      </Layout>
+    ),
+    text: `Your daily summary (${d.total})\n\n${d.groups.map((g) => `${g.title}\n${g.lines.map((l) => `- ${l.text}${l.link ? ` ${l.link}` : ""}`).join("\n")}`).join("\n\n")}`,
   }),
   ticket_received: (d) => ({
     subject: `We've got your ticket: ${d.title} (${d.ref})`,

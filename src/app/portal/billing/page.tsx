@@ -1,4 +1,5 @@
-import { CreditCard, CheckCircle2 } from "lucide-react";
+import { CreditCard, CheckCircle2, Receipt as ReceiptIcon, Download } from "lucide-react";
+import { clientReceipts } from "@/modules/billing/receipt";
 import { redirect } from "next/navigation";
 import { clientCanAny } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
@@ -13,7 +14,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
   const c = await requireClient();
   if (!clientCanAny(c, "billing")) redirect("/overview");
   const sp = await searchParams;
-  const items = await clientBilling(c);
+  const [items, receipts] = await Promise.all([clientBilling(c), clientReceipts(c)]);
   const due = items.filter((b) => !isMonthly(b.kind) && b.status === "pending");
   const monthly = items.filter((b) => isMonthly(b.kind) && b.status !== "cancelled");
   const total = due.reduce((n, b) => n + b.amountMinor, 0);
@@ -23,7 +24,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
       {sp.error && <div role="alert" className="tile bg-blush !p-5 font-semibold">{sp.error}</div>}
       <section className="tile bg-lilac !p-7 sm:!p-10">
         <h1 className="text-4xl sm:text-5xl">Billing</h1>
-        <p className="mt-3 max-w-xl text-lg font-medium">{total > 0 ? `${money(total)} to pay. You can pay by card, securely through Stripe.` : items.length ? "You're all paid up." : "Nothing to pay yet. Your payments appear here once you've signed your order."}</p>
+        <p className="mt-3 max-w-xl text-lg font-medium">{total > 0 ? `${money(total)} to pay. You can pay by card on a secure payment page.` : items.length ? "You're all paid up." : "Nothing to pay yet. Your payments appear here once you've signed your order."}</p>
       </section>
       {items.length > 0 && (
         <section className="tile bg-white" aria-label="Payments">
@@ -41,6 +42,15 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
           </ul>
         </section>
       )}
+      <section className="tile bg-white" aria-labelledby="rc"><h2 id="rc" className="flex items-center gap-2 text-2xl"><ReceiptIcon size={22} aria-hidden /> Your receipts</h2>
+        {receipts.length === 0 ? <p className="mt-2 text-muted">When you pay, your receipt appears here straight away. We email you a copy too.</p> : (
+          <ul className="mt-3 divide-y divide-line">{receipts.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div className="min-w-0"><p className="font-bold">{r.description}</p><p className="text-sm text-muted">{r.ref} · {fmtDate(r.paidAt)} · {r.method === "card" ? "Card" : r.method === "bank" ? "Bank transfer" : "Other"}</p></div>
+              <div className="flex items-center gap-3"><p className="text-lg font-bold">{money(r.amountMinor, r.currency)}</p><a href={`/billing/receipt/${r.id}`} className="btn btn-quiet" download><Download size={15} aria-hidden /> PDF</a></div>
+            </li>))}</ul>
+        )}
+      </section>
       {monthly.some((b) => b.status !== "pending") && (
         <section className="tile bg-white"><h2 className="text-2xl">Your monthly plan</h2><p className="mt-1 text-muted">Update your card, see receipts, or cancel on Stripe's secure page.</p>
           <form action={manageBillingAction} className="mt-4"><button className="btn btn-quiet">Manage card and receipts</button></form></section>
