@@ -91,6 +91,20 @@ model TwoFactor {
   @@map("two_factor")
 }
 
+/// A browser we have seen a person sign in from. Used only to send "new sign-in" notices for unrecognised devices.
+model KnownDevice {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String
+  deviceHash  String
+  label       String
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([userId, deviceHash])
+  @@index([userId])
+  @@map("known_device")
+}
+
 /// A passkey (Face ID, fingerprint, phone or security key) a person signed in with. Written by Better Auth.
 model Passkey {
   id           String    @id

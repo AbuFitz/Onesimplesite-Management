@@ -1,24 +1,19 @@
 "use client";
 import { PasswordInput } from "./password-input";
-import { useActionState, useEffect, useRef, useState } from "react";
-import { login, verifyMfa, acceptInvitation, sendLoginCodeAction } from "@/app/actions/auth";
+import { useActionState, useEffect, useState } from "react";
+import { login, verifyMfa, acceptInvitation } from "@/app/actions/auth";
 import { authClient } from "@/lib/auth-client";
 import { ErrorSummary } from "./ui";
 
-type LoginState = { error?: string; mfa?: "totp" | "otp"; hint?: string } | undefined;
+type LoginState = { error?: string; mfa?: boolean } | undefined;
 export function LoginForm({ staff = false }: { staff?: boolean }) {
   const [s, act, pending] = useActionState(login, undefined as LoginState);
   const [m, mfaAct, mfaPending] = useActionState(verifyMfa, undefined as { error?: string } | undefined);
-  const [note, setNote] = useState("");
-  const [cool, setCool] = useState(0);
   const [canPasskey, setCanPasskey] = useState(false);
   const [pkError, setPkError] = useState("");
   const [pkBusy, setPkBusy] = useState(false);
-  const sentOnce = useRef(false);
+  const [backup, setBackup] = useState(false);
   useEffect(() => { setCanPasskey(typeof window !== "undefined" && !!window.PublicKeyCredential); }, []);
-  useEffect(() => { if (cool <= 0) return; const t = setTimeout(() => setCool(cool - 1), 1000); return () => clearTimeout(t); }, [cool]);
-  const send = async () => { setNote(""); const r = await sendLoginCodeAction(); if (r.sent) { setNote("A new code is on its way."); setCool(30); } else setNote(r.error ?? ""); };
-  useEffect(() => { if (s?.mfa === "otp" && !sentOnce.current) { sentOnce.current = true; setCool(30); void sendLoginCodeAction().then((r) => { if (r.error) setNote(r.error); }); } }, [s?.mfa]);
 
   async function usePasskey() {
     setPkError(""); setPkBusy(true);
@@ -30,21 +25,20 @@ export function LoginForm({ staff = false }: { staff?: boolean }) {
   }
 
   if (s?.mfa) {
-    const otp = s.mfa === "otp";
     return (
       <form action={mfaAct} className="space-y-4">
         <ErrorSummary message={m?.error} />
-        <input type="hidden" name="method" value={s.mfa} />
-        <p className="text-sm">{otp ? <>We've emailed a 6-digit code to <strong>{s.hint}</strong>. It works for 10 minutes.</> : "Open your authenticator app and enter the 6-digit code for OneSimpleSite."}</p>
-        <div><label className="label" htmlFor="code">{otp ? "Code from your email" : "Authenticator code"}</label>
-          <input id="code" name="code" className="field !text-xl tracking-[0.3em]" inputMode="numeric" pattern="[0-9 ]*" maxLength={7} autoComplete="one-time-code" autoFocus required /></div>
+        <input type="hidden" name="backup" value={backup ? "1" : "0"} />
+        <p className="text-sm">{backup ? "Enter one of the backup codes you saved when you set up two-step sign-in. Each works once." : "Open your authenticator app and enter the 6-digit code for OneSimpleSite."}</p>
+        <div><label className="label" htmlFor="code">{backup ? "Backup code" : "Authenticator code"}</label>
+          <input id="code" name="code" className={`field ${backup ? "" : "!text-xl tracking-[0.3em]"}`} inputMode={backup ? "text" : "numeric"} pattern={backup ? undefined : "[0-9 ]*"} maxLength={backup ? 24 : 7} autoComplete="one-time-code" autoFocus required /></div>
         <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm"><input type="checkbox" name="trust" defaultChecked className="size-5 accent-[#0c6a49]" /><span>Trust this device for 30 days <span className="text-muted">(don't ask again here)</span></span></label>
         <button className="btn w-full" disabled={mfaPending}>{mfaPending ? "Checking…" : "Verify and sign in"}</button>
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          {otp && <button type="button" onClick={send} disabled={cool > 0} className="min-h-10 font-semibold underline disabled:no-underline disabled:opacity-60">{cool > 0 ? `Send a new code in ${cool}s` : "Send me a new code"}</button>}
+          <button type="button" onClick={() => setBackup(!backup)} className="min-h-10 font-semibold underline">{backup ? "Use my authenticator app" : "Lost your phone? Use a backup code"}</button>
           <a className="min-h-10 py-2 underline" href="/login">Start again</a>
         </div>
-        {note && <p role="status" className="text-sm text-muted">{note}</p>}
+        <p className="hint">Still stuck? Ask us to reset it and you'll be guided through setting it up again.</p>
       </form>
     );
   }

@@ -5,17 +5,18 @@ import { createTestClient, resetTestClient } from "@/modules/crm/test-client";
 import { DomainError } from "@/lib/errors";
 import { stripe, stripeReady } from "@/lib/stripe";
 import { ZodError } from "zod";
+import { reportProblem } from "@/lib/problems";
 
 const msg = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join(" ") : "Something went wrong and nothing was changed.");
 
 export async function createTestClientAction(fd: FormData) {
   const ctx = await requireStaff("settings.write");
-  try { await createTestClient(ctx, fd.get("email")); } catch (e) { redirect(`/testing?error=${encodeURIComponent(msg(e))}`); }
+  try { await createTestClient(ctx, fd.get("email")); } catch (e) { if (!(e instanceof DomainError) && !(e instanceof ZodError)) await reportProblem({ workspaceId: ctx.workspaceId, area: "test_client", error: e }); redirect(`/testing?error=${encodeURIComponent(msg(e))}`); }
   redirect("/testing?created=1");
 }
 export async function resetTestClientAction() {
   const ctx = await requireStaff("settings.write");
-  try { await resetTestClient(ctx); } catch (e) { redirect(`/testing?error=${encodeURIComponent(msg(e))}`); }
+  try { await resetTestClient(ctx); } catch (e) { if (!(e instanceof DomainError)) await reportProblem({ workspaceId: ctx.workspaceId, area: "test_client", error: e }); redirect(`/testing?error=${encodeURIComponent(msg(e) + (e instanceof DomainError ? "" : " The reason is under Problems below."))}`); }
   redirect("/testing?reset=1");
 }
 

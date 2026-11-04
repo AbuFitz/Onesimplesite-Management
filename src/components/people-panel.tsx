@@ -1,5 +1,5 @@
 import { Avatar } from "@/components/ui";
-import { addPersonAction, updatePersonAction, invitePersonAction, setAccessAction, resetPasswordAction, revokeAccessAction, removePersonAction, approveRequestAction, declineRequestAction, makeMainContactAction } from "@/app/actions/people";
+import { addPersonAction, updatePersonAction, invitePersonAction, setAccessAction, resetPasswordAction, revokeAccessAction, removePersonAction, approveRequestAction, declineRequestAction, makeMainContactAction, resetTwoStepAction } from "@/app/actions/people";
 import { ACCESS_LEVELS, levelLabel } from "@/modules/portal/access";
 import type { Person } from "@/modules/people/service";
 import { timeAgo } from "./ui";
@@ -70,6 +70,7 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                     <span className={`rounded-md px-2 py-0.5 font-semibold ${st.cls}`}>{st.label}</span>
                     {canEdit && p.access === "none" && p.email && <form action={invitePersonAction}><Hidden customerId={customerId} contactId={p.id} /><input type="hidden" name="role" value="member" /><SubmitButton className="btn !min-h-9 text-[13px]" pendingText="Inviting…">Invite as team member</SubmitButton></form>}
                     {p.role && p.access !== "none" && p.access !== "revoked" && <span className="rounded-md bg-bone px-2 py-0.5">{levelLabel(p.role)}{p.billing && p.role !== "admin" ? " + billing" : ""}</span>}
+                    {p.access === "active" && <span className={`rounded-md px-2 py-0.5 font-semibold ${p.twoStep?.authenticator ? "bg-[#e9f6ef] text-[#0a5a3d]" : "bg-bone text-muted"}`}>{p.twoStep?.authenticator ? "Two-step on" : "Two-step not set up"}{p.twoStep?.passkeys ? ` · ${p.twoStep.passkeys} passkey${p.twoStep.passkeys > 1 ? "s" : ""}` : ""}</span>}
                     {p.access === "active" && <span className="text-muted">{p.lastSeen ? `Last seen ${timeAgo(p.lastSeen)}` : "Not signed in yet"}</span>}
                   </div>
                 </div>
@@ -87,6 +88,8 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                           <div className="flex flex-wrap gap-2">
                             <form action={resetPasswordAction}><Hidden customerId={customerId} contactId={p.id} /><SubmitButton className="btn btn-quiet">Send password reset email</SubmitButton></form>
                             <form action={revokeAccessAction}><Hidden customerId={customerId} contactId={p.id} /><button className="btn btn-quiet">Remove portal access and sign them out</button></form>
+                            <details className="rounded-lg border border-line bg-white px-3 py-2"><summary className="min-h-9 cursor-pointer py-1.5 font-semibold">Reset two-step sign-in</summary>
+                              <form action={resetTwoStepAction} className="mt-2 space-y-2"><Hidden customerId={customerId} contactId={p.id} /><p className="text-muted">For when they've lost their phone. This removes their authenticator app, passkeys and trusted devices, signs them out everywhere and emails them. Check it really is {p.name.split(" ")[0]} first (call the number we have on file).</p><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Reset for {p.name.split(" ")[0]}</button></form></details>
                           </div>
                         </>
                       )}

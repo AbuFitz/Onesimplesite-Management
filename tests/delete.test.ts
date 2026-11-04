@@ -36,6 +36,15 @@ describe("test client and deleting a company", () => {
     await db.note.create({ data: { workspaceId: ctx.workspaceId, title: "n", body: "b", ownerId: ctx.staffId, customerId: id, visibility: "team" } });
     await db.opportunity.create({ data: { workspaceId: ctx.workspaceId, customerId: id, title: "Lead" } });
     await db.auditEvent.create({ data: { workspaceId: ctx.workspaceId, action: "x", targetType: "customer", targetId: id, customerId: id } });
+    // the protected trail a signed order leaves behind: signing request, signature, final PDF, receipt, logo, passkey
+    const k = await db.contract.findFirstOrThrow({ where: { customerId: id } });
+    const sr = await db.signingRequest.create({ data: { workspaceId: ctx.workspaceId, contractId: k.id, signerName: "Demo", signerEmail: email, contentText: "x", contentSha256: "abc", expiresAt: new Date(Date.now() + 1e9) } });
+    await db.signatureRecord.create({ data: { workspaceId: ctx.workspaceId, signingRequestId: sr.id, signerName: "Demo", method: "typed", consentText: "c", consentVersion: "1", evidence: {}, evidenceSha256: "e" } });
+    await db.contractDocument.create({ data: { workspaceId: ctx.workspaceId, contractId: k.id, kind: "final_pdf", bytes: Buffer.alloc(8), sha256: "s" } });
+    const bi = await db.billingIntent.findFirstOrThrow({ where: { customerId: id } });
+    await db.receipt.create({ data: { workspaceId: ctx.workspaceId, customerId: id, intentId: bi.id, ref: `RC-${Math.random()}`, key: "k", description: "d", amountMinor: 100, method: "card", paidAt: new Date() } });
+    await db.companyLogo.create({ data: { customerId: id, workspaceId: ctx.workspaceId, bytes: Buffer.alloc(4), type: "image/png" } });
+    await db.passkey.create({ data: { id: `pk-${u.id}`, userId: u.id, publicKey: "k", credentialID: `c-${u.id}`, counter: 0, deviceType: "singleDevice", backedUp: false } });
 
     await expect(deleteBusiness(ctx, id, "wrong name")).rejects.toThrow(/doesn't match/);
     expect(await db.customer.count({ where: { id } })).toBe(1);
@@ -46,6 +55,7 @@ describe("test client and deleting a company", () => {
       files: await db.attachment.count({ where: { customerId: id } }), contracts: await db.contract.count({ where: { customerId: id } }), billing: await db.billingIntent.count({ where: { customerId: id } }),
       projects: await db.project.count({ where: { customerId: id } }), notes: await db.note.count({ where: { customerId: id } }), opps: await db.opportunity.count({ where: { customerId: id } }),
       members: await db.clientMembership.count({ where: { customerId: id } }), invites: await db.invitation.count({ where: { customerId: id } }),
+      signatures: await db.signatureRecord.count({ where: { signingRequestId: sr.id } }), documents: await db.contractDocument.count({ where: { contractId: k.id } }), receipts: await db.receipt.count({ where: { customerId: id } }), logo: await db.companyLogo.count({ where: { customerId: id } }), passkeys: await db.passkey.count({ where: { userId: u.id } }),
     })) expect(n, name).toBe(0);
     expect(await db.user.count({ where: { id: u.id } })).toBe(0);                        // the login that only belonged to this company is gone
     expect(await db.customer.count({ where: { id: other.id } })).toBe(1);               // other companies untouched

@@ -18,10 +18,10 @@ async function save(fd: FormData) {
 }
 
 const MODES: Record<CodeMode, { label: string; about: string }> = {
-  off: { label: "Off", about: "Nobody is asked for a code. Passkeys and authenticator apps are still there for anyone who sets them up." },
-  testers: { label: "Only the emails I list", about: "Switch it on for yourself first. Only these addresses are asked for a code on a new device." },
-  team: { label: "Everyone on the team", about: "Every team member is asked for an emailed code on a new device." },
-  everyone: { label: "Team and customers", about: "Customers are asked too. After one code, their device is trusted for 30 days." },
+  off: { label: "Off", about: "Nobody is required to. Passkeys and authenticator apps are still there for anyone who wants them." },
+  testers: { label: "Only the emails I list", about: "Switch it on for yourself first. Only these addresses are required to set it up." },
+  team: { label: "Everyone on the team", about: "Every team member is guided through setup at their next sign-in." },
+  everyone: { label: "Team and customers", about: "Customers are guided through setup too, on their next sign-in." },
 };
 
 export default async function Security({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
@@ -38,8 +38,8 @@ export default async function Security({ searchParams }: { searchParams: Promise
       <ErrorSummary message={sp.error} />
       <form action={save} className="max-w-3xl">
         <section className="card-section" aria-labelledby="oc">
-          <h2 id="oc">One-time codes on new devices</h2>
-          <p className="mb-3 text-sm text-ink/70">When someone signs in on a device we haven't seen, we email a 6-digit code after their password. Roll it out in stages so nobody is locked out by surprise: start with your own email, check the email arrives, then widen it. You can switch it off here at any time.</p>
+          <h2 id="oc">Require two-step sign-in</h2>
+          <p className="mb-3 text-sm text-ink/70">Anyone required to use it is guided through setting up an authenticator app straight after their password, then asked for a code on each new device (trusted for 30 days). Roll it out in stages so nobody is surprised: start with your own email, then widen it. You can switch it off here at any time, and reset anyone from the Team page or a company's People tab if they lose their phone.</p>
           <fieldset className="space-y-2"><legend className="sr-only">Who is asked for a code</legend>
             {CODE_MODES.map((m) => (
               <label key={m} className="flex cursor-pointer gap-3 rounded-xl border border-[var(--card-line)] bg-white p-3 has-[:checked]:border-ink has-[:checked]:bg-[#eef7f2]"><input type="radio" name="codes" value={m} defaultChecked={sec.codes === m} className="mt-1 size-4 accent-[#0c6a49]" /><span><span className="block font-semibold">{MODES[m].label}</span><span className="text-sm text-ink/70">{MODES[m].about}</span></span></label>
@@ -47,7 +47,7 @@ export default async function Security({ searchParams }: { searchParams: Promise
           </fieldset>
           <div className="mt-4"><label className="label" htmlFor="testers">Emails to test with <span className="font-normal text-muted">(used by “Only the emails I list”, one per line)</span></label>
             <textarea id="testers" name="testers" rows={3} className="field" defaultValue={sec.testers.join("\n")} placeholder="you@onesimplesite.co.uk" /></div>
-          <p className="mt-3 text-sm text-ink/70">Anyone who has set up an authenticator app uses that instead of an emailed code. Remember: the team's sign-in email must be able to receive mail before you widen this.</p>
+          <p className="mt-3 text-sm text-ink/70">Emails are only used for security notices: one when someone signs in from a device we haven't seen, and one when support resets someone.</p>
         </section>
         <SubmitButton pendingText="Saving…">Save</SubmitButton>
       </form>

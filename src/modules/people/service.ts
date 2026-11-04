@@ -8,6 +8,7 @@ import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
 import { memberCan, levelLabel, type AccessLevel } from "@/modules/portal/access";
+import { twoStepStatus } from "@/modules/identity/security";
 import { tidyPhone } from "@/lib/phone";
 import { inviteClientContact } from "@/modules/crm/invite";
 
@@ -20,7 +21,7 @@ const lc = (e?: string | null) => (e ?? "").trim().toLowerCase();
 export type Access = "none" | "invited" | "active" | "revoked";
 export type Person = {
   id: string; name: string; email: string | null; phone: string | null; position: string | null; isPrimary: boolean;
-  access: Access; role: AccessLevel | null; billing: boolean; userId: string | null; lastSeen: Date | null;
+  access: Access; role: AccessLevel | null; billing: boolean; userId: string | null; lastSeen: Date | null; twoStep: { authenticator: boolean; passkeys: number } | null;
 };
 
 /** Everyone at a company, with where they are on portal access. */
@@ -32,13 +33,14 @@ export async function listPeople(ctx: StaffCtx, customerId: string): Promise<Per
     emails.length ? db.user.findMany({ where: { email: { in: emails } }, select: { id: true, email: true, sessions: { orderBy: { updatedAt: "desc" }, take: 1, select: { updatedAt: true } }, clientMemberships: { where: { customerId } } } }) : [],
     db.invitation.findMany({ where: { customerId, kind: "client", acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } } }),
   ]);
+  const steps = await twoStepStatus(users.map((u) => u.id));
   return contacts.map((c) => {
     const e = lc(c.email);
     const u = users.find((x) => lc(x.email) === e);
     const m = u?.clientMemberships[0];
     const inv = invites.find((i) => lc(i.email) === e);
     const access: Access = m ? (m.revokedAt ? "revoked" : "active") : inv ? "invited" : "none";
-    return { id: c.id, name: c.name, email: c.email, phone: c.phone, position: c.position, isPrimary: c.isPrimary, access, role: (m?.role ?? inv?.clientRole ?? null) as AccessLevel | null, billing: m ? m.billing : !!inv?.clientBilling, userId: u?.id ?? null, lastSeen: u?.sessions[0]?.updatedAt ?? null };
+    return { id: c.id, name: c.name, email: c.email, phone: c.phone, position: c.position, isPrimary: c.isPrimary, access, role: (m?.role ?? inv?.clientRole ?? null) as AccessLevel | null, billing: m ? m.billing : !!inv?.clientBilling, userId: u?.id ?? null, lastSeen: u?.sessions[0]?.updatedAt ?? null, twoStep: u ? steps.get(u.id) ?? null : null };
   });
 }
 

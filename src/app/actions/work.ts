@@ -6,6 +6,7 @@ import { transitionProject, postUpdate, requestAsset, addTask } from "@/modules/
 import { createEvent, cancelEvent, updateEvent } from "@/modules/calendar/service";
 import { createNote, saveNote, archiveNote } from "@/modules/notes/service";
 import { DomainError } from "@/lib/errors";
+import { db } from "@/lib/db";
 import { londonToUtc } from "@/lib/london";
 import { flushEmails } from "@/lib/flush-email";
 
@@ -170,3 +171,13 @@ export async function publishLegalAction(fd: FormData) {
   redirect(`/settings/legal/${kind}?published=1`);
 }
 
+
+/** Owners: reset a team member's two-step sign-in. */
+export async function resetTeamTwoStepAction(fd: FormData) {
+  const ctx = await requireStaff("staff.manage");
+  const { resetTwoStep } = await import("@/modules/identity/security");
+  const m = await db.staffMembership.findFirst({ where: { id: String(fd.get("id")), workspaceId: ctx.workspaceId }, select: { userId: true } });
+  try { if (!m?.userId) throw new DomainError("not_found", "They haven't signed in yet, so there is nothing to reset."); await resetTwoStep(ctx, { userId: m.userId, kind: "staff" }); }
+  catch (e) { return back("/team", e); }
+  redirect("/team");
+}

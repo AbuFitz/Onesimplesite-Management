@@ -1,7 +1,7 @@
 import { requireStaff } from "@/modules/identity/session";
 import { listTeam } from "@/modules/identity/team";
 import { ROLE_INFO } from "@/modules/identity/permissions";
-import { changeRoleAction, setActiveAction, setAliasAction } from "@/app/actions/work";
+import { changeRoleAction, setActiveAction, setAliasAction, resetTeamTwoStepAction } from "@/app/actions/work";
 import { InviteStaffForm } from "@/components/invite-staff-form";
 import { queueStatus } from "@/modules/outbox/drain";
 import { retryEmailsAction } from "@/app/actions/work";
@@ -35,6 +35,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ e
                       <button className="btn btn-quiet">Change level</button></form>
                     <form action={setActiveAction}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="active" value={m.status === "deactivated" ? "1" : "0"} />
                       <button className="btn btn-quiet">{m.status === "deactivated" ? "Reactivate" : "Deactivate"}</button></form>
+                    {ctx.role === "owner" && m.userId && <details className="rounded-lg border border-line bg-white px-3 py-1"><summary className="min-h-9 cursor-pointer py-1.5 text-sm font-semibold">Reset two-step</summary><form action={resetTeamTwoStepAction} className="mt-1 mb-2 space-y-2 text-sm"><input type="hidden" name="id" value={m.id} /><p className="max-w-xs text-muted">Removes their authenticator app, passkeys and trusted devices and signs them out. They set it up again at next sign-in.</p><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Reset for {m.displayName.split(" ")[0]}</button></form></details>}
                   </div>
                 )}
               </li>

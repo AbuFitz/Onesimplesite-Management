@@ -6,7 +6,7 @@ export const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "
   { id: "signing_confirmation", label: "Signed copy", audience: "Customer", when: "Straight after they sign. The signed PDF is attached.", sender: "legal" },
   { id: "invitation", label: "Portal invitation", audience: "Customer", when: "When you invite a customer to their client portal.", sender: "noreply" },
   { id: "password_reset", label: "Password reset", audience: "Customer", when: "When anyone asks to reset a password.", sender: "noreply" },
-  { id: "login_code", label: "Sign-in code", audience: "Customer", when: "When someone signs in on a new device and one-time codes are switched on.", sender: "noreply" },
+  { id: "security_notice", label: "Security notice", audience: "Customer", when: "When someone signs in from a device we haven't seen, or support resets their two-step sign-in.", sender: "noreply" },
   { id: "password_changed", label: "Password changed", audience: "Customer", when: "After a password is changed, as a safety notice.", sender: "noreply" },
   { id: "payment_received", label: "Payment received", audience: "Customer", when: "When a website payment is made by card, or you mark one as paid.", sender: "support" },
   { id: "plan_started", label: "Monthly plan live", audience: "Customer", when: "When a customer starts their monthly plan.", sender: "support" },
@@ -40,7 +40,7 @@ export function sampleEmail(id: TemplateName) {
     case "signing_confirmation": return renderEmail(id, { to, signerName: "Alex", title: "Website for Sample Café", ref: "OSS-OF-2026-047", signedAt: "2 November 2026, 14:05", fileSha: "9f2c1ab07d3e44f1", hasAttachment: true });
     case "invitation": return renderEmail(id, { to, businessName: "Sample Café Ltd", inviter: "Jamie at OneSimpleSite", link: PORTAL, expires: "9 November 2026" });
     case "password_reset": return renderEmail(id, { to, name: "Alex", link: PORTAL, minutes: 60 });
-    case "login_code": return renderEmail(id, { to, name: "Alex", code: "482 913".replace(" ", ""), minutes: 10 });
+    case "security_notice": return renderEmail(id, { to, name: "Alex", headline: "New sign-in to your OneSimpleSite account", detail: "We noticed a sign-in from Chrome on Windows.", when: "2 November 2026, 14:05" });
     case "password_changed": return renderEmail(id, { to, name: "Alex", when: "2 November 2026, 14:05" });
     case "signing_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", title: "Website for Sample Café", ref: "OSS-OF-2026-047", business: "Sample Café Ltd", signerName: "Alex", signerEmail: to, signedAt: "2 November 2026, 14:05", link: "https://manage.onesimplesite.co.uk/pipeline?stage=won", fileSha: "9f2c1ab07d3e44f1" });
     case "payment_received": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-OF-2026-047", what: "Website", amount: "£1,200.00", paidOn: "3 November 2026", link: PORTAL });

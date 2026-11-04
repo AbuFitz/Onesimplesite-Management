@@ -8,6 +8,8 @@ export const PROBLEM_LABEL: Record<string, string> = {
   billing_portal: "A customer couldn't open card settings",
   invite_accept: "Someone couldn't finish setting up their login",
   stripe_webhook: "A Stripe payment update couldn't be applied",
+  company_delete: "A company couldn't be deleted",
+  test_client: "The test client couldn't be created or reset",
   email_failed: "An email couldn't be sent",
 };
 

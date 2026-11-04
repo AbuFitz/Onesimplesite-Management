@@ -132,6 +132,6 @@ export async function sendAgreementAction(fd: FormData) {
 export async function deleteBusinessAction(fd: FormData) {
   const ctx = await requireStaff("customer.write");
   const id = String(fd.get("id"));
-  try { await deleteBusiness(ctx, id, String(fd.get("typed") ?? "")); } catch (e) { redirect(`/customers/${id}?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't delete it.")}`); }
+  try { await deleteBusiness(ctx, id, String(fd.get("typed") ?? "")); } catch (e) { if (!(e instanceof DomainError)) { const { reportProblem } = await import("@/lib/problems"); await reportProblem({ workspaceId: ctx.workspaceId, area: "company_delete", error: e, customerId: id }); } redirect(`/customers/${id}?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't delete it. The reason has been recorded on the Testing page under Problems.")}`); }
   redirect("/customers?deleted=1");
 }

@@ -8,13 +8,21 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 const host = (u?: string) => { try { return u ? new URL(u).host : undefined; } catch { return undefined; } };
 
-export function proxy(req: NextRequest) {
+/** A random id for this browser, so we can tell a new device from one we know. It identifies nothing about the person. */
+function withDevice(req: NextRequest, res: NextResponse) {
+  if (!req.cookies.get("oss_did")) res.cookies.set("oss_did", crypto.randomUUID(), { httpOnly: true, sameSite: "lax", secure: process.env.APP_ENV === "production", maxAge: 60 * 60 * 24 * 400, path: "/" });
+  return res;
+}
+
+export function proxy(req: NextRequest) { return withDevice(req, route(req)); }
+
+function route(req: NextRequest): NextResponse {
   const manage = host(process.env.MANAGE_ORIGIN ?? "http://manage.localhost:3000");
   const portal = host(process.env.PORTAL_ORIGIN ?? "http://portal.localhost:3000");
   const h = req.headers.get("host");
   const { pathname } = req.nextUrl;
   if (h === portal) {
-    if (pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || /^\/(icon|apple-icon|favicon)(\.|$)/.test(pathname) || pathname === "/manifest.webmanifest" || /^\/icon-[\w-]+\.png$/.test(pathname) || pathname === "/login" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next();
+    if (pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || /^\/(icon|apple-icon|favicon)(\.|$)/.test(pathname) || pathname === "/manifest.webmanifest" || /^\/icon-[\w-]+\.png$/.test(pathname) || pathname === "/login" || pathname === "/setup-security" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next();
     if (pathname.startsWith("/portal")) return NextResponse.next();
     const url = req.nextUrl.clone();
     url.pathname = `/portal${pathname === "/" ? "/overview" : pathname}`;

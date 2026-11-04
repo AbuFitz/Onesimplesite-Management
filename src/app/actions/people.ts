@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { requireStaff } from "@/modules/identity/session";
 import { setPrimaryContact, addPerson, updatePerson, invitePerson, setAccess, sendPasswordReset, revokeAccess, removePerson, approveRequest, declineRequest } from "@/modules/people/service";
+import { resetTwoStep } from "@/modules/identity/security";
+import { db } from "@/lib/db";
 import { flushEmails } from "@/lib/flush-email";
 import { DomainError } from "@/lib/errors";
 
@@ -33,3 +35,13 @@ export async function revokeAccessAction(fd: FormData) { return run(fd, "Access 
 export async function removePersonAction(fd: FormData) { return run(fd, "Person removed.", (c) => removePerson(c, String(fd.get("contactId")))); }
 export async function approveRequestAction(fd: FormData) { return run(fd, "Approved. They've been invited.", (c) => approveRequest(c, String(fd.get("requestId")), level(fd))); }
 export async function declineRequestAction(fd: FormData) { return run(fd, "Declined. The requester has been told.", (c) => declineRequest(c, String(fd.get("requestId")), String(fd.get("reason") ?? ""))); }
+
+/** Support: reset a customer's two-step sign-in (authenticator app, passkeys, trusted devices) and sign them out. */
+export async function resetTwoStepAction(fd: FormData) {
+  return run(fd, "Two-step sign-in reset. They've been signed out and emailed; they'll set it up again at their next sign-in.", async (c) => {
+    const contact = await db.contact.findFirst({ where: { id: String(fd.get("contactId")), workspaceId: c.workspaceId }, select: { email: true } });
+    const user = contact?.email ? await db.user.findFirst({ where: { email: { equals: contact.email, mode: "insensitive" } }, select: { id: true } }) : null;
+    if (!user) throw new DomainError("not_found", "They don't have a login yet, so there is nothing to reset.");
+    await resetTwoStep(c, { userId: user.id, kind: "client" });
+  });
+}
