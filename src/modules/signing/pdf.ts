@@ -72,7 +72,7 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
     if (n === 0) {
       const mh = 112 * 2.835; // the artwork runs 112mm, dissolving into the page
       page.drawImage(mastImg, { x: 0, y: H - mh, width: A4[0], height: mh });
-      wordmark(page, WORDMARK_REVERSED, M, H - 28, 142);
+      wordmark(page, WORDMARK_REVERSED, M, H - 28, 172);
       rtext(page, upper(`Prepared for ${i.preparedFor ?? i.signerName}`), A4[0] - M, H - 47, 6.8, mono, BONE_T);
       const words = safe(i.title).toUpperCase().split(/\s+/); const last = words.pop() ?? "";
       const size = i.title.length > 26 ? 24 : 29; let tx = M; const ty = H - 100;
@@ -87,7 +87,7 @@ export async function buildSignedPdf(i: SignedPdfInput): Promise<Buffer> {
       }
       y = H - FIRST_TOP;
     } else {
-      wordmark(page, WORDMARK_COLOUR, M, H - 26, 96);
+      wordmark(page, WORDMARK_COLOUR, M, H - 26, 112);
       rtext(page, safe(`${i.title.toUpperCase()}   REF ${i.reference}`), A4[0] - M, H - 36, 6.6, mono, INK);
       page.drawLine({ start: { x: M, y: H - 62 }, end: { x: M + W, y: H - 62 }, thickness: 0.6, color: HAIR });
       page.drawRectangle({ x: M, y: H - 62.5, width: 62, height: 2.5, color: MOSS });

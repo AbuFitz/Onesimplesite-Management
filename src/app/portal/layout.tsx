@@ -19,7 +19,7 @@ export default async function PortalLayout({ children }: { children: React.React
       <LiveRefresh seconds={30} />
       <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <Link href="/overview" aria-label="Client portal home"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={140} height={29} priority /></Link>
+          <Link href="/overview" aria-label="Client portal home"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={164} height={34} priority /></Link>
           <div className="flex items-center gap-3">
             <span className="hidden max-w-[16rem] truncate text-sm font-semibold sm:inline">{company}</span>
             <Avatar name={c.name} size={38} staffId={c.userId} base="/avatar/u" />

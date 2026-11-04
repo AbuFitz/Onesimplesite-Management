@@ -16,13 +16,13 @@ describe("test emails", () => {
     const before = new Set(readdirSync(".mail-sink").filter((f) => f.endsWith(".json")));
     const results = await sendTestEmails(c);
     expect(results.every((r) => r.ok)).toBe(true);
-    expect(results).toHaveLength(24);
+    expect(results).toHaveLength(25);
     const mails = readdirSync(".mail-sink").filter((f) => f.endsWith(".json") && !before.has(f)).map((f) => JSON.parse(readFileSync(`.mail-sink/${f}`, "utf8")));
-    expect(mails).toHaveLength(24);
+    expect(mails).toHaveLength(25);
     expect(new Set(mails.map((m) => m.to))).toEqual(new Set(["hello@onesimplesite.co.uk"]));
     expect(mails.every((m) => m.subject.startsWith("[TEST] "))).toBe(true);
     expect(mails.filter((m) => m.attachments?.length).length).toBe(2);
-    expect(mails.every((m) => /<img/.test(m.html) && m.html.includes("#0C6A49"))).toBe(true); // wordmark and brand green are in every one
+    expect(mails.every((m) => /<img/.test(m.html) && (m.html.includes("#0C6A49") || m.html.includes("#4FD9A0")))).toBe(true); // wordmark and brand green are in every one
     expect(await db.auditEvent.count({ where: { workspaceId: c.workspaceId, action: "email.test_sent" } })).toBe(1);
   });
   it("can send just one, and is refused to roles without settings access", async () => {

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { DomainError, forbidden, notFound, stale } from "@/lib/errors";
 import { can } from "@/modules/identity/permissions";
+import { requestBalance } from "@/modules/billing/service";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ProjectStage } from "@/generated/prisma/enums";
 
@@ -52,6 +53,8 @@ export async function transitionProject(ctx: StaffCtx, id: string, to: ProjectSt
     if (TERMINAL.includes(p.stage) && !reason?.trim()) throw new DomainError("validation", "This project is finished. Say why you're reopening it.");
     const r = await tx.project.updateMany({ where: { id, version: expectedVersion }, data: { stage: to, version: { increment: 1 } } });
     if (r.count === 0) throw stale();
+    // When the site is ready to launch, the final payment is asked for automatically.
+    if (to === "ready_to_launch" && p.contractId) await requestBalance(tx, ctx.workspaceId, p.contractId, { userId: ctx.userId, label: ctx.name });
     const order = typeOf(p.workType).stages;
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "project.stage", targetType: "project", targetId: id, customerId: p.customerId, detail: { from: p.stage, to, reason: reason?.trim() || undefined, skipped: order.slice(order.indexOf(p.stage) + 1, order.indexOf(to)).length > 0 && order.indexOf(to) > order.indexOf(p.stage) ? order.slice(order.indexOf(p.stage) + 1, order.indexOf(to)) : undefined } });
   });

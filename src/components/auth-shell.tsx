@@ -17,7 +17,7 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
     return (
       <div className="grid min-h-dvh place-items-center bg-bone px-5 py-10">
         <main id="main" className="w-full max-w-sm">
-          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={190} height={39} priority className="mx-auto mb-8" />
+          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={220} height={45} priority className="mx-auto mb-8" />
           <div className="card p-7">
             <h1 className="text-2xl">{title}</h1>
             {intro && <p className="mt-1.5 text-muted">{intro}</p>}

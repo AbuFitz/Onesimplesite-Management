@@ -59,6 +59,7 @@ export async function startPayment(c: ClientCtx, intentId: string): Promise<stri
   if (!b) throw notFound();
   if (b.status === "paid" || b.status === "active") throw new DomainError("conflict", "This one is already paid.");
   if (b.status === "cancelled") throw new DomainError("conflict", "This charge was cancelled. Please contact us.");
+  if (b.kind === "balance" && !b.requestedAt) throw new DomainError("conflict", "Your final payment isn't due yet. We'll email you as soon as your website is ready to launch.");
   const monthly = isMonthly(b.kind);
   const make = async (fresh: boolean) => {
     const customer = await stripeCustomer(b.customerId, c.email || undefined, c.name ?? "", fresh);
@@ -121,6 +122,28 @@ const needWrite = (ctx: StaffCtx) => { if (!can(ctx.role, "billing.write")) thro
 export async function staffBilling(ctx: StaffCtx, customerId: string) {
   need(ctx);
   return db.billingIntent.findMany({ where: { workspaceId: ctx.workspaceId, customerId }, orderBy: { createdAt: "asc" }, include });
+}
+
+/** True while a final payment has not been asked for yet: shown to the customer as "due before launch" with no Pay button. */
+export const isScheduled = (b: { kind: string; status: string; requestedAt?: Date | null }) => b.kind === "balance" && b.status === "pending" && !b.requestedAt;
+
+/** Asks the customer for the final payment: unlocks Pay now and emails them. Safe to run twice. Used by the team's button and when a project is ready to launch. */
+export async function requestBalance(tx: Tx, workspaceId: string, contractId: string, actor: { userId: string | null; label: string } | null) {
+  const b = await tx.billingIntent.findFirst({ where: { workspaceId, contractId, kind: "balance", status: "pending", requestedAt: null } });
+  if (!b) return false;
+  await tx.billingIntent.update({ where: { id: b.id }, data: { requestedAt: new Date() } });
+  const [k, primary] = await Promise.all([
+    tx.contract.findUniqueOrThrow({ where: { id: contractId }, select: { reference: true } }),
+    tx.contact.findFirst({ where: { customerId: b.customerId, email: { not: null } }, orderBy: { isPrimary: "desc" }, select: { name: true, email: true } }),
+  ]);
+  await audit(tx, { workspaceId, actor: actor ? { userId: actor.userId as string, label: actor.label } : null, action: "billing.final_payment_requested", targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } });
+  if (primary?.email) await enqueue(tx, workspaceId, "email.balance_requested", `pay.balance:${b.id}`, { to: primary.email, name: primary.name, ref: k.reference, amount: money(b.amountMinor, b.currency), link: portalLink("/billing") });
+  return true;
+}
+export async function requestFinalPayment(ctx: StaffCtx, contractId: string) {
+  needWrite(ctx);
+  const done = await db.$transaction((tx) => requestBalance(tx, ctx.workspaceId, contractId, { userId: ctx.userId, label: ctx.name }));
+  if (!done) throw new DomainError("conflict", "There's no final payment waiting to be requested on this order.");
 }
 
 /** Paid by bank transfer, cash or anything outside Stripe. */

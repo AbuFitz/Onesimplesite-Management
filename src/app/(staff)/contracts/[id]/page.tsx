@@ -1,5 +1,5 @@
-import { plainStatus, KIND_LABEL, isMonthly } from "@/modules/billing/service";
-import { markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction, setPlanOfferAction } from "@/app/actions/billing";
+import { plainStatus, KIND_LABEL, isMonthly, isScheduled } from "@/modules/billing/service";
+import { requestFinalPaymentAction, markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction, setPlanOfferAction } from "@/app/actions/billing";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -80,7 +80,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
           <Panel title="Payments" icon={CreditCard} tone="lilac">
             {k.billingIntents.length === 0 ? <p className="text-[15px] text-ink/70">Payments appear here once the agreement is signed.</p> : (
               <>
-                <ul className="space-y-3">{k.billingIntents.map((b) => { const st = plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt); return (
+                <ul className="space-y-3">{k.billingIntents.map((b) => { const st = isScheduled(b) ? { label: "Due before launch", tone: "off" as const } : plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt); return (
                   <li key={b.id} className="rounded-xl border border-[#e3e7e3] bg-[#fafaf8] p-3">
                     <div className="flex items-start justify-between gap-3"><p className="font-semibold">{b.description ?? KIND_LABEL[b.kind] ?? b.kind}</p><p className="font-bold">{money(b.amountMinor, b.currency)}{isMonthly(b.kind) ? <span className="text-sm font-medium text-ink/60"> /mo</span> : ""}</p></div>
                     <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm"><span className={`rounded-md px-2 py-0.5 font-semibold ${TONE[st.tone]}`}>{st.label}</span>{b.paidAt && <span className="text-ink/65">{b.paidVia === "stripe" ? "by card" : "by bank or other"}</span>}</p>
@@ -89,6 +89,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
                     {receiptsBy.get(b.id)?.map((r) => <p key={r.id} className="mt-1.5 text-[13px]"><a className="font-semibold underline" href={`/api/receipts/${r.id}`} target="_blank" rel="noreferrer">Receipt {r.ref}</a> <span className="text-ink/65">· {fmtDate(r.paidAt)}</span></p>)}
                     <div className="mt-2 flex flex-wrap gap-2">
                       {isMonthly(b.kind) && b.stripeSubscriptionId && ["active", "past_due"].includes(b.status) && !b.cancelsAt && <form action={cancelPlanAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Stops the monthly payments after the month they've already paid for">Cancel the monthly plan</button></form>}
+                      {isScheduled(b) && <form action={requestFinalPaymentAction}><input type="hidden" name="contractId" value={k.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Emails them and lets them pay. This also happens by itself when the project reaches Ready to launch.">Ask for the final payment now</button></form>}
                       {b.status === "pending" && !isMonthly(b.kind) && <form action={markPaidAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn}>Mark as paid (bank)</button></form>}
                       {isMonthly(b.kind) && b.status === "pending" && <details className="w-full rounded-lg border border-line bg-white px-3 py-1"><summary className="min-h-9 cursor-pointer py-1.5 text-[13px] font-semibold">{b.trialMonths > 0 ? "Change the free period" : "Give free months"}</summary>
                         <form action={setPlanOfferAction} className="mb-2 mt-1 flex flex-wrap items-end gap-2"><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} />

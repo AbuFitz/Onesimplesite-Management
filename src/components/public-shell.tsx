@@ -8,7 +8,7 @@ export function PublicShell({ label, children, narrow = false }: { label?: strin
     <div className="min-h-dvh bg-white">
       <header className="border-b border-line" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className={`mx-auto flex h-14 items-center justify-between px-5 ${narrow ? "max-w-xl" : "max-w-3xl"}`}>
-          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={126} height={26} priority />
+          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={150} height={31} priority />
           {label && <span className="flex items-center gap-1.5 text-sm text-muted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>{label}</span>}
         </div>
       </header>
@@ -23,7 +23,7 @@ export function SignShell({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-[#f4f3ee] bg-[radial-gradient(60rem_30rem_at_90%_-5%,#dff5ea,transparent),radial-gradient(40rem_26rem_at_-5%_20%,#fbf3d5,transparent)]">
       <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5">
-          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={132} height={27} priority />
+          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={150} height={31} priority />
           <span className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm text-muted"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>Secure signing</span>
         </div>
       </header>

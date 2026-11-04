@@ -52,8 +52,8 @@ export default async function StaffLayout({ children, modal }: { children: React
       )}
       <header className="sticky top-0 z-30 border-b border-line bg-white" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
-          <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[11rem]">
-            <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={126} height={26} priority />
+          <Link href="/" aria-label="OneSimpleSite Manage, home" className="flex items-center gap-2.5 lg:w-[12.5rem]">
+            <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={140} height={29} priority />
           </Link>
           <CommandPalette actions={create} />
           <div className="ml-auto flex items-center gap-2">

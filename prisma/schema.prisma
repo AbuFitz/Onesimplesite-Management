@@ -601,6 +601,7 @@ model BillingIntent {
   trialMonths Int       @default(0) // free months at the start of a monthly plan (a promotion agreed with this company)
   trialEndsAt DateTime? // set when the plan starts: when the free period ends and the first payment is due
   promoLabel  String? // what the offer is called, e.g. "Launch offer"
+  requestedAt DateTime? // when we asked them to pay the final payment (until then it is shown as "due before launch" and cannot be paid)
 }
 
 // ───────── Calendar & Notes ─────────

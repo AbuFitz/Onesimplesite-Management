@@ -18,6 +18,7 @@ export type EmailData = {
   payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string; receiptRef?: string; receiptId?: string };
   plan_started: { to: string; name: string; ref: string; amount: string; link: string; freeUntil?: string; receiptRef?: string; receiptId?: string };
   payment_failed: { to: string; name: string; ref: string; what: string; amount: string; link: string };
+  balance_requested: { to: string; name: string; ref: string; amount: string; link: string; replyTo?: string };
   payment_notice: { to: string; event: "paid" | "plan_started" | "failed" | "cancelled"; business: string; ref: string; what: string; amount: string; link: string };
   access_request_notice: { to: string; business: string; requester: string; name: string; email: string; level: string; billing: boolean; reason: string; link: string };
   access_request_decision: { to: string; name: string; business: string; person: string; approved: boolean; note: string; link: string };
@@ -73,6 +74,18 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Your monthly plan is live\n\nHi ${d.name.split(" ")[0]}, your plan (${d.amount} a month, order ${d.ref}) is now active.${d.freeUntil ? ` You pay nothing until ${d.freeUntil}, when ${d.amount} is first taken.` : ""} Manage it any time: ${d.link}`,
+  }),
+  balance_requested: (d) => ({
+    subject: `Your website is nearly ready: final payment of ${d.amount} (${d.ref})`,
+    node: (
+      <Layout preview={`Your final payment of ${d.amount} is ready to pay.`}>
+        <H>Your website is nearly ready to go live</H>
+        <P>Hi {d.name.split(" ")[0]}, thank you for your deposit. The last step before launch is the final payment of {d.amount} for order {d.ref}. You can pay it any time from your portal, on a secure card payment page.</P>
+        <Action href={d.link}>Pay the final {d.amount}</Action>
+        <P>We launch as soon as it is paid. Questions? Just reply to this email.</P>
+      </Layout>
+    ),
+    text: `Your website is nearly ready to go live\n\nHi ${d.name.split(" ")[0]}, thank you for your deposit. The last step before launch is the final payment of ${d.amount} for order ${d.ref}. Pay it from your portal: ${d.link}\n\nWe launch as soon as it is paid.`,
   }),
   payment_failed: (d) => ({
     subject: `We couldn't take your payment (${d.ref})`,

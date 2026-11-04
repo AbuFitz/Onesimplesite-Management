@@ -10,6 +10,7 @@ export const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "
   { id: "password_changed", label: "Password changed", audience: "Customer", when: "After a password is changed, as a safety notice.", sender: "noreply" },
   { id: "payment_received", label: "Payment received", audience: "Customer", when: "When a website payment is made by card, or you mark one as paid.", sender: "support" },
   { id: "plan_started", label: "Monthly plan live", audience: "Customer", when: "When a customer starts their monthly plan.", sender: "support" },
+  { id: "balance_requested", label: "Final payment ready", audience: "Customer", when: "When the website is nearly ready and we ask for the final payment.", sender: "support" },
   { id: "payment_failed", label: "Payment didn't go through", audience: "Customer", when: "If a monthly payment is declined.", sender: "support" },
   { id: "payment_notice", label: "Payment update for us", audience: "Team", when: "When a payment is received, a plan starts or is cancelled, or a payment fails.", sender: "noreply" },
   { id: "access_request_decision", label: "Access request answered", audience: "Customer", when: "When we approve or decline a request to add someone to the portal.", sender: "support" },
@@ -45,6 +46,7 @@ export function sampleEmail(id: TemplateName) {
     case "signing_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", title: "Website for Sample Café", ref: "OSS-OF-2026-047", business: "Sample Café Ltd", signerName: "Alex", signerEmail: to, signedAt: "2 November 2026, 14:05", link: "https://manage.onesimplesite.co.uk/pipeline?stage=won", fileSha: "9f2c1ab07d3e44f1" });
     case "payment_received": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-OF-2026-047", what: "Website", amount: "£1,200.00", paidOn: "3 November 2026", link: PORTAL });
     case "plan_started": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-OF-2026-047", amount: "£49.00", link: PORTAL });
+    case "balance_requested": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-OF-2026-047", amount: "£600.00", link: PORTAL });
     case "payment_failed": return renderEmail(id, { to, name: "Alex Sample", ref: "OSS-OF-2026-047", what: "Monthly plan", amount: "£49.00", link: PORTAL });
     case "payment_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", event: "paid", business: "Sample Café Ltd", ref: "OSS-OF-2026-047", what: "Website", amount: "£1,200.00", link: MANAGE });
     case "access_request_decision": return renderEmail(id, { to, name: "Alex Sample", business: "Sample Café Ltd", person: "Sam Colleague", approved: true, note: "", link: PORTAL });

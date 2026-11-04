@@ -18,9 +18,10 @@ export function ProposalFields({ initial, defaults, plans = [] }: { initial?: In
       <div><label className="label" htmlFor="dp">Deposit due when they sign</label><select id="dp" name="depositPercent" className="field" defaultValue={initial?.requirements?.depositPercent ?? ""}><option value="">No deposit, pay the website fee in one go</option>{["10", "20", "25", "30", "40", "50", "60", "70", "75"].map((n) => <option key={n} value={n}>{n}% deposit, the rest before launch</option>)}</select><p className="hint mt-1">Shown on the agreement they sign, so there are no surprises. The two payments are created for you once they sign.</p></div>
       <fieldset className="rounded-xl border border-line p-4"><legend className="px-1 text-sm font-semibold">Offer for this company <span className="font-normal text-muted">(optional)</span></legend>
         <p className="mb-3 text-sm text-muted">A promotion just for them. It is written into the order they sign, and the free months and discount are applied automatically when they pay.</p>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div><label className="label" htmlFor="pfm">Free months on the monthly plan</label><select id="pfm" name="promoFreeMonths" className="field" defaultValue={initial?.requirements?.promoFreeMonths ?? ""}><option value="">None</option>{["1", "2", "3", "6", "12"].map((n) => <option key={n} value={n}>{n} month{n === "1" ? "" : "s"} free</option>)}</select></div>
-          <div><label className="label" htmlFor="pd">Discount on the website fee (£)</label><input id="pd" name="promoDiscount" inputMode="decimal" className="field" placeholder="0" defaultValue={initial?.requirements?.promoDiscount ?? ""} /></div>
+          <div><label className="label" htmlFor="pp">Percent off the website fee (%)</label><input id="pp" name="promoPercent" inputMode="decimal" className="field" placeholder="e.g. 10" defaultValue={initial?.requirements?.promoPercent ?? ""} /></div>
+          <div><label className="label" htmlFor="pd">Or pounds off (£)</label><input id="pd" name="promoDiscount" inputMode="decimal" className="field" placeholder="0" defaultValue={initial?.requirements?.promoDiscount ?? ""} /></div>
           <div><label className="label" htmlFor="pl">What to call it</label><input id="pl" name="promoLabel" className="field" placeholder="e.g. Launch offer" maxLength={60} defaultValue={initial?.requirements?.promoLabel ?? ""} /></div>
         </div>
       </fieldset>

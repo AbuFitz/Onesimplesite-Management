@@ -11,8 +11,11 @@ import type { ClientCtx } from "@/modules/portal/service";
 describe("offers", () => {
   it("reads an offer from the order and counts months properly", () => {
     expect(promoFrom({})).toBeNull();
-    expect(promoFrom({ promoFreeMonths: "1", promoLabel: "Launch offer" })).toEqual({ label: "Launch offer", freeMonths: 1, discountMinor: 0 });
-    expect(promoFrom({ promoDiscount: "150.50" })).toEqual({ label: "Special offer", freeMonths: 0, discountMinor: 15050 });
+    expect(promoFrom({ promoFreeMonths: "1", promoLabel: "Launch offer" })).toEqual({ label: "Launch offer", freeMonths: 1, discountMinor: 0, percent: 0 });
+    expect(promoFrom({ promoDiscount: "150.50" })).toEqual({ label: "Special offer", freeMonths: 0, discountMinor: 15050, percent: 0 });
+    expect(promoFrom({ promoPercent: "10" }, 120000)).toMatchObject({ percent: 10, discountMinor: 12000 });
+    expect(promoFrom({ promoPercent: "10", promoDiscount: "50" }, 120000)).toMatchObject({ discountMinor: 17000 });      // both add up
+    expect(promoFrom({ promoPercent: "100" }, 120000)!.discountMinor).toBe(120000); expect(promoFrom({ promoDiscount: "5000" }, 120000)!.discountMinor).toBe(120000);   // never more than the fee
     expect(addMonths(new Date("2026-01-31T10:00:00Z"), 1).toISOString().slice(0, 10)).toBe("2026-02-28");
     expect(addMonths(new Date("2026-11-04T10:00:00Z"), 1).toISOString().slice(0, 10)).toBe("2026-12-04");
     expect(trialDays(new Date("2026-11-04T10:00:00Z"), 1)).toBe(30);

@@ -21,6 +21,14 @@ describe("deposit on signing", () => {
     expect(t).toContain("| -£200.00 |"); expect(t).not.toContain("−£");
   });
 
+  it("takes a percentage off and says so on the first page, the price table and the bills", async () => {
+    const t = composeAgreement({ ...base, requirements: { promoPercent: "10", promoLabel: "Launch offer", depositPercent: "50" } } as never);
+    const first = t.slice(0, t.indexOf("## The project"));
+    expect(first).toContain("Launch offer: 10% off (£120.00) the website fee, so £1,080.00 to pay instead of £1,200.00");
+    expect(first).toContain("£540.00 (50% of £1,080.00)");
+    expect(t).toContain("| Launch offer: 10% discount on the website fee |  | -£120.00 |");
+  });
+
   it("creates the deposit and final payment when the order completes, and no single website fee", async () => {
     const w = await db.workspace.create({ data: { name: `dp-${Math.random()}` } });
     const c = await db.customer.create({ data: { workspaceId: w.id, reference: `OSS-CU-${Math.random().toString(36).slice(2, 8)}`, displayName: "Harbour Bakery" } });
