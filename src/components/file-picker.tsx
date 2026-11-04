@@ -1,6 +1,7 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Paperclip, X } from "lucide-react";
+import { ImageLink } from "./lightbox";
 
 const MAX_FILES = 4, MAX_TOTAL = 4_000_000, MAX_EDGE = 1600;
 
@@ -44,7 +45,7 @@ export function FilePicker({ label = "Add pictures or a PDF", hint, accept = "im
         <ul className="mt-2 flex flex-wrap gap-2" aria-label="Files to send">
           {files.map((f, i) => (
             <li key={`${f.name}-${i}`} className="inline-flex items-center gap-2 rounded-lg border border-line bg-white py-1 pl-3 pr-1 text-sm">
-              <span className="max-w-40 truncate">{f.name}</span><span className="text-muted">{kb(f.size)}</span>
+              {f.type.startsWith("image/") ? <Preview file={f} /> : <span className="max-w-40 truncate">{f.name}</span>}<span className="text-muted">{kb(f.size)}</span>
               <button type="button" onClick={() => sync(files.filter((_, j) => j !== i))} className="grid size-7 place-items-center rounded-md hover:bg-bone" aria-label={`Remove ${f.name}`}><X size={14} aria-hidden /></button>
             </li>
           ))}
@@ -54,17 +55,30 @@ export function FilePicker({ label = "Add pictures or a PDF", hint, accept = "im
   );
 }
 
+/** A picture chosen but not sent yet: a thumbnail you can click to check it is the right one. */
+function Preview({ file }: { file: File }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => { const u = URL.createObjectURL(file); setUrl(u); return () => URL.revokeObjectURL(u); }, [file]);
+  if (!url) return <span className="max-w-40 truncate">{file.name}</span>;
+  return (
+    <ImageLink src={url} name={file.name} className="inline-flex min-h-9 items-center gap-2 rounded-md hover:underline">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" className="size-8 rounded object-cover" /><span className="max-w-32 truncate">{file.name}</span>
+    </ImageLink>
+  );
+}
+
 /** Thumbnails and file chips for a list of attachments. */
 export function Files({ items, base }: { items: { id: string; filename: string; contentType: string; internal?: boolean }[]; base: string }) {
   if (!items.length) return null;
   return (
     <ul className="mt-3 flex flex-wrap gap-2">
       {items.map((a) => a.contentType.startsWith("image/") ? (
-        <li key={a.id}><a href={`${base}/${a.id}`} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-line bg-bone" title={a.filename}>
+        <li key={a.id}><ImageLink src={`${base}/${a.id}`} name={a.filename} download={`${base}/${a.id}`} className="block overflow-hidden rounded-xl border border-line bg-bone text-left">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`${base}/${a.id}`} alt={a.filename} loading="lazy" className="h-28 w-auto max-w-56 object-cover" />
           {a.internal && <span className="block bg-ink px-2 py-0.5 text-xs font-semibold text-white">Only we see this</span>}
-        </a></li>
+        </ImageLink></li>
       ) : (
         <li key={a.id}><a href={`${base}/${a.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-white px-4 text-sm font-semibold hover:bg-[#e6e2d8]"><Paperclip size={15} aria-hidden />{a.filename}{a.internal && <span className="text-muted">(only we see this)</span>}</a></li>
       ))}

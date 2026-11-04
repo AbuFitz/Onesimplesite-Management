@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { can } from "@/modules/identity/permissions";
 import { TEAM_WAIT_HOURS } from "@/modules/support/reminders";
 import { STAGE_GUIDE } from "@/modules/projects/service";
+import { PROBLEM_LABEL } from "@/lib/problems";
 import { lastExport, isBackupDue } from "@/modules/export/service";
 import type { StaffCtx } from "@/modules/identity/session";
 
@@ -22,6 +23,12 @@ export async function suggestionsFor(ctx: StaffCtx, now = new Date()): Promise<S
   const seeBiz = can(ctx.role, "customer.read"), seeProjects = can(ctx.role, "project.read_all") || can(ctx.role, "project.read_assigned");
   const q: Promise<void>[] = [];
 
+  if (can(ctx.role, "settings.write")) {
+    q.push((async () => {
+      const rows = await db.auditEvent.findMany({ where: { workspaceId: w, action: { startsWith: "problem." }, createdAt: { gte: new Date(+now - D) } }, orderBy: { createdAt: "desc" }, take: 10, select: { id: true, action: true, createdAt: true } });
+      if (rows.length) out.push({ id: `problems:${rows[0].id}`, level: "urgent", title: `${rows.length} ${plural(rows.length, "thing", "things")} went wrong in the last day`, reason: `Most recent: ${PROBLEM_LABEL[rows[0].action.replace("problem.", "")] ?? "something failed"} ${ago(+now - +rows[0].createdAt)} ago. It shows what failed and for whom.`, action: { label: "See what failed", href: "/testing#problems" } });
+    })());
+  }
   if (seeBiz) {
     q.push((async () => {
       const waiting = await db.ticket.findMany({ where: { workspaceId: w, status: { in: ["open", "customer_replied"] } }, include: { customer: { select: { displayName: true } } }, orderBy: { updatedAt: "asc" }, take: 30 });

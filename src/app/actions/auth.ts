@@ -1,4 +1,5 @@
 "use server";
+import { reportProblem } from "@/lib/problems";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { staffAuth, portalAuth, provisioningAuth } from "@/lib/auth";
@@ -60,6 +61,8 @@ export async function acceptInvitation(_: unknown, fd: FormData) {
   if (inv?.kind === "staff") name = (await db.staffMembership.findFirst({ where: { workspaceId: inv.workspaceId, email: inv.email }, select: { displayName: true } }))?.displayName ?? name;
   if (!name) return { error: "Enter your name." };
   if (!inv || inv.acceptedAt || inv.revokedAt || inv.expiresAt <= new Date()) return { error: "This invitation has expired or was already used. Ask for a new one." };
+  // They already have a login (a team member testing, or a customer of another company): add this company to it. Their password is never changed here.
+  if (inv.kind === "client" && inv.customerId && (await db.user.findFirst({ where: { email: { equals: inv.email, mode: "insensitive" } }, select: { id: true } }))) return addToExistingLogin(inv.id);
   const claimed = await db.invitation.updateMany({ where: { id: inv.id, acceptedAt: null }, data: { acceptedAt: new Date() } });
   if (claimed.count === 0) return { error: "This invitation was already used." };
   try {
@@ -72,11 +75,34 @@ export async function acceptInvitation(_: unknown, fd: FormData) {
         create: { userId: res.user.id, customerId: inv.customerId, role: inv.clientRole ?? "member", billing: inv.clientBilling }, update: { revokedAt: null, role: inv.clientRole ?? "member", billing: inv.clientBilling },
       });
     }
-  } catch {
+  } catch (e) {
+    await reportProblem({ workspaceId: inv.workspaceId, area: "invite_accept", error: e, customerId: inv.customerId, ref: inv.email });
     await db.invitation.update({ where: { id: inv.id }, data: { acceptedAt: null } });
-    return { error: "Could not create the account. If you already have one, sign in instead." };
+    return { error: "We couldn't create your account just now. Please try again, or ask for a new invitation if it keeps happening." };
   }
   redirect("/login");
+}
+
+async function addToExistingLogin(invitationId: string): Promise<{ error?: string }> {
+  const inv = await db.invitation.findUnique({ where: { id: invitationId } });
+  if (!inv?.customerId || inv.acceptedAt || inv.revokedAt || inv.expiresAt <= new Date()) return { error: "This invitation has expired or was already used. Ask for a new one." };
+  const user = await db.user.findFirst({ where: { email: { equals: inv.email, mode: "insensitive" } }, select: { id: true } });
+  if (!user) return { error: "We couldn't find that login. Please try again." };
+  await db.$transaction(async (tx) => {
+    await tx.invitation.update({ where: { id: inv.id }, data: { acceptedAt: new Date() } });
+    await tx.clientMembership.upsert({
+      where: { userId_customerId: { userId: user.id, customerId: inv.customerId! } },
+      create: { userId: user.id, customerId: inv.customerId!, role: inv.clientRole ?? "member", billing: inv.clientBilling }, update: { revokedAt: null, role: inv.clientRole ?? "member", billing: inv.clientBilling },
+    });
+  });
+  redirect("/login?added=1");
+}
+
+/** For someone who already has a login: the invitation page's one button. */
+export async function acceptExistingInvitation(fd: FormData) {
+  const inv = await db.invitation.findUnique({ where: { tokenHash: sha256(String(fd.get("token") ?? "")) } });
+  const r = inv ? await addToExistingLogin(inv.id) : { error: "This invitation has expired or was already used. Ask for a new one." };
+  redirect(`/login?error=${encodeURIComponent(r.error ?? "")}`);
 }
 
 const hostAuth = async () => ((await isPortalHost()) ? portalAuth() : staffAuth());

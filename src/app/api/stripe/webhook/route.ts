@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { applyStripeEvent } from "@/modules/billing/service";
 import { stripeSubId } from "@/lib/stripe";
+import { reportProblem } from "@/lib/problems";
 import { flushEmails } from "@/lib/flush-email";
 import { verifyStripeSignature } from "@/lib/stripe-signature";
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
     await db.$transaction((tx) => audit(tx, { workspaceId: w.id, actor: null, action: `stripe.${ev.type}`, targetType: "stripe_event", targetId: ev.id!, detail: { livemode: !!ev.livemode, object: o?.id, amount: o?.amount_paid ?? o?.amount_total, currency: o?.currency } }));
   }
   try { if (ev.data?.object) await applyStripeEvent(ev.type, ev.data.object as never, w.id); }
-  catch (e) { console.error("stripe event failed", ev.id, e); return new Response("Could not apply.", { status: 500 }); } // Stripe retries
+  catch (e) { await reportProblem({ workspaceId: w.id, area: "stripe_webhook", error: e, ref: `${ev.type} ${ev.id}` }); return new Response("Could not apply.", { status: 500 }); } // Stripe retries
   // Send the receipt now instead of waiting for the daily job.
   try { flushEmails(); } catch { /* not inside a request (tests): the outbox is drained elsewhere */ }
   return new Response("ok");

@@ -11,6 +11,7 @@ import { mailConfigured } from "@/lib/mail";
 import { queueStatus } from "@/modules/outbox/drain";
 import { origins } from "@/lib/env";
 import { db } from "@/lib/db";
+import { recentProblems, PROBLEM_LABEL } from "@/lib/problems";
 
 export const metadata = { title: "Testing" };
 const CARDS = [["4242 4242 4242 4242", "Payment works"], ["4000 0000 0000 9995", "Card is declined (not enough money)"], ["4000 0025 0000 3155", "Asks for extra bank approval"]];
@@ -18,6 +19,7 @@ const CARDS = [["4242 4242 4242 4242", "Payment works"], ["4000 0000 0000 9995",
 export default async function Testing({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; reset?: string; queue?: string }> }) {
   const ctx = await requireStaff("settings.write");
   const sp = await searchParams;
+  const problems = await recentProblems(ctx.workspaceId);
   const [demo, events, queue] = await Promise.all([testClientStatus(ctx), db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, action: { startsWith: "stripe." } }, orderBy: { createdAt: "desc" }, take: 8 }), queueStatus(ctx.workspaceId)]);
   const key = process.env.STRIPE_SECRET_KEY ?? "";
   const mode = /^(sk|rk)_test_/.test(key) ? "Test mode" : /^(sk|rk)_live_/.test(key) ? "LIVE mode" : key ? "Unknown" : "Not set";
@@ -29,6 +31,15 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
       <ErrorSummary message={sp.error} />
       {sp.created && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Demo company ready. A portal invitation is on its way to that email.</p>}
       {sp.reset && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Demo company deleted. You can start again.</p>}
+
+      <section id="problems" aria-labelledby="pb" className="mb-8 scroll-mt-24 rounded-xl border border-[var(--card-line)] bg-white p-4">
+        <h2 id="pb" className="text-base font-bold">Problems <span className="font-normal text-muted">(last 7 days)</span></h2>
+        {problems.length === 0 ? <p className="mt-1 text-sm text-muted">Nothing has failed. Payment, invitation and Stripe failures show up here the moment they happen, with the reason.</p> : (
+          <ul className="mt-2 divide-y divide-[var(--card-rule)]">{problems.map((p) => { const d = p.detail as { message?: string; ref?: string | null } | null; return (
+            <li key={p.id} className="py-2.5 text-sm"><p className="font-semibold">{PROBLEM_LABEL[p.action.replace("problem.", "")] ?? p.action}<span className="ml-2 font-normal text-muted">{fmtDateTime(p.createdAt)}</span></p>
+              {d?.ref && <p className="text-muted">{d.ref}</p>}{d?.message && <p className="break-words text-[#7a2e12]">{d.message}</p>}
+              {p.customerId && <Link className="underline" href={`/customers/${p.customerId}`}>Open the company</Link>}</li>); })}</ul>)}
+      </section>
 
       <div className="grid gap-x-12 gap-y-10 lg:grid-cols-2">
         <Section title="Test emails">

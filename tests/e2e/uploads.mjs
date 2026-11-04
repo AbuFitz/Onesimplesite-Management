@@ -19,6 +19,11 @@ await cl.waitForSelector("text=We've got it"); ok(true, "customer sees a confirm
 ok(await cl.locator("text=Sent ✓").count() === 1, "that request is marked sent");
 await cl.setInputFiles("section[aria-labelledby=x] input[type=file]", "/tmp/pixel.png"); await cl.fill("#x-t", "Extra photo of the shop front");
 await cl.click("section[aria-labelledby=x] button:has-text('Send to us')"); await cl.waitForURL(/sent=1/);
+await cl.setInputFiles("section[aria-labelledby=x] input[type=file]", "/tmp/pixel.png");
+await cl.click("section[aria-labelledby=x] button[aria-haspopup=dialog]"); await cl.waitForSelector("dialog[open] img");
+ok(cl.context().pages().length === 1, "clicking a picture before sending opens it in a frame, not a new tab");
+await cl.keyboard.press("Escape"); await cl.waitForSelector("dialog[open]", { state: "detached" });
+await cl.click("section[aria-labelledby=f] button:has-text('View') >> nth=0"); await cl.waitForSelector("dialog[open] img"); ok(cl.context().pages().length === 1, "files in the project open in a frame"); await cl.keyboard.press("Escape");
 await cl.goto(`${P}/account`); await cl.setInputFiles("input[name=photo]", "/tmp/pixel.png"); await cl.waitForSelector("button:has-text('Save picture')"); await cl.click("button:has-text('Save picture')"); await cl.waitForURL(/photo=1/);
 ok(await cl.locator("text=Picture saved").count() > 0, "customer saves a profile picture");
 const mine = await cl.evaluate(async () => { const e = document.querySelector("[style*='/avatar/u/']"); return e ? (await fetch(e.getAttribute("style").match(/url\(([^)]+)\)/)[1].replace(/["']/g, ""))).status : 0; });

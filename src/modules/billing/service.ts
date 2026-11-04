@@ -3,6 +3,7 @@ import { audit, enqueue } from "@/lib/audit";
 import type { Tx } from "@/lib/db";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { ensureReceipt } from "./receipt";
+import { reportProblem } from "@/lib/problems";
 import { portalLink, manageLink } from "@/lib/env";
 import { stripe, stripeReady, stripeSubId } from "@/lib/stripe";
 import { can } from "@/modules/identity/permissions";
@@ -35,12 +36,18 @@ export const chargeOf = (b: { contract?: { title: string; reference: string } | 
 export const clientBilling = (c: ClientCtx) =>
   db.billingIntent.findMany({ where: { ...clientScope(c), OR: [{ contract: { status: "completed" } }, { ticketId: { not: null } }] }, orderBy: { createdAt: "asc" }, include });
 
-async function stripeCustomer(customerId: string, email: string | undefined, name: string) {
+const stripeMode = () => ((process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_live") ? "live" : "test");
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** The Stripe customer for a company. A customer made in test mode does not exist in live mode (and the reverse), so a stale id is replaced instead of failing the payment. */
+async function stripeCustomer(customerId: string, email: string | undefined, name: string, fresh = false) {
   const cu = await db.customer.findUniqueOrThrow({ where: { id: customerId }, select: { stripeCustomerId: true, displayName: true, reference: true } });
-  if (cu.stripeCustomerId) return cu.stripeCustomerId;
-  const made = await stripe<{ id: string }>("/customers", { name: cu.displayName, email: email || undefined, metadata: { customerId, reference: cu.reference, contact: name } }, { idempotencyKey: `cust:${customerId}` });
-  await db.customer.updateMany({ where: { id: customerId, stripeCustomerId: null }, data: { stripeCustomerId: made.id } });
-  return (await db.customer.findUniqueOrThrow({ where: { id: customerId }, select: { stripeCustomerId: true } })).stripeCustomerId!;
+  if (cu.stripeCustomerId && !fresh) return cu.stripeCustomerId;
+  const body = { name: cu.displayName, email: email || undefined, metadata: { customerId, reference: cu.reference, contact: name } };
+  const made = await stripe<{ id: string }>("/customers", body, { idempotencyKey: `cust:${customerId}:${stripeMode()}${fresh ? `:${Date.now()}` : ""}` })
+    .catch((e) => (/idempoten/i.test(errText(e)) ? stripe<{ id: string }>("/customers", body) : Promise.reject(e)));
+  await db.customer.updateMany({ where: { id: customerId }, data: { stripeCustomerId: made.id } });
+  return made.id;
 }
 
 /** Starts a secure Stripe checkout for one charge and returns its page address. */
@@ -51,14 +58,22 @@ export async function startPayment(c: ClientCtx, intentId: string): Promise<stri
   if (b.status === "paid" || b.status === "active") throw new DomainError("conflict", "This one is already paid.");
   if (b.status === "cancelled") throw new DomainError("conflict", "This charge was cancelled. Please contact us.");
   const monthly = isMonthly(b.kind);
-  const customer = await stripeCustomer(b.customerId, c.email || undefined, c.name ?? "");
+  const make = async (fresh: boolean) => {
+    const customer = await stripeCustomer(b.customerId, c.email || undefined, c.name ?? "", fresh);
   const line = { quantity: 1, price_data: { currency: b.currency.toLowerCase(), unit_amount: b.amountMinor, product_data: { name: `${b.description ?? KIND_LABEL[b.kind] ?? "OneSimpleSite"} (${chargeOf(b).reference})` }, ...(monthly ? { recurring: { interval: "month" } } : {}) } };
-  const s = await stripe<{ id: string; url: string }>("/checkout/sessions", {
+    return stripe<{ id: string; url: string }>("/checkout/sessions", {
     mode: monthly ? "subscription" : "payment", customer, line_items: [line], payment_method_types: ["card"],
     success_url: portalLink("/billing?paid=1"), cancel_url: portalLink("/billing"),
     client_reference_id: b.id, metadata: { intentId: b.id, contract: chargeOf(b).reference },
     ...(monthly ? { subscription_data: { metadata: { intentId: b.id } } } : { payment_intent_data: { metadata: { intentId: b.id }, description: `${chargeOf(b).reference} ${KIND_LABEL[b.kind] ?? ""}` } }),
   });
+  };
+  let s: { id: string; url: string };
+  try { s = await make(false); }
+  catch (e) {
+    if (/no such customer/i.test(errText(e))) s = await make(true).catch(async (e2) => { await reportProblem({ workspaceId: b.workspaceId, area: "payment_start", error: e2, customerId: b.customerId, ref: `${chargeOf(b).reference} ${b.kind}` }); throw new DomainError("conflict", "We couldn't start the payment. We've been told and will sort it out, or please contact us."); });
+    else { await reportProblem({ workspaceId: b.workspaceId, area: "payment_start", error: e, customerId: b.customerId, ref: `${chargeOf(b).reference} ${b.kind}` }); throw new DomainError("conflict", "We couldn't start the payment. Please try again in a minute, or contact us if it keeps happening."); }
+  }
   await db.billingIntent.update({ where: { id: b.id }, data: { stripeSessionId: s.id } });
   return s.url;
 }

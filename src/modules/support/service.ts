@@ -62,7 +62,7 @@ export async function clientCreateTicket(c: ClientCtx, customerId: string | unde
 const clientScope = (c: ClientCtx) => ({ customerId: { in: c.memberships.map((m) => m.customerId) } });
 
 export const clientTickets = (c: ClientCtx) =>
-  db.ticket.findMany({ where: clientScope(c), orderBy: { updatedAt: "desc" }, take: 100, select: { id: true, reference: true, title: true, status: true, priority: true, kind: true, updatedAt: true, createdAt: true } });
+  db.ticket.findMany({ where: clientScope(c), orderBy: { updatedAt: "desc" }, take: 100, select: { id: true, reference: true, title: true, status: true, priority: true, kind: true, updatedAt: true, createdAt: true, contact: { select: { name: true, email: true } }, customer: { select: { displayName: true } } } });
 
 /** A ticket and its public conversation. Internal notes never leave the building. */
 export async function clientTicket(c: ClientCtx, id: string) {

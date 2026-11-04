@@ -5,6 +5,7 @@ import { requireClient } from "@/modules/identity/session";
 import { clientProject, STAGE_COPY } from "@/modules/portal/service";
 import { projectFileList } from "@/modules/files/service";
 import { fmtDate, fmtDateTime } from "@/components/ui";
+import { ImageLink } from "@/components/lightbox";
 import { FilePicker } from "@/components/file-picker";
 import { SubmitButton } from "@/components/submit-button";
 import { sendToProjectAction } from "@/app/actions/portal";
@@ -74,7 +75,9 @@ export default async function PortalProject({ params, searchParams }: { params: 
             <div key={fo || "none"}>{fo && <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-muted"><Folder size={14} aria-hidden />{fo}</p>}
               <ul className="divide-y divide-line rounded-2xl border border-line">{files.filter((f) => (f.folder ?? "") === fo).map((f) => (
                 <li key={f.id} className="flex items-center justify-between gap-3 p-3"><span className="flex min-w-0 items-center gap-2"><Paperclip size={16} className="shrink-0" aria-hidden /><span className="min-w-0"><span className="block truncate font-semibold">{f.filename}</span><span className="text-sm text-muted">{kb(f.sizeBytes)} · {fmtDate(f.createdAt)}</span></span></span>
-                  <a className="btn btn-quiet shrink-0" href={`/files/${f.id}`} download={!f.contentType.startsWith("image/")} target={f.contentType.startsWith("image/") ? "_blank" : undefined}><Download size={15} aria-hidden /> {f.contentType.startsWith("image/") ? "View" : "Download"}</a></li>))}</ul></div>))}</div>
+                  {f.contentType.startsWith("image/")
+                    ? <ImageLink src={`/files/${f.id}`} name={f.filename} download={`/files/${f.id}`} className="btn btn-quiet shrink-0"><Download size={15} aria-hidden /> View</ImageLink>
+                    : <a className="btn btn-quiet shrink-0" href={`/files/${f.id}`} download><Download size={15} aria-hidden /> Download</a>}</li>))}</ul></div>))}</div>
         )}
       </section>
 

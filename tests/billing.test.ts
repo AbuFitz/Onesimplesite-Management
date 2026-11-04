@@ -158,6 +158,6 @@ describe("checkout requests sent to Stripe", () => {
     const { client, one } = await world();
     const key = process.env.STRIPE_SECRET_KEY; process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
     const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ error: { message: "Your card was declined." } }), { status: 402 }));
-    try { await expect(startPayment(client, one!.id)).rejects.toThrow(/declined/); } finally { spy.mockRestore(); if (key) process.env.STRIPE_SECRET_KEY = key; else delete process.env.STRIPE_SECRET_KEY; }
+    try { await expect(startPayment(client, one!.id)).rejects.toThrow(/couldn.t start the payment/); } finally { spy.mockRestore(); if (key) process.env.STRIPE_SECRET_KEY = key; else delete process.env.STRIPE_SECRET_KEY; }
   });
 });

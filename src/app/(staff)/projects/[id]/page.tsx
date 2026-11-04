@@ -1,3 +1,4 @@
+import { ImageLink } from "@/components/lightbox";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, ListChecks, Files as FilesIcon, Ticket, Package, Megaphone, Sparkles, ArrowRight, Folder, Download, Eye, EyeOff, Trash2, Paperclip, CircleDot, Circle } from "lucide-react";
@@ -131,7 +132,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
                   <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-ink/75"><Folder size={15} aria-hidden />{fo || "No folder"}</p>
                   <ul className="divide-y divide-[var(--card-rule)] rounded-xl border border-[var(--card-rule)]">{files.filter((f) => (f.folder ?? "") === fo).map((f) => (
                     <li key={f.id} className="p-2.5">
-                      <div className="flex items-start justify-between gap-2"><a href={`/api/files/${f.id}`} className="flex min-w-0 items-center gap-1.5 break-all text-[15px] font-semibold hover:underline" target={f.contentType.startsWith("image/") ? "_blank" : undefined}><Paperclip size={14} className="shrink-0" aria-hidden />{f.filename}</a>
+                      <div className="flex items-start justify-between gap-2">{f.contentType.startsWith("image/") ? <ImageLink src={`/api/files/${f.id}`} name={f.filename} download={`/api/files/${f.id}`} className="flex min-w-0 items-center gap-1.5 break-all text-left text-[15px] font-semibold hover:underline"><Paperclip size={14} className="shrink-0" aria-hidden />{f.filename}</ImageLink> : <a href={`/api/files/${f.id}`} className="flex min-w-0 items-center gap-1.5 break-all text-[15px] font-semibold hover:underline"><Paperclip size={14} className="shrink-0" aria-hidden />{f.filename}</a>}
                         <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-bold ${f.internal ? "bg-[#e5e9f2] text-ink/75" : "bg-[#d7f3e6] text-[#0a5a3d]"}`}>{f.internal ? "Team only" : "Shared"}</span></div>
                       <p className="mt-0.5 text-[13px] text-ink/65">{kb(f.sizeBytes)} · {f.uploadedName} · {timeAgo(f.createdAt)}</p>
                       {canWrite && <div className="mt-1.5 flex flex-wrap gap-1.5">
