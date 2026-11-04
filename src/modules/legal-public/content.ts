@@ -35,7 +35,7 @@ kv: To tell you about your project, documents and payments | Contract
 1.1 Some of these providers may process information outside the UK. When they do, it is protected by an adequacy decision or by standard contractual safeguards approved under UK data protection law.
 
 ## How long we keep it
-kv: Account and business details | While you are a customer and for 6 years afterwards
+kv: Account and company details | While you are a customer and for 6 years afterwards
 kv: Signed agreements and payment records | 6 years from the end of the financial year they relate to
 kv: Support tickets and their files | 3 years after the ticket is closed
 kv: Sign-in and security records | 12 months
@@ -72,7 +72,7 @@ const TERMS = `## Your account
 1.1 Tell us straight away at {{support_email}} if you think someone else has used your account.
 
 ## Using the portal
-1.1 Use the portal only for your own business and your work with us.
+1.1 Use the portal only for your own company and your work with us.
 1.1 Do not try to access other people's accounts or information, interfere with the portal, or upload anything harmful, unlawful or that you have no right to share.
 1.1 We may suspend an account that is being misused. We will tell you why and help put it right where we can.
 

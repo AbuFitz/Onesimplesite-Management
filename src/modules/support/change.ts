@@ -44,7 +44,7 @@ export async function clientApproveChange(c: ClientCtx, ticketId: string) {
   const t = await db.ticket.findFirst({ where: { id: ticketId, customerId: { in: c.memberships.map((m) => m.customerId) } }, include: { customer: { select: { displayName: true } } } });
   if (!t) throw notFound();
   const m = scope(c, t.customerId)!;
-  if (!memberCan(m, "billing")) throw new DomainError("forbidden", "Only the business owner, or someone with billing access, can approve a cost.");
+  if (!memberCan(m, "billing")) throw new DomainError("forbidden", "Only the company owner, or someone with billing access, can approve a cost.");
   if (t.chargeStatus !== "quoted" || !t.priceMinor) throw new DomainError("conflict", t.chargeStatus === "approved" || t.chargeStatus === "paid" ? "You've already approved this." : "There's nothing to approve on this ticket.");
   await db.$transaction(async (tx) => {
     const done = await tx.ticket.updateMany({ where: { id: t.id, chargeStatus: "quoted" }, data: { chargeStatus: "approved", approvedAt: new Date(), approvedByName: c.name ?? "Customer", status: "open", lastCustomerAt: new Date() } });
@@ -59,7 +59,7 @@ export async function clientApproveChange(c: ClientCtx, ticketId: string) {
 export async function clientDeclineChange(c: ClientCtx, ticketId: string, reason?: string) {
   const t = await db.ticket.findFirst({ where: { id: ticketId, customerId: { in: c.memberships.map((m) => m.customerId) } }, include: { customer: { select: { displayName: true } } } });
   if (!t) throw notFound();
-  if (!memberCan(scope(c, t.customerId)!, "billing")) throw new DomainError("forbidden", "Only the business owner, or someone with billing access, can answer a cost.");
+  if (!memberCan(scope(c, t.customerId)!, "billing")) throw new DomainError("forbidden", "Only the company owner, or someone with billing access, can answer a cost.");
   if (t.chargeStatus !== "quoted") throw new DomainError("conflict", "There's nothing to decline on this ticket.");
   const note = (reason ?? "").trim().slice(0, 500);
   await db.$transaction(async (tx) => {

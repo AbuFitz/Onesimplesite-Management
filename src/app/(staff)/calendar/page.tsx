@@ -53,7 +53,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
     db.task.findMany({ where: { workspaceId: ctx.workspaceId, assigneeId: ctx.staffId, doneAt: null, dueDate: { gte: from, lt: to } }, select: { id: true, title: true, dueDate: true } }),
   ]);
   const custIds = [...new Set(events.map((e) => e.customerId).filter((x): x is string => !!x))];
-  const [custs, businesses] = await Promise.all([
+  const [custs, companies] = await Promise.all([
     custIds.length ? db.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, displayName: true } }) : Promise.resolve([]),
     db.customer.findMany({ where: { workspaceId: ctx.workspaceId, archivedAt: null }, orderBy: { displayName: "asc" }, take: 200, select: { id: true, displayName: true } }),
   ]);
@@ -236,7 +236,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         </aside>
       </div>
 
-      {canWrite && <AddEventDialog open={sp.add === "1"} closeHref={here} day={selected} view={view} scope={scope} businesses={businesses.map((b) => ({ id: b.id, name: b.displayName }))} error={sp.add ? sp.error : undefined} />}
+      {canWrite && <AddEventDialog open={sp.add === "1"} closeHref={here} day={selected} view={view} scope={scope} companies={companies.map((b) => ({ id: b.id, name: b.displayName }))} error={sp.add ? sp.error : undefined} />}
     </>
   );
 }

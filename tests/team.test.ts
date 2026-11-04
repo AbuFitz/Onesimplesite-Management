@@ -17,7 +17,7 @@ async function team() {
 }
 
 describe("team member level", () => {
-  it("has every business capability except managing logins and settings", () => {
+  it("has every company capability except managing logins and settings", () => {
     const missing = CAPS.filter((c) => !can("member", c));
     expect(missing.sort()).toEqual(["staff.manage"]);
   });

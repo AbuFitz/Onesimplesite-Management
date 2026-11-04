@@ -39,7 +39,7 @@ export type SignedPdfInput = {
   draftWording?: boolean;
   /** A review copy sent before signing: blank signature block, no signing record. */
   unsigned?: boolean;
-  /** Shown top right of the first page, e.g. the customer business. */
+  /** Shown top right of the first page, e.g. the customer company. */
   preparedFor?: string;
 };
 

@@ -17,18 +17,18 @@ const registerInput = z.object({
   contactPhone: opt(40), contactPosition: opt(80),
 });
 
-/** Registers a new business with its first person, in one go. Sales tickets and payments are added after. */
+/** Registers a new company with its first person, in one go. Sales tickets and payments are added after. */
 export async function registerBusiness(ctx: StaffCtx, raw: unknown) {
   if (!can(ctx.role, "customer.write")) throw forbidden();
   const i = registerInput.parse(raw);
   if (i.kind === "business" && !i.legalName) i.legalName = i.displayName;
   const dupe = await db.contact.findFirst({ where: { workspaceId: ctx.workspaceId, email: { equals: i.contactEmail, mode: "insensitive" } }, select: { customer: { select: { displayName: true } } } });
-  if (dupe) throw new DomainError("conflict", `That email is already a contact at ${dupe.customer.displayName}. Open that business and add the ticket there.`);
+  if (dupe) throw new DomainError("conflict", `That email is already a contact at ${dupe.customer.displayName}. Open that company and add the ticket there.`);
   return db.$transaction(async (tx) => {
     const reference = await nextRef(tx, ctx.workspaceId, "customer");
     const c = await tx.customer.create({ data: { workspaceId: ctx.workspaceId, reference, displayName: i.displayName, legalName: i.legalName, kind: i.kind, companyNumber: i.kind === "business" ? i.companyNumber : null, vatNumber: i.vatNumber, billingAddress: i.billingAddress, website: i.website, phone: i.phone, businessType: i.businessType, town: i.town, source: i.source, ownerId: ctx.staffId } });
     await tx.contact.create({ data: { workspaceId: ctx.workspaceId, customerId: c.id, name: i.contactName, email: i.contactEmail, phone: i.contactPhone, position: i.contactPosition, isPrimary: true } });
-    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "business.registered", targetType: "customer", targetId: c.id, customerId: c.id });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "company.registered", targetType: "customer", targetId: c.id, customerId: c.id });
     return c;
   });
 }

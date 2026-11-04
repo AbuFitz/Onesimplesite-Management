@@ -3,7 +3,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { signAction, declineAction } from "@/app/actions/public";
 import { ErrorSummary } from "./ui";
 
-export function SignForm({ token, defaultName, consent, business }: { token: string; defaultName: string; consent: string; business?: string }) {
+export function SignForm({ token, defaultName, consent, company }: { token: string; defaultName: string; consent: string; company?: string }) {
   const [state, act, pending] = useActionState(signAction, undefined as { error?: string } | undefined);
   const [method, setMethod] = useState<"typed" | "drawn">("drawn");
   const [name, setName] = useState(defaultName);
@@ -33,7 +33,7 @@ export function SignForm({ token, defaultName, consent, business }: { token: str
       <input type="hidden" name="method" value={method} />
       <input type="hidden" name="image" value={method === "drawn" ? image : ""} />
       <div className="d-sig !max-w-none">
-        <h2 id="sign-h" className="text-xl font-bold">Sign this order</h2>{business && <p className="mb-1 text-sm text-muted">Accepted on behalf of {business}</p>}
+        <h2 id="sign-h" className="text-xl font-bold">Sign this order</h2>{company && <p className="mb-1 text-sm text-muted">Accepted on behalf of {company}</p>}
         <p className="d-small mb-4">Draw your signature with your finger or mouse, or type your name. Then confirm and submit.</p>
         <ErrorSummary message={state?.error} />
         <div className="d-row">

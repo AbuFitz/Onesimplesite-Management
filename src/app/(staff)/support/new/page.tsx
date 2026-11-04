@@ -23,7 +23,7 @@ export default async function NewSupport({ searchParams }: { searchParams: Promi
       <RecordHeader back={{ href: "/support", label: "Support tickets" }} title="New support ticket" meta="For when a customer rings, messages or emails you" />
       <ErrorSummary message={sp.error} />
       {!cust ? (
-        <form className="max-w-lg space-y-4"><div><label className="label" htmlFor="c">Which account is it for?</label><select id="c" name="customerId" className="field" required defaultValue=""><option value="" disabled>Choose an account</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.displayName} ({c.reference})</option>)}</select></div><button className="btn">Continue</button><p className="hint">Not on the list? <Link className="underline" href="/customers">Add the business first</Link>.</p></form>
+        <form className="max-w-lg space-y-4"><div><label className="label" htmlFor="c">Which account is it for?</label><select id="c" name="customerId" className="field" required defaultValue=""><option value="" disabled>Choose an account</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.displayName} ({c.reference})</option>)}</select></div><button className="btn">Continue</button><p className="hint">Not on the list? <Link className="underline" href="/customers">Add the company first</Link>.</p></form>
       ) : (
         <form action={supportCreateAction} className="max-w-xl space-y-4">
           <input type="hidden" name="customerId" value={cust.id} />

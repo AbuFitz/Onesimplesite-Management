@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "photo" BYTEA, ADD COLUMN "photoType" TEXT;

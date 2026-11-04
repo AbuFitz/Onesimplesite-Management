@@ -97,7 +97,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           <Panel title="What we need from the customer" icon={Package} tone="amber">
             {p.assetRequests.length === 0 ? <p className="text-[15px] text-ink/70">Nothing requested yet. Ask for the logo, photos or text they need to supply.</p> : (
               <ul className="divide-y divide-[var(--card-rule)]">{p.assetRequests.map((a) => (
-                <li key={a.id} className="flex items-center justify-between gap-3 py-2.5"><span className="text-[15px] font-medium">{a.label}{a.required ? "" : " (optional)"}</span>
+                <li key={a.id} className="flex items-center justify-between gap-3 py-2.5"><span className="min-w-0 text-[15px] font-medium">{a.label}{a.required ? "" : " (optional)"}{a.response && <span className="mt-1 block whitespace-pre-wrap break-words rounded-lg bg-[#f4f4f5] px-3 py-2 text-sm font-normal"><b>Customer wrote:</b> {a.response}</span>}</span>
                   <span className="flex items-center gap-2"><Status label={a.receivedAt ? "received" : "requested"} kind={a.receivedAt ? "good" : "warn"} />{canWrite && <form action={receiveAssetAction}><input type="hidden" name="id" value={p.id} /><input type="hidden" name="assetId" value={a.id} /><input type="hidden" name="received" value={a.receivedAt ? "0" : "1"} /><button className={btn}>{a.receivedAt ? "Undo" : "Mark received"}</button></form>}</span></li>))}</ul>
             )}
             {canWrite && <form action={assetAction} className="mt-3 flex flex-wrap items-end gap-2 border-t border-[var(--card-rule)] pt-3"><input type="hidden" name="id" value={p.id} />

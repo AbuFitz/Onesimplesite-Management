@@ -1,7 +1,7 @@
 # Data model notes
 
 Schema: `prisma/schema.prisma`; raw SQL in `prisma/migrations/*integrity_constraints` (checks, triggers).
-Original models only (no upstream models). Scope: every business row carries `workspaceId`; child rows are tied to `Customer(id, workspaceId)` by composite FK so a row cannot be attached across workspaces. Deletes restrict (no cascade) on customer-owned business records.
+Original models only (no upstream models). Scope: every company row carries `workspaceId`; child rows are tied to `Customer(id, workspaceId)` by composite FK so a row cannot be attached across workspaces. Deletes restrict (no cascade) on customer-owned business records.
 
 | Logical entity (brief §14/§6) | Model | Status |
 |---|---|---|

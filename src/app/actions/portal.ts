@@ -7,6 +7,7 @@ import { clientCreateTicket, clientReply, clientResolve } from "@/modules/suppor
 import { clientApproveChange, clientDeclineChange } from "@/modules/support/change";
 import { DomainError } from "@/lib/errors";
 import { readUploads } from "@/modules/files/service";
+import { clientSendToProject } from "@/modules/projects/client-input";
 import { flushEmails } from "@/lib/flush-email";
 
 const msg = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join(" ") : "Something went wrong and nothing was sent. Please try again.");
@@ -47,4 +48,14 @@ export async function declineChangeAction(fd: FormData) {
   const id = String(fd.get("id"));
   try { await clientDeclineChange(c, id, String(fd.get("reason") ?? "")); flushEmails(); } catch (e) { redirect(`/help/${id}?error=${encodeURIComponent(msg(e))}`); }
   redirect(`/help/${id}`);
+}
+
+/** Customer sends text and/or files straight into their project (no ticket). */
+export async function sendToProjectAction(fd: FormData) {
+  const c = await requireClient();
+  const id = String(fd.get("projectId")), asset = String(fd.get("assetId") || "") || null;
+  try { await clientSendToProject(c, id, asset, { text: fd.get("text"), files: await readUploads(fd, "files", { extra: true }) }); }
+  catch (e) { return redirect(`/projects/${id}?error=${encodeURIComponent(msg(e))}${asset ? `&open=${asset}` : ""}`); }
+  revalidatePath(`/projects/${id}`);
+  redirect(`/projects/${id}?sent=1`);
 }

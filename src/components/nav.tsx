@@ -38,7 +38,7 @@ export function SideNav({ groups }: { groups: NavGroup[] }) {
 export function BottomNav() {
   const p = usePathname();
   const tabs = [
-    { href: "/", label: "Today", Icon: Home }, { href: "/customers", label: "Businesses", Icon: Users }, { href: "/projects", label: "Projects", Icon: FolderKanban },
+    { href: "/", label: "Today", Icon: Home }, { href: "/customers", label: "Companies", Icon: Users }, { href: "/projects", label: "Projects", Icon: FolderKanban },
     { href: "/calendar", label: "Calendar", Icon: CalendarDays }, { href: "/more", label: "More", Icon: Menu },
   ];
   return (

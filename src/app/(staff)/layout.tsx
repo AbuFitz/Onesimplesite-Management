@@ -27,9 +27,9 @@ export default async function StaffLayout({ children, modal }: { children: React
   // Only built modules appear. Unfinished modules are hidden, not faked.
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
-    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Businesses", icon: "customers" }, { href: "/tickets", label: "Tickets", icon: "pipeline", badge: supportOpen }] }] : []),
+    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Companies", icon: "customers" }, { href: "/tickets", label: "Tickets", icon: "pipeline", badge: supportOpen }] }] : []),
     { label: "Work", items: [{ href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/board", label: "Board", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
-    { label: "Business", items: [
+    { label: "Company", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Business settings", icon: "settings" }] : []),
       ...(can(ctx.role, "data.export") ? [{ href: "/backup", label: "Backup", icon: "backup" }] : []),
       ...(can(ctx.role, "staff.manage") ? [{ href: "/team", label: "Team", icon: "team" }] : []),
@@ -38,7 +38,7 @@ export default async function StaffLayout({ children, modal }: { children: React
   ].filter((g) => g.items.length) as NavGroup[];
   const profileTodo = profileMissing(await getMyProfile(ctx));
   const create = [
-    ...(can(ctx.role, "proposal.write") ? [{ href: "/tickets/new", label: "New ticket" }, { href: "/customers/new", label: "Add a business" }] : []),
+    ...(can(ctx.role, "proposal.write") ? [{ href: "/tickets/new", label: "New ticket" }, { href: "/customers/new", label: "Add a company" }] : []),
     ...(can(ctx.role, "calendar.write") ? [{ href: "/calendar/new", label: "New event" }] : []),
     ...(can(ctx.role, "notes.write") ? [{ href: "/board", label: "Post to the board" }] : []),
   ];

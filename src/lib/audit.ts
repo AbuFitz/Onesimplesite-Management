@@ -68,7 +68,7 @@ export async function enqueue(tx: Tx, workspaceId: string, topic: string, dedupe
     if (mode === "off") return;
     if (mode === "digest") status = "held";
   }
-  // Unique (workspace, dedupeKey): replay of the same business event is a no-op.
+  // Unique (workspace, dedupeKey): replay of the same company event is a no-op.
   await tx.outbox.upsert({
     where: { workspaceId_dedupeKey: { workspaceId, dedupeKey } },
     create: { workspaceId, topic, dedupeKey, payload, status },

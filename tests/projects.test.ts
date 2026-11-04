@@ -56,8 +56,8 @@ describe("project files", () => {
     expect((await projectFileList(x.project.id, false)).map((f) => f.filename)).toEqual(["menu.pdf"]);
     const design = all.find((f) => f.filename === "design.png")!, menu = all.find((f) => f.filename === "menu.pdf")!;
     await expect(clientFile(x.ca, design.id)).rejects.toMatchObject({ code: "not_found" });         // team-only
-    expect((await clientFile(x.ca, menu.id)).id).toBe(menu.id);                                       // shared, their own business
-    await expect(clientFile(x.cb, menu.id)).rejects.toMatchObject({ code: "not_found" });            // another business can't open it
+    expect((await clientFile(x.ca, menu.id)).id).toBe(menu.id);                                       // shared, their own company
+    await expect(clientFile(x.cb, menu.id)).rejects.toMatchObject({ code: "not_found" });            // another company can't open it
     await setProjectFileShared(x.staff, design.id, true); expect((await clientFile(x.ca, design.id)).id).toBe(design.id);
     await setProjectFileShared(x.staff, design.id, false); await expect(clientFile(x.ca, design.id)).rejects.toThrow();
     await deleteProjectFile(x.staff, menu.id); expect(await db.attachment.count({ where: { projectId: x.project.id } })).toBe(1);

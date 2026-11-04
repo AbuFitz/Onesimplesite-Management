@@ -4,7 +4,7 @@ import { can } from "@/modules/identity/permissions";
 import { listCustomers } from "@/modules/crm/service";
 import { RecordHeader, Status, Empty, Avatar, timeAgo } from "@/components/ui";
 
-export const metadata = { title: "Businesses" };
+export const metadata = { title: "Companies" };
 type SP = { q?: string; page?: string; mine?: string };
 
 export default async function Customers({ searchParams }: { searchParams: Promise<SP> }) {
@@ -15,23 +15,23 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   const qs = (p: number) => `?${new URLSearchParams({ ...(sp.q ? { q: sp.q } : {}), ...(sp.mine ? { mine: "1" } : {}), page: String(p) })}`;
   return (
     <>
-      <RecordHeader title="Businesses" meta={`${total} ${total === 1 ? "business" : "businesses"}`} action={can(ctx.role, "customer.write") ? <Link href="/customers/new" className="btn">Add a business</Link> : undefined} />
+      <RecordHeader title="Companies" meta={`${total} ${total === 1 ? "company" : "companies"}`} action={can(ctx.role, "customer.write") ? <Link href="/customers/new" className="btn">Add a company</Link> : undefined} />
       <form className="mb-6 flex flex-wrap items-center gap-3" role="search">
-        <label className="sr-only" htmlFor="q">Search businesses</label>
+        <label className="sr-only" htmlFor="q">Search companies</label>
         <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Search by name, reference or email" className="field max-w-sm" />
         <label className="flex min-h-10 items-center gap-2 text-sm"><input type="checkbox" name="mine" value="1" defaultChecked={sp.mine === "1"} className="size-4" /> Mine only</label>
         <button className="btn btn-quiet">Search</button>
       </form>
       {rows.length === 0 ? (
-        <Empty title={sp.q || sp.mine ? "No businesses match" : "No businesses yet"}>{sp.q || sp.mine ? "Try a different search." : <Link className="underline" href="/customers/new">Add your first business</Link>}</Empty>
+        <Empty title={sp.q || sp.mine ? "No companies match" : "No companies yet"}>{sp.q || sp.mine ? "Try a different search." : <Link className="underline" href="/customers/new">Add your first company</Link>}</Empty>
       ) : (
         <div>
-          <div className="thead hidden grid-cols-[minmax(0,2.2fr)_minmax(0,2fr)_9rem_8rem] gap-4 px-4 pb-2 md:grid"><span>Business</span><span>Primary contact</span><span>Status</span><span className="text-right">Added</span></div>
+          <div className="thead hidden grid-cols-[minmax(0,2.2fr)_minmax(0,2fr)_9rem_8rem] gap-4 px-4 pb-2 md:grid"><span>Company</span><span>Primary contact</span><span>Status</span><span className="text-right">Added</span></div>
           <ul className="list-card">
             {rows.map((c) => (
               <li key={c.id} className="row">
                 <Link href={`/customers/${c.id}`} className="grid min-h-16 items-center gap-x-4 gap-y-1 py-3 hover:bg-soft md:grid-cols-[minmax(0,2.2fr)_minmax(0,2fr)_9rem_8rem] md:rounded-lg md:px-3">
-                  <span className="flex min-w-0 items-center gap-3"><Avatar name={c.displayName} /><span className="min-w-0"><span className="block truncate font-medium">{c.displayName}</span><span className="block text-xs text-muted">{c.reference}</span></span></span>
+                  <span className="flex min-w-0 items-center gap-3"><Avatar name={c.displayName} staffId={c.id} base="/api/logo" /><span className="min-w-0"><span className="block truncate font-medium">{c.displayName}</span><span className="block text-xs text-muted">{c.reference}</span></span></span>
                   <span className="min-w-0 truncate text-sm text-muted">{c.contacts[0] ? `${c.contacts[0].name}${c.contacts[0].email ? ` · ${c.contacts[0].email}` : ""}` : "No contact"}</span>
                   <span><Status label={c.lifecycle} kind={c.lifecycle === "active" ? "good" : "neutral"} /></span>
                   <span className="text-sm text-muted md:text-right">{timeAgo(c.createdAt)}</span>

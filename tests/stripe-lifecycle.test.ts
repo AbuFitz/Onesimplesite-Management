@@ -125,7 +125,7 @@ describe("Stripe lifecycle through the real webhook and the outbox", () => {
     expect(rec.every((m) => m.text.includes("£600.00"))).toBe(true);
   });
 
-  it("unpaid or unknown events and other businesses' charges change nothing", async () => {
+  it("unpaid or unknown events and other companies' charges change nothing", async () => {
     const a = await order(); const b = await order();
     await send("checkout.session.completed", { id: "cs_u", metadata: { intentId: a.site.id }, payment_status: "unpaid" });
     await send("checkout.session.async_payment_failed", { id: "cs_x", metadata: { intentId: a.site.id } });

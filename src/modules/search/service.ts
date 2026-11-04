@@ -23,7 +23,7 @@ export async function searchAll(ctx: StaffCtx, raw: string) {
     seeC ? db.ticket.findMany({ where: { workspaceId: w, OR: [{ title: ci(q) }, { reference: ci(q) }, { body: ci(q) }] }, include: { customer: { select: { displayName: true } } }, orderBy: { updatedAt: "desc" }, take }) : [],
   ]);
   const groups = [
-    { title: "Businesses", kind: "business", items: customers.map((c) => ({ href: `/customers/${c.id}`, title: c.displayName, sub: `${c.reference} · ${c.lifecycle}` })) },
+    { title: "Companies", kind: "business", items: customers.map((c) => ({ href: `/customers/${c.id}`, title: c.displayName, sub: `${c.reference} · ${c.lifecycle}` })) },
     { title: "People", kind: "person", items: contacts.map((c) => ({ href: `/customers/${c.customerId}`, title: c.name, sub: `${c.email ?? "no email"} · ${c.customer.displayName}` })) },
     { title: "Quotes", kind: "quote", items: proposals.map((p) => ({ href: `/proposals/${p.id}`, title: p.title, sub: `${p.reference} · ${p.customer.displayName} · ${p.status}` })) },
     { title: "Agreements", kind: "agreement", items: contracts.map((k) => ({ href: `/contracts/${k.id}`, title: k.title, sub: `${k.reference} · ${k.customer.displayName} · ${k.status.replace("_", " ")}` })) },

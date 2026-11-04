@@ -2,7 +2,7 @@ import { getClient } from "@/modules/identity/session";
 import { receiptFor, buildReceiptPdf, companyForReceipt } from "@/modules/billing/receipt";
 import { db } from "@/lib/db";
 
-/** A customer downloading their own receipt. Only people with billing access to that business can. */
+/** A customer downloading their own receipt. Only people with billing access to that company can. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const c = await getClient();
   if (!c) return new Response("Please sign in.", { status: 401 });

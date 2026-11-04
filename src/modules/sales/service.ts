@@ -10,7 +10,7 @@ import type { StaffCtx } from "@/modules/identity/session";
 
 export const ACCEPTANCE_TERMS_VERSION = "2026-10-v1";
 export const ACCEPTANCE_TEXT =
-  "I confirm I am authorised to accept this proposal for the business named above, and I accept this exact version, scope and price. This records my acceptance of the proposal; it is not by itself a signed contract.";
+  "I confirm I am authorised to accept this proposal for the company named above, and I accept this exact version, scope and price. This records my acceptance of the proposal; it is not by itself a signed contract.";
 
 const lineInput = z.object({
   description: z.string().trim().min(1).max(300),

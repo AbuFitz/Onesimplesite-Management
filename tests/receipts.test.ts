@@ -51,7 +51,7 @@ describe("receipts", () => {
     await db.billingIntent.update({ where: { id: x.one.id }, data: { status: "paid", paidAt: new Date("2026-10-01"), paidVia: "stripe" } });
     expect(await clientReceipts(x.ca)).toHaveLength(1); expect(await clientReceipts(x.ca)).toHaveLength(1);
   });
-  it("only people with billing access to that business can open it, and the PDF is real", async () => {
+  it("only people with billing access to that company can open it, and the PDF is real", async () => {
     const x = await world();
     await markPaidManually(x.staff, x.one.id, "bank");
     const [r] = await clientReceipts(x.ca);

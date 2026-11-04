@@ -15,6 +15,8 @@ model User {
   emailVerified    Boolean  @default(false)
   image            String?
   twoFactorEnabled Boolean  @default(false)
+  photo            Bytes? // customer profile picture (staff pictures live on StaffMembership)
+  photoType        String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -524,6 +526,8 @@ model AssetRequest {
   dueDate     DateTime? @db.Date
   receivedAt  DateTime?
   note        String?
+  response    String? // what the customer typed in answer (links, text, details)
+  respondedAt DateTime?
   createdAt   DateTime  @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
@@ -931,4 +935,13 @@ model Receipt {
   @@unique([workspaceId, ref])
   @@unique([intentId, key])
   @@index([customerId, paidAt])
+}
+
+/// A company's logo, for the team's own visibility. Kept apart so company lists never load the picture bytes.
+model CompanyLogo {
+  customerId  String   @id @db.Uuid
+  workspaceId String   @db.Uuid
+  bytes       Bytes
+  type        String
+  updatedAt   DateTime @updatedAt
 }

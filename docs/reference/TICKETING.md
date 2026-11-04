@@ -1,9 +1,9 @@
-# How tickets, businesses and people work
+# How tickets, companies and people work
 
 ## The three ideas
-1. **Business** = a customer company (or sole trader / individual). Everything hangs off it.
-2. **People** = the humans at that business. Each has a name, email and position. A person *may* also have a **portal login** at one of three levels.
-3. **Ticket** = one piece of work or one conversation, always linked to a business and (if known) the person who got in touch.
+1. **Company** = a customer company (or sole trader / individual). Everything hangs off it.
+2. **People** = the humans at that company. Each has a name, email and position. A person *may* also have a **portal login** at one of three levels.
+3. **Ticket** = one piece of work or one conversation, always linked to a company and (if known) the person who got in touch.
 
 ## Three kinds of ticket (they are treated differently)
 | Kind | What it is | What happens |
@@ -16,7 +16,7 @@
 New · In progress · **Customer replied** · **Waiting on customer** · Resolved · Closed.
 Customer writes = *Customer replied*. We reply = *Waiting on customer*. Customers see these as "We've got it / We're on it / Waiting for you / Sorted".
 
-## Flow: new business to live site
+## Flow: new company to live site
 ```mermaid
 flowchart TD
   A[Add a business: type, details, main contact] --> B[New ticket: New website]
@@ -62,7 +62,7 @@ flowchart TD
 | See and pay invoices, approve costs | yes | only with the billing switch | only with the billing switch |
 | See who has access, ask for another person | yes | no | no |
 
-Team controls (Business > People): invite, resend, change level, send password reset, remove access (signs them out), remove the person.
+Team controls (Company > People): invite, resend, change level, send password reset, remove access (signs them out), remove the person.
 A client owner can ask for a new person; the team approves (can change the level) or declines, and the requester is emailed.
 
 ## See also

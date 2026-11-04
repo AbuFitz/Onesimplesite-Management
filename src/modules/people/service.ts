@@ -22,7 +22,7 @@ export type Person = {
   access: Access; role: AccessLevel | null; billing: boolean; userId: string | null; lastSeen: Date | null;
 };
 
-/** Everyone at a business, with where they are on portal access. */
+/** Everyone at a company, with where they are on portal access. */
 export async function listPeople(ctx: StaffCtx, customerId: string): Promise<Person[]> {
   read(ctx);
   const contacts = await db.contact.findMany({ where: { customerId, workspaceId: ctx.workspaceId }, orderBy: [{ isPrimary: "desc" }, { name: "asc" }] });
@@ -58,8 +58,8 @@ async function contactOf(ctx: StaffCtx, id: string) {
 export async function addPerson(ctx: StaffCtx, customerId: string, raw: unknown) {
   write(ctx);
   const i = personInput.parse(raw);
-  if (!(await db.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId }, select: { id: true } }))) throw notFound("Business not found.");
-  if (await db.contact.findFirst({ where: { customerId, email: { equals: i.email, mode: "insensitive" } }, select: { id: true } })) throw new DomainError("conflict", "Someone with that email is already on this business.");
+  if (!(await db.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId }, select: { id: true } }))) throw notFound("Company not found.");
+  if (await db.contact.findFirst({ where: { customerId, email: { equals: i.email, mode: "insensitive" } }, select: { id: true } })) throw new DomainError("conflict", "Someone with that email is already on this company.");
   const first = (await db.contact.count({ where: { customerId } })) === 0;
   return db.$transaction(async (tx) => {
     const c = await tx.contact.create({ data: { workspaceId: ctx.workspaceId, customerId, name: i.name, email: i.email, phone: i.phone, position: i.position, isPrimary: first } });
@@ -72,7 +72,7 @@ export async function updatePerson(ctx: StaffCtx, contactId: string, raw: unknow
   write(ctx);
   const c = await contactOf(ctx, contactId);
   const i = personInput.parse(raw);
-  if (lc(i.email) !== lc(c.email) && (await db.contact.findFirst({ where: { customerId: c.customerId, id: { not: c.id }, email: { equals: i.email, mode: "insensitive" } }, select: { id: true } }))) throw new DomainError("conflict", "Someone else on this business already has that email.");
+  if (lc(i.email) !== lc(c.email) && (await db.contact.findFirst({ where: { customerId: c.customerId, id: { not: c.id }, email: { equals: i.email, mode: "insensitive" } }, select: { id: true } }))) throw new DomainError("conflict", "Someone else on this company already has that email.");
   const access = (await listPeople(ctx, c.customerId)).find((p) => p.id === c.id)?.access;
   if (lc(i.email) !== lc(c.email) && (access === "active" || access === "revoked")) throw new DomainError("conflict", "They already have a portal login on the old email. Remove their access, then add them again with the new email.");
   await db.$transaction(async (tx) => {
@@ -149,7 +149,7 @@ async function endAccess(tx: Parameters<Parameters<typeof db.$transaction>[0]>[0
   const u = await tx.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
   if (!u) return;
   await tx.clientMembership.updateMany({ where: { userId: u.id, customerId }, data: { revokedAt: new Date() } });
-  // Signed out everywhere right now if this was their only business.
+  // Signed out everywhere right now if this was their only company.
   if (!(await tx.clientMembership.count({ where: { userId: u.id, revokedAt: null } })) && !(await tx.staffMembership.count({ where: { userId: u.id } }))) await tx.session.deleteMany({ where: { userId: u.id } });
 }
 
@@ -160,7 +160,7 @@ const requestInput = personInput.extend({
   reason: z.string().trim().max(500).optional().transform((v) => v || null),
 });
 
-/** The portal list: who has access to this business, for owners only. */
+/** The portal list: who has access to this company, for owners only. */
 export async function clientPeople(c: ClientCtx, customerId: string) {
   if (!c.memberships.some((m) => m.customerId === customerId && memberCan(m, "people"))) throw forbidden();
   const [contacts, members, pending] = await Promise.all([
@@ -168,14 +168,14 @@ export async function clientPeople(c: ClientCtx, customerId: string) {
     db.clientMembership.findMany({ where: { customerId, revokedAt: null }, include: { user: { select: { email: true } } } }),
     db.accessRequest.findMany({ where: { customerId, status: "pending" }, orderBy: { createdAt: "desc" } }),
   ]);
-  return { people: contacts.map((p) => { const m = members.find((x) => lc(x.user.email) === lc(p.email)); return { ...p, level: m ? levelLabel(m.role) : null, billing: !!m?.billing || m?.role === "admin" }; }), pending };
+  return { people: contacts.map((p) => { const m = members.find((x) => lc(x.user.email) === lc(p.email)); return { ...p, userId: m?.userId ?? null, level: m ? levelLabel(m.role) : null, billing: !!m?.billing || m?.role === "admin" }; }), pending };
 }
 
 export async function clientRequestAccess(c: ClientCtx, customerId: string, raw: unknown) {
   const m = c.memberships.find((x) => x.customerId === customerId);
-  if (!m || !memberCan(m, "people")) throw forbidden("Only the business owner can ask for someone to be added.");
+  if (!m || !memberCan(m, "people")) throw forbidden("Only the company owner can ask for someone to be added.");
   const i = requestInput.parse(raw);
-  if (await db.contact.findFirst({ where: { customerId, email: { equals: i.email, mode: "insensitive" } }, select: { id: true } })) throw new DomainError("conflict", "That person is already on your business. Ask us if they can't sign in.");
+  if (await db.contact.findFirst({ where: { customerId, email: { equals: i.email, mode: "insensitive" } }, select: { id: true } })) throw new DomainError("conflict", "That person is already on your company. Ask us if they can't sign in.");
   if (await db.accessRequest.findFirst({ where: { customerId, status: "pending", email: { equals: i.email, mode: "insensitive" } }, select: { id: true } })) throw new DomainError("conflict", "You've already asked for that person. We'll be in touch soon.");
   if ((await db.accessRequest.count({ where: { customerId, status: "pending" } })) >= 10) throw new DomainError("conflict", "You have several requests waiting. We'll deal with those first.");
   const ws = m.customer.workspaceId;

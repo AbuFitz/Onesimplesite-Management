@@ -5,7 +5,7 @@ This replaces the older table in `IMPLEMENTATION-STATUS.md`, which describes the
 ## The working model
 
 **Customer → Ticket → Quote → Signature → Project.**
-A *ticket* (stored as an `Opportunity`) is one piece of work for a customer. The *New ticket* popup captures the customer, business, work type, priority, due date, assignee and price in five dropdown-led steps, and creates the customer (or reuses one) plus a draft quote. Sending the quote for signature emails one link. The customer signs once (draw first, or type), and the signed PDF goes to them, to hello@ and to their portal. The ticket then reads **Signed** and a project is created.
+A *ticket* (stored as an `Opportunity`) is one piece of work for a customer. The *New ticket* popup captures the customer, company, work type, priority, due date, assignee and price in five dropdown-led steps, and creates the customer (or reuses one) plus a draft quote. Sending the quote for signature emails one link. The customer signs once (draw first, or type), and the signed PDF goes to them, to hello@ and to their portal. The ticket then reads **Signed** and a project is created.
 
 Ticket status words: New · In progress · Waiting to sign · Signed · Lost. They move on their own; the only manual change is *Mark lost*.
 
@@ -55,4 +55,4 @@ Grey application frame, white working panel, left rail with a clear active state
 - **Agreement**: the quote plus our Terms and Conditions as the customer sees and signs it. Immutable once sent.
 - **Outbox**: the queue every email goes through, so a failed send is retried and never duplicated.
 - **Capability**: one permission (for example `vault.use`). Team levels are sets of capabilities.
-- **RLS**: row level security in the database; the app role is the only one allowed to read business tables.
+- **RLS**: row level security in the database; the app role is the only one allowed to read company tables.

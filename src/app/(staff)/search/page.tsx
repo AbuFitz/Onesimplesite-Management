@@ -17,7 +17,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<{
     <>
       <RecordHeader title="Search" meta="Tip: press ⌘K (or Ctrl+K) anywhere to search without leaving the page" />
       <form role="search" className="relative mb-6 max-w-2xl"><SearchIcon size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" aria-hidden /><label htmlFor="q" className="sr-only">Search</label>
-        <input id="q" name="q" defaultValue={q} autoFocus type="search" placeholder="A business, person, ticket, agreement, project or post" className="field !min-h-12 !pl-11 !text-base" /></form>
+        <input id="q" name="q" defaultValue={q} autoFocus type="search" placeholder="A company, person, ticket, agreement, project or post" className="field !min-h-12 !pl-11 !text-base" /></form>
       {r.q.length < 2 ? <p className="text-ink/70">Type at least two letters. You can search by reference number too, like OSS-TK-2026-0004.</p>
         : r.groups.length === 0 ? <Empty title={`No results for “${r.q}”`}>Check the spelling, or search by reference number. You only see records you have access to.</Empty>
         : (

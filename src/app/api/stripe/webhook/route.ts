@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   let ev: { id?: string; type?: string; livemode?: boolean; data?: { object?: Record<string, unknown> & { id?: string; amount_total?: number; amount_paid?: number; currency?: string } } };
   try { ev = JSON.parse(body); } catch { return new Response("Bad payload.", { status: 400 }); }
   if (!ev.id || !ev.type) return new Response("Bad payload.", { status: 400 });
-  // Find the business this event belongs to from our own records, so it is right even with several workspaces.
+  // Find the company this event belongs to from our own records, so it is right even with several workspaces.
   const o0 = ev.data?.object as Record<string, unknown> | undefined;
   const intentId = (o0?.metadata as Record<string, string> | undefined)?.intentId;
   const subId = String(ev.type).startsWith("customer.subscription.") ? (o0?.id as string | undefined) : stripeSubId(o0);

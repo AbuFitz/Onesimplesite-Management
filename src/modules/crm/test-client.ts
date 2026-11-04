@@ -10,7 +10,7 @@ import { deleteBusiness } from "./delete";
 export const TEST_CLIENT_NAME = "Test Client (demo)";
 
 /**
- * A ready-made demo business so the team can walk the whole client experience: portal sign-in, a signed order with a
+ * A ready-made demo company so the team can walk the whole client experience: portal sign-in, a signed order with a
  * website fee and a monthly plan to pay (use Stripe test cards), a project, and a ticket. Reuses the same demo account
  * if it already exists, and just sends a fresh portal invitation to the email given.
  */
@@ -44,7 +44,7 @@ export async function createTestClient(ctx: StaffCtx, rawEmail: unknown) {
   return contactId.customerId;
 }
 
-/** What the Testing page shows about the demo business. */
+/** What the Testing page shows about the demo company. */
 export async function testClientStatus(ctx: StaffCtx) {
   const cu = await db.customer.findFirst({ where: { workspaceId: ctx.workspaceId, displayName: TEST_CLIENT_NAME }, select: { id: true, reference: true, contacts: { select: { email: true } }, createdAt: true } });
   if (!cu) return null;
@@ -54,7 +54,7 @@ export async function testClientStatus(ctx: StaffCtx) {
   return { id: cu.id, reference: cu.reference, email, signedUp: !!user, invitePending: pending > 0 };
 }
 
-/** Wipes the demo business so you can start the test again. */
+/** Wipes the demo company so you can start the test again. */
 export async function resetTestClient(ctx: StaffCtx) {
   if (!can(ctx.role, "settings.write")) throw forbidden();
   const cu = await db.customer.findFirst({ where: { workspaceId: ctx.workspaceId, displayName: TEST_CLIENT_NAME }, select: { id: true } });

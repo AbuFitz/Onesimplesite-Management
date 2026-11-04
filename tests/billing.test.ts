@@ -105,7 +105,7 @@ describe("billing", () => {
 
 import { createTestClient, TEST_CLIENT_NAME } from "@/modules/crm/test-client";
 describe("test client", () => {
-  it("creates a demo business with a completed order to pay, invites the email, and is safe to run twice", async () => {
+  it("creates a demo company with a completed order to pay, invites the email, and is safe to run twice", async () => {
     const { w, staff } = await world();
     const email = `demo-${Math.random().toString(36).slice(2, 8)}@example.test`;
     const id = await createTestClient(staff, email);

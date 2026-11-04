@@ -33,7 +33,7 @@ async function SamplePage() {
       <div role="note" className="mx-auto mb-5 max-w-[794px] rounded-2xl bg-[#fbf3d5] px-4 py-3 text-sm text-[#5c4700]"><strong>This is a sample.</strong> It shows exactly what a customer sees. You can try signing; nothing is recorded and no one is emailed.</div>
       <SignWorkspace title="Website for Sample Café" reference="OSS-OF-2026-047"
         doc={<DocSheet meta={{ title: "Website for Sample Café", ref: "OSS-OF-2026-047", date: day(new Date()), version: "1.0", status: "Sample", mark: "Prepared for Sample Café Ltd" }}><DocBody text={text} hideSign={(l) => l.startsWith("Accepted by")} /></DocSheet>}
-        panel={<SignForm token="sample" defaultName="Alex Sample" consent={CONSENT_TEXT} business="Sample Café Ltd" />} />
+        panel={<SignForm token="sample" defaultName="Alex Sample" consent={CONSENT_TEXT} company="Sample Café Ltd" />} />
     </SignShell>
   );
 }
@@ -62,7 +62,7 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
       </section>
       <SignWorkspace title={r.title} reference={r.reference} pdfHref={`/s/${token}/pdf`}
         doc={<DocSheet meta={{ title: r.title, ref: r.reference, date: day(r.sentAt), version: "1.0", status: "Issued", mark: `Prepared for ${r.business}` }}><DocBody text={r.contentText} hideSign={(l) => l.startsWith("Accepted by")} /></DocSheet>}
-        panel={<><SignForm token={token} defaultName={r.signerName} consent={CONSENT_TEXT} business={r.business} /><DeclineForm token={token} /></>} />
+        panel={<><SignForm token={token} defaultName={r.signerName} consent={CONSENT_TEXT} company={r.business} /><DeclineForm token={token} /></>} />
     </SignShell>
   );
 }

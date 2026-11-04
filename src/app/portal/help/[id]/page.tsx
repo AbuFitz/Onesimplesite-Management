@@ -37,7 +37,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               <form action={approveChangeAction}><input type="hidden" name="id" value={t.id} /><button className="btn btn-dark">Approve {money(t.priceMinor)}</button></form>
               <form action={declineChangeAction} className="flex flex-wrap items-center gap-2"><input type="hidden" name="id" value={t.id} /><label className="sr-only" htmlFor="why">Why not?</label><input id="why" name="reason" className="field !min-h-10 w-56" placeholder="Not now? Tell us why (optional)" /><button className="btn btn-quiet">Not now</button></form>
             </div>
-          ) : <p className="mt-4 font-semibold">Ask the business owner to approve this.</p>}
+          ) : <p className="mt-4 font-semibold">Ask the company owner to approve this.</p>}
         </section>
       ) : t.chargeStatus === "approved" ? <section className="tile bg-mint !p-5"><p className="font-semibold">You approved {money(t.priceMinor ?? 0)}. <Link className="underline" href="/billing">Pay now</Link></p></section>
         : t.chargeStatus === "paid" ? <section className="tile bg-mint !p-5"><p className="font-semibold">{money(t.priceMinor ?? 0)} paid. Thank you.</p></section> : null}
@@ -49,7 +49,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
       <section className="space-y-3" aria-label="Conversation">
         {t.comments.map((m) => (
           <div key={m.id} className={`tile !p-5 ${m.authorKind === "client" ? "bg-sky/60" : "bg-white"}`}>
-            <div className="mb-2 flex items-center gap-3"><Avatar name={m.authorName} size={32} staffId={m.authorKind === "staff" ? m.authorStaffId : null} base="/avatar" /><div><p className="font-bold leading-tight">{m.authorKind === "client" ? "You" : m.authorName}</p><p className="text-xs text-muted">{fmtDateTime(m.createdAt)}</p></div></div>
+            <div className="mb-2 flex items-center gap-3"><Avatar name={m.authorName} size={32} staffId={m.authorKind === "staff" ? m.authorStaffId : m.authorUserId} base={m.authorKind === "staff" ? "/avatar" : "/avatar/u"} /><div><p className="font-bold leading-tight">{m.authorKind === "client" ? "You" : m.authorName}</p><p className="text-xs text-muted">{fmtDateTime(m.createdAt)}</p></div></div>
             <p className="whitespace-pre-wrap">{m.body}</p>
             <Files base="/files" items={files.filter((f) => f.commentId === m.id)} />
           </div>

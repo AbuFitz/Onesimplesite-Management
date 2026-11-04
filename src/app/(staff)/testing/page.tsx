@@ -25,10 +25,10 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
   const yesNo = (ok: boolean, good = "Yes", bad = "No") => <span className={`rounded-md px-2 py-0.5 text-sm font-semibold ${ok ? "bg-[#e9f6ef] text-[#0a5a3d]" : "bg-[#fde6dc] text-[#7a2e12]"}`}>{ok ? good : bad}</span>;
   return (
     <>
-      <RecordHeader title="Testing" meta="Safe to play with. Test emails only go to hello@, the demo business is clearly marked, and Stripe test mode never moves real money." />
+      <RecordHeader title="Testing" meta="Safe to play with. Test emails only go to hello@, the demo company is clearly marked, and Stripe test mode never moves real money." />
       <ErrorSummary message={sp.error} />
-      {sp.created && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Demo business ready. A portal invitation is on its way to that email.</p>}
-      {sp.reset && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Demo business deleted. You can start again.</p>}
+      {sp.created && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Demo company ready. A portal invitation is on its way to that email.</p>}
+      {sp.reset && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Demo company deleted. You can start again.</p>}
 
       <div className="grid gap-x-12 gap-y-10 lg:grid-cols-2">
         <Section title="Test emails">
@@ -48,12 +48,12 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
         </Section>
 
         <Section title="Test client">
-          <p className="mb-3 text-sm text-muted">A demo business ({TEST_CLIENT_NAME}) with a signed website order, a £49 monthly plan and a project, so you can use the whole client portal for real.</p>
+          <p className="mb-3 text-sm text-muted">A demo company ({TEST_CLIENT_NAME}) with a signed website order, a £49 monthly plan and a project, so you can use the whole client portal for real.</p>
           {demo && (
             <div className="mb-4 rounded-xl bg-bone p-4 text-sm">
               <p><strong>{TEST_CLIENT_NAME}</strong> · {demo.reference}</p>
               <p className="text-muted">Portal login email: {demo.email ?? "none"} · {demo.signedUp ? "login created" : demo.invitePending ? "invitation sent, not accepted yet" : "no invitation waiting"}</p>
-              <p className="mt-2 flex flex-wrap gap-3"><Link className="underline" href={`/customers/${demo.id}`}>Open the business</Link><a className="underline" href={`${origins().portal}/login`} target="_blank" rel="noreferrer">Open the client portal</a></p>
+              <p className="mt-2 flex flex-wrap gap-3"><Link className="underline" href={`/customers/${demo.id}`}>Open the company</Link><a className="underline" href={`${origins().portal}/login`} target="_blank" rel="noreferrer">Open the client portal</a></p>
             </div>
           )}
           <form action={createTestClientAction} className="flex flex-wrap items-end gap-3">
@@ -61,7 +61,7 @@ export default async function Testing({ searchParams }: { searchParams: Promise<
             <SubmitButton>{demo ? "Send invitation" : "Create test client"}</SubmitButton>
           </form>
           <p className="hint mt-2">Use an email that isn't your team login. With Gmail, add +test (you+test@gmail.com) and it still lands in your inbox.</p>
-          {demo && <form action={resetTestClientAction} className="mt-4"><button className="btn btn-quiet">Delete the demo business and start again</button></form>}
+          {demo && <form action={resetTestClientAction} className="mt-4"><button className="btn btn-quiet">Delete the demo company and start again</button></form>}
         </Section>
 
         <Section title="Stripe">

@@ -103,14 +103,14 @@ ok((await get(staff, `${termsUrl}/sample.pdf`)).head === "%PDF-", "sample PDF do
 await staff.goto(`${M}/customers/new`); await staff.waitForLoadState("networkidle");
 await staff.fill("#rb-n", name); await staff.selectOption("#rb-t", "Food and drink"); await staff.fill("#rb-to", "Bristol");
 await staff.fill("#rc-n", "Casey Morgan"); await staff.fill("#rc-e", email);
-await staff.click("button:has-text('Add business and start a ticket')"); await staff.waitForURL(/\/tickets\/new\?business=/);
+await staff.click("button:has-text('Add company and start a ticket')"); await staff.waitForURL(/\/tickets\/new\?business=/);
 await staff.click("button:has-text('New website')");
 await staff.fill("#tc-t", title); await staff.fill("#tc-d", "A website with bookings for their bakery.");
 await staff.click("button:has-text('Create and open the quote')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
 await staff.fill("input[name=l0d]", "Website build"); await staff.fill("input[name=l0p]", "1500"); await staff.fill("input[name=l1d]", "Hosting"); await staff.fill("input[name=l1p]", "25"); await staff.check("input[name=l1r]");
 await staff.fill("#scope", "A website with bookings in Bristol"); await staff.locator("summary:has-text('More details')").click(); await staff.fill("#req_pages", "Up to 5 pages"); await staff.fill("#req_features", "Contact form"); await staff.fill("#req_payment", "50% on signing\n50% on launch");
 await staff.click("button:has-text('Save changes')"); await staff.waitForSelector("text=Saved.");
-ok(true, "a business was registered, then a New website ticket opened its draft quote");
+ok(true, "a company was registered, then a New website ticket opened its draft quote");
 const earlyProposal = staff.url();
 await staff.goto(`${M}/customers`); await staff.click(`a:has-text('${name}')`); await staff.waitForURL(/\/customers\/[0-9a-f-]{36}$/);
 const customerUrl = staff.url();

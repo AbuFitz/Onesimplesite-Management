@@ -28,7 +28,7 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
     return () => { clearTimeout(t); ctl.abort(); };
   }, [q]);
 
-  const quick: Item[] = useMemo(() => [...actions.map((a) => ({ href: a.href, title: a.label, kind: "action" })), ...[["/", "Today"], ["/tickets", "Tickets"], ["/customers", "Businesses"], ["/projects", "Projects"], ["/calendar", "Calendar"], ["/board", "Team Board"]].map(([href, title]) => ({ href, title: `Go to ${title}`, kind: "go" }))], [actions]);
+  const quick: Item[] = useMemo(() => [...actions.map((a) => ({ href: a.href, title: a.label, kind: "action" })), ...[["/", "Today"], ["/tickets", "Tickets"], ["/customers", "Companies"], ["/projects", "Projects"], ["/calendar", "Calendar"], ["/board", "Team Board"]].map(([href, title]) => ({ href, title: `Go to ${title}`, kind: "go" }))], [actions]);
   const flat: Item[] = q.trim().length < 2 ? quick : groups.flatMap((g) => g.items.map((i) => ({ ...i, kind: g.kind })));
   const go = (href: string) => { setOpen(false); router.push(href); };
   const onKey = (e: React.KeyboardEvent) => {
@@ -46,7 +46,7 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className="relative mx-auto hidden h-9 w-full max-w-lg items-center gap-2 rounded-lg border border-line bg-soft px-3 text-left text-sm text-muted hover:border-edge sm:flex" aria-label="Search, or press Command K">
-        <Search size={16} aria-hidden /><span className="flex-1">Search businesses, tickets, projects</span><kbd className="rounded border border-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-muted">⌘K</kbd>
+        <Search size={16} aria-hidden /><span className="flex-1">Search companies, tickets, projects</span><kbd className="rounded border border-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-muted">⌘K</kbd>
       </button>
       {open && (
         <div className="fixed inset-0 z-[60] flex items-start justify-center bg-ink/40 px-3 pt-[10dvh]" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>

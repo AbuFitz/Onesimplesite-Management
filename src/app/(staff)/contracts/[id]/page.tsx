@@ -39,7 +39,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
         <SummaryTile label="Status" value={stateText} sub={k.completedAt ? fmtDate(k.completedAt) : undefined} tone={stateTone} />
         <SummaryTile label="Website" value={money(k.oneOffMinor, k.currency)} sub="one-off" tone="blue" />
         <SummaryTile label="Monthly plan" value={k.recurringMinor ? money(k.recurringMinor, k.currency) : "None"} sub={k.recurringMinor ? "every month" : "website only"} tone="lilac" />
-        <SummaryTile label="Business" value={<Link className="underline decoration-ink/30 underline-offset-2" href={`/customers/${k.customerId}`}>{k.customer.displayName}</Link>} sub={pc ? pc.name : undefined} />
+        <SummaryTile label="Company" value={<Link className="underline decoration-ink/30 underline-offset-2" href={`/customers/${k.customerId}`}>{k.customer.displayName}</Link>} sub={pc ? pc.name : undefined} />
       </div>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">

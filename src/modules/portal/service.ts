@@ -23,7 +23,7 @@ export async function clientProject(c: ClientCtx, projectId: string) {
     select: {
       id: true, name: true, stage: true, dueDate: true, customerId: true,
       updates: { where: { clientVisible: true }, orderBy: { createdAt: "desc" }, select: { id: true, body: true, createdAt: true } },
-      assetRequests: { select: { id: true, label: true, required: true, dueDate: true, receivedAt: true } },
+      assetRequests: { orderBy: { createdAt: "asc" }, select: { id: true, label: true, required: true, dueDate: true, receivedAt: true, response: true } },
     },
   });
   return p;

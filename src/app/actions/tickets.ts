@@ -21,7 +21,7 @@ export async function createTicketStaffAction(_: unknown, fd: FormData): Promise
   let to: string;
   try {
     const cu = await db.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId }, select: { id: true, displayName: true } });
-    if (!cu) throw new DomainError("not_found", "Pick the business first.");
+    if (!cu) throw new DomainError("not_found", "Pick the company first.");
     let contactId = g("contactId");
     if (contactId === "new") contactId = (await addPerson(ctx, cu.id, { name: g("newName"), email: g("newEmail"), position: g("newPosition") || undefined })).id;
     if (type === "onboarding") {

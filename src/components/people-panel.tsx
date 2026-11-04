@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui";
 import { addPersonAction, updatePersonAction, invitePersonAction, setAccessAction, resetPasswordAction, revokeAccessAction, removePersonAction, approveRequestAction, declineRequestAction } from "@/app/actions/people";
 import { ACCESS_LEVELS, levelLabel } from "@/modules/portal/access";
 import type { Person } from "@/modules/people/service";
@@ -22,7 +23,7 @@ function Level({ role = "member", billing = false, id }: { role?: string; billin
 }
 const Hidden = ({ customerId, contactId }: { customerId: string; contactId?: string }) => <><input type="hidden" name="customerId" value={customerId} />{contactId && <input type="hidden" name="contactId" value={contactId} />}</>;
 
-/** Everyone at the business, what each can do in the portal, and every control the team needs. */
+/** Everyone at the company, what each can do in the portal, and every control the team needs. */
 export function PeoplePanel({ customerId, people, requests, canEdit }: { customerId: string; people: Person[]; requests: Req[]; canEdit: boolean }) {
   return (
     <div className="space-y-8">
@@ -48,14 +49,14 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
 
       <section aria-label="People">
         <h2 className="mb-1 text-lg">People</h2>
-        <p className="mb-4 text-sm text-muted">Everyone at this business. Add them here, then invite the ones who need the client portal and choose what they can do.</p>
+        <p className="mb-4 text-sm text-muted">Everyone at this company. Add them here, then invite the ones who need the client portal and choose what they can do.</p>
         {people.length === 0 ? <p className="text-sm text-muted">Nobody added yet.</p> : (
           <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
             {people.map((p) => { const st = STATE[p.access]; return (
               <li key={p.id} className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold">{p.name}{p.isPrimary && <span className="ml-2 text-xs font-normal text-muted">main contact</span>}</p>
+                    <p className="flex items-center gap-2 font-semibold"><Avatar name={p.name} size={28} staffId={p.userId} base="/api/avatar/u" />{p.name}{p.isPrimary && <span className="ml-2 text-xs font-normal text-muted">main contact</span>}</p>
                     <p className="text-sm text-muted">{[p.position, p.email, p.phone].filter(Boolean).join(" · ") || "No details"}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -90,7 +91,7 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                         <div><label className="label" htmlFor={`t-${p.id}`}>Phone</label><input id={`t-${p.id}`} name="phone" className="field !min-h-11 sm:!min-h-9" defaultValue={p.phone ?? ""} /></div>
                         <div className="sm:col-span-2"><button className="btn btn-quiet">Save details</button></div>
                       </form>
-                      <details className="border-t border-line pt-3"><summary className="cursor-pointer text-[#7a2e12]">They've left the business</summary>
+                      <details className="border-t border-line pt-3"><summary className="cursor-pointer text-[#7a2e12]">They've left the company</summary>
                         <form action={removePersonAction} className="mt-2 space-y-2"><Hidden customerId={customerId} contactId={p.id} /><p>This removes {p.name} from the list and ends any portal access straight away. Tickets they raised stay, without their name.</p><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Remove {p.name.split(" ")[0]}</button></form></details>
                     </div>
                   </details>

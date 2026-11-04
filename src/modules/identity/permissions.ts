@@ -15,7 +15,7 @@ const without = (...c: Cap[]) => new Set(CAPS.filter((x) => !c.includes(x)));
 
 export const ROLE_CAPS: Record<StaffRole, ReadonlySet<Cap>> = {
   owner: ALL,
-  // Everyone on the team gets every business capability, but cannot manage logins or settings.
+  // Everyone on the team gets every company capability, but cannot manage logins or settings.
   member: without("staff.manage"),
   client_director: without("staff.manage", "settings.write", "billing.refund", "audit.read"),
   delivery: new Set<Cap>(["vault.use", "customer.read", "project.read_assigned", "project.write", "calendar.write", "notes.write"]),

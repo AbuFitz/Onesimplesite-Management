@@ -13,7 +13,7 @@ async function staffCtx(): Promise<StaffCtx> {
   return { userId: null as unknown as string, staffId: m.id, workspaceId: w.id, role: "owner", name: "Abukar", email: m.email };
 }
 
-describe("test client and deleting a business", () => {
+describe("test client and deleting a company", () => {
   it("refuses an email that already has a login, such as your own team login", async () => {
     const ctx = await staffCtx();
     const email = `me-${Math.random().toString(36).slice(2, 8)}@example.test`;
@@ -21,7 +21,7 @@ describe("test client and deleting a business", () => {
     await expect(createTestClient(ctx, email)).rejects.toThrow(/already has a login/);
   });
 
-  it("deletes a business and absolutely everything under it, and leaves other businesses alone", async () => {
+  it("deletes a company and absolutely everything under it, and leaves other companies alone", async () => {
     const ctx = await staffCtx();
     const email = `demo-${Math.random().toString(36).slice(2, 8)}@example.test`;
     const id = await createTestClient(ctx, email);
@@ -47,12 +47,12 @@ describe("test client and deleting a business", () => {
       projects: await db.project.count({ where: { customerId: id } }), notes: await db.note.count({ where: { customerId: id } }), opps: await db.opportunity.count({ where: { customerId: id } }),
       members: await db.clientMembership.count({ where: { customerId: id } }), invites: await db.invitation.count({ where: { customerId: id } }),
     })) expect(n, name).toBe(0);
-    expect(await db.user.count({ where: { id: u.id } })).toBe(0);                        // the login that only belonged to this business is gone
-    expect(await db.customer.count({ where: { id: other.id } })).toBe(1);               // other businesses untouched
+    expect(await db.user.count({ where: { id: u.id } })).toBe(0);                        // the login that only belonged to this company is gone
+    expect(await db.customer.count({ where: { id: other.id } })).toBe(1);               // other companies untouched
     expect(await db.contact.count({ where: { customerId: other.id } })).toBe(1);
   });
 
-  it("will not delete a business with a monthly plan still running in Stripe", async () => {
+  it("will not delete a company with a monthly plan still running in Stripe", async () => {
     const ctx = await staffCtx();
     const id = await createTestClient(ctx, `d-${Math.random().toString(36).slice(2, 8)}@example.test`);
     await db.billingIntent.updateMany({ where: { customerId: id, kind: "recurring_setup" }, data: { status: "active", stripeSubscriptionId: "sub_live" } });

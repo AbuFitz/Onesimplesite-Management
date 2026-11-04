@@ -78,7 +78,7 @@ export function TicketForm({ accounts, projects }: { accounts: { id: string; nam
         </div>
         <div className="mt-6 space-y-4">
           {projects.length > 0 && <div><label className="label" htmlFor="tk-proj">Is it about one of your websites? <span className="font-normal text-muted">(optional)</span></label><select id="tk-proj" name="projectId" value={project} onChange={(e) => setProject(e.target.value)} className="field"><option value="">Not sure, or not a specific one</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>}
-          {accounts.length > 1 && <div><label className="label" htmlFor="tk-acc">Which business is this for?</label><select id="tk-acc" name="customerId" value={account} onChange={(e) => setAccount(e.target.value)} className="field">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>}
+          {accounts.length > 1 && <div><label className="label" htmlFor="tk-acc">Which company is this for?</label><select id="tk-acc" name="customerId" value={account} onChange={(e) => setAccount(e.target.value)} className="field">{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>}
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export function TicketForm({ accounts, projects }: { accounts: { id: string; nam
         <h2 className={big}>Check and send</h2>
         <p className="mb-5 mt-1 text-muted">Everything look right? We'll email you a copy.</p>
         <dl className="divide-y divide-line overflow-hidden rounded-2xl bg-white">
-          {[["About", k?.label ?? "", 0], ["Title", title, 1], ["Details", body.length > 220 ? `${body.slice(0, 220)}…` : body, 1], ["Files", files() ? `${files()} attached` : "None", 1], ["Urgency", u.label, 2], ...(accounts.length > 1 ? [["Business", accounts.find((a) => a.id === account)?.name ?? "", 2] as [string, string, number]] : [])].map(([l, v, to]) => (
+          {[["About", k?.label ?? "", 0], ["Title", title, 1], ["Details", body.length > 220 ? `${body.slice(0, 220)}…` : body, 1], ["Files", files() ? `${files()} attached` : "None", 1], ["Urgency", u.label, 2], ...(accounts.length > 1 ? [["Company", accounts.find((a) => a.id === account)?.name ?? "", 2] as [string, string, number]] : [])].map(([l, v, to]) => (
             <div key={String(l)} className="grid gap-1 px-4 py-3 sm:grid-cols-[7rem_1fr_auto] sm:items-start sm:gap-4"><dt className="text-sm font-semibold text-muted">{l}</dt><dd className="whitespace-pre-wrap break-words">{String(v) || "—"}</dd><button type="button" onClick={() => go(Number(to))} className="justify-self-start text-sm font-semibold underline sm:justify-self-end">Change</button></div>
           ))}
         </dl>

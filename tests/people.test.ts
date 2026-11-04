@@ -66,7 +66,7 @@ describe("team controls for people", () => {
   it("adds a person, blocks duplicates, and an invitation carries the level chosen", async () => {
     const x = await world();
     const p = await addPerson(x.staff, x.c.id, { name: "Nina New", email: "Nina@Client.test", position: "Manager" });
-    await expect(addPerson(x.staff, x.c.id, { name: "Nina Again", email: "nina@client.test" })).rejects.toThrow(/already on this business/);
+    await expect(addPerson(x.staff, x.c.id, { name: "Nina Again", email: "nina@client.test" })).rejects.toThrow(/already on this company/);
     await invitePerson(x.staff, p.id, { role: "viewer", billing: true });
     const inv = await db.invitation.findFirstOrThrow({ where: { customerId: x.c.id, email: "nina@client.test" } });
     expect(inv).toMatchObject({ clientRole: "viewer", clientBilling: true });
@@ -79,11 +79,11 @@ describe("team controls for people", () => {
 describe("clients asking for another person", () => {
   it("only owners can ask; the team is emailed; approve creates the person and invites at the level; the requester is told", async () => {
     const x = await world();
-    await expect(clientRequestAccess(x.member.ctx, x.c.id, { name: "Sam S", email: "sam@client.test" })).rejects.toThrow(/Only the business owner/);
+    await expect(clientRequestAccess(x.member.ctx, x.c.id, { name: "Sam S", email: "sam@client.test" })).rejects.toThrow(/Only the company owner/);
     await expect(clientPeople(x.member.ctx, x.c.id)).rejects.toMatchObject({ code: "forbidden" });
     const r = await clientRequestAccess(x.owner.ctx, x.c.id, { name: "Sam S", email: "sam@client.test", position: "Bookings", role: "member", billing: false, reason: "Looks after bookings" });
     await expect(clientRequestAccess(x.owner.ctx, x.c.id, { name: "Sam S", email: "SAM@client.test" })).rejects.toThrow(/already asked/);
-    await expect(clientRequestAccess(x.owner.ctx, x.c.id, { name: "Mia", email: x.member.email })).rejects.toThrow(/already on your business/);
+    await expect(clientRequestAccess(x.owner.ctx, x.c.id, { name: "Mia", email: x.member.email })).rejects.toThrow(/already on your company/);
     expect((await clientPeople(x.owner.ctx, x.c.id)).pending).toHaveLength(1);
     expect(await db.outbox.count({ where: { workspaceId: x.w.id, topic: "email.access_request_notice" } })).toBe(1);
     await approveRequest(x.staff, r.id, { role: "viewer", billing: true });             // the team can change the level before approving
@@ -100,7 +100,7 @@ describe("clients asking for another person", () => {
     expect(await db.contact.count({ where: { customerId: x.c.id, email: "stranger@elsewhere.test" } })).toBe(0);
     expect((await db.outbox.findFirstOrThrow({ where: { workspaceId: x.w.id, topic: "email.access_request_decision" } })).payload).toMatchObject({ approved: false, note: "We couldn't verify them" });
   });
-  it("one business can't touch another's people", async () => {
+  it("one company can't touch another's people", async () => {
     const x = await world(); const y = await world();
     await expect(clientRequestAccess(x.owner.ctx, y.c.id, { name: "Intruder", email: "i@x.test" })).rejects.toMatchObject({ code: "forbidden" });
     await expect(setAccess(x.staff, y.owner.contact.id, { role: "viewer" })).rejects.toMatchObject({ code: "not_found" });

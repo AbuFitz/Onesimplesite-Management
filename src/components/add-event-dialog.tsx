@@ -8,7 +8,7 @@ import { SubmitButton } from "./submit-button";
 const TYPES = [["internal_meeting", "Team meeting"], ["client_call", "Customer call"], ["review", "Review"], ["focus", "Focus time"], ["other", "Something else"]] as const;
 
 /** Add an event: a bottom sheet on a phone, a centred box on a computer. Opened by a link (?add=1), so it works everywhere and survives a refresh. */
-export function AddEventDialog({ open, closeHref, day, view, scope, businesses, error }: { open: boolean; closeHref: string; day: string; view: string; scope: string; businesses: { id: string; name: string }[]; error?: string }) {
+export function AddEventDialog({ open, closeHref, day, view, scope, companies, error }: { open: boolean; closeHref: string; day: string; view: string; scope: string; companies: { id: string; name: string }[]; error?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   useEffect(() => { const d = ref.current; if (!d) return; if (open && !d.open) d.showModal(); if (!open && d.open) d.close(); }, [open]);
@@ -31,7 +31,7 @@ export function AddEventDialog({ open, closeHref, day, view, scope, businesses, 
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label" htmlFor="ev-y">Kind</label><select id="ev-y" name="type" className="field !min-h-12" defaultValue="internal_meeting">{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
-              <div><label className="label" htmlFor="ev-b">Business <span className="font-normal text-muted">(optional)</span></label><select id="ev-b" name="customerId" className="field !min-h-12" defaultValue=""><option value="">None</option>{businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+              <div><label className="label" htmlFor="ev-b">Company <span className="font-normal text-muted">(optional)</span></label><select id="ev-b" name="customerId" className="field !min-h-12" defaultValue=""><option value="">None</option>{companies.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
             </div>
             <div><label className="label" htmlFor="ev-w">Where, or a meeting link <span className="font-normal text-muted">(optional)</span></label><input id="ev-w" name="location" className="field !min-h-12" autoComplete="off" /></div>
           </div>

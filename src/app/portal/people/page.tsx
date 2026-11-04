@@ -21,7 +21,7 @@ export default async function People({ searchParams }: { searchParams: Promise<{
       <section className="tile bg-white" aria-label="Your team">
         <ul className="divide-y divide-line">
           {people.map((p) => (
-            <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><span className="flex items-center gap-3"><Avatar name={p.name} size={38} /><span><span className="block font-bold">{p.name}</span><span className="text-sm text-muted">{[p.position, p.email].filter(Boolean).join(" · ")}</span></span></span>
+            <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><span className="flex items-center gap-3"><Avatar name={p.name} size={38} staffId={p.userId} base="/avatar/u" /><span><span className="block font-bold">{p.name}</span><span className="text-sm text-muted">{[p.position, p.email].filter(Boolean).join(" · ")}</span></span></span>
               <span className="text-sm font-semibold">{p.level ? <>{p.level}{p.billing && p.level !== "Owner" ? " + billing" : ""}</> : <span className="text-muted">Not on the portal</span>}</span></li>
           ))}
         </ul>

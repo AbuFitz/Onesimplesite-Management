@@ -14,7 +14,7 @@ import { STATUS_LABEL, CATEGORY_LABEL } from "@/modules/support/options";
 import { LiveRefresh } from "@/components/live-refresh";
 import { RecordHeader, Status, Empty, ErrorSummary, Section, Stat, Tabs, money, fmtDateTime, timeAgo } from "@/components/ui";
 
-export const metadata = { title: "Business" };
+export const metadata = { title: "Company" };
 const TABS = ["overview", "people", "agreements", "projects", "notes", "activity"] as const;
 
 export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string; error?: string; tab?: string; details?: string; done?: string; delete?: string }> }) {
@@ -37,7 +37,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   return (
     <>
       <LiveRefresh seconds={20} />
-      <RecordHeader avatar back={{ href: "/customers", label: "Businesses" }} title={c.displayName}
+      <RecordHeader avatar logoId={c.id} back={{ href: "/customers", label: "Companies" }} title={c.displayName}
         status={<><Status label={c.lifecycle} kind={c.lifecycle === "active" ? "good" : "neutral"} />{c.atRisk && <Status label="at risk" kind="bad" />}</>}
         meta={<span>{c.reference}</span>}
         action={<>
@@ -48,8 +48,8 @@ export default async function CustomerPage({ params, searchParams }: { params: P
             <details className="relative">
               <summary className="btn btn-quiet cursor-pointer list-none" aria-label="More actions"><MoreHorizontal size={16} aria-hidden /> More</summary>
               <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-line bg-white p-1 shadow-[0_8px_30px_rgba(14,19,17,.12)]">
-                <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm hover:bg-bone" href={`/customers/${c.id}/details`}><Pencil size={15} aria-hidden /> Edit business details</Link>
-                <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-[#b3261e] hover:bg-[#fde6dc]" href={`/customers/${c.id}?delete=1`}><Trash2 size={15} aria-hidden /> Delete this business</Link>
+                <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm hover:bg-bone" href={`/customers/${c.id}/details`}><Pencil size={15} aria-hidden /> Edit company details</Link>
+                <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-[#b3261e] hover:bg-[#fde6dc]" href={`/customers/${c.id}?delete=1`}><Trash2 size={15} aria-hidden /> Delete this company</Link>
               </div>
             </details>
           )}
@@ -58,7 +58,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         <form action={deleteBusinessAction} className="mb-6 max-w-2xl space-y-3 rounded-2xl border border-[#e8b4ad] bg-[#fdf1ef] p-5 text-sm">
           <input type="hidden" name="id" value={c.id} />
           <p className="text-base font-semibold text-[#7a2e12]">Delete {c.displayName}?</p>
-          <p>This permanently deletes the business and everything under it: people and their portal logins, tickets and files, orders and signed agreements, projects, notes and calendar entries. It can't be undone and nothing is kept.</p>
+          <p>This permanently deletes the company and everything under it: people and their portal logins, tickets and files, orders and signed agreements, projects, notes and calendar entries. It can't be undone and nothing is kept.</p>
           <div><label className="label" htmlFor="typed">Type <strong>{c.displayName}</strong> to confirm</label><input id="typed" name="typed" className="field" autoComplete="off" required /></div>
           <div className="flex gap-2"><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Delete for good</button><Link className="btn btn-quiet" href={`/customers/${c.id}`}>Cancel</Link></div>
         </form>

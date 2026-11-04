@@ -29,7 +29,7 @@ const MAX_PER_HOUR = 8;
 const clean = (t: string) => t.replace(/\r\n?/g, "\n").trim();
 const excerpt = (t: string, n = 280) => (t.length > n ? `${t.slice(0, n).trimEnd()}…` : t);
 
-// ───────── People: every ticket belongs to a person at the business ─────────
+// ───────── People: every ticket belongs to a person at the company ─────────
 /** The contact for a signed-in client, found by email. Created on the spot if the team never added them. */
 async function contactFor(tx: Pick<typeof db, "contact">, workspaceId: string, customerId: string, name: string, email: string) {
   const found = await tx.contact.findFirst({ where: { workspaceId, customerId, email: { equals: email, mode: "insensitive" } } });
@@ -40,7 +40,7 @@ async function contactFor(tx: Pick<typeof db, "contact">, workspaceId: string, c
 export async function clientCreateTicket(c: ClientCtx, customerId: string | undefined, raw: unknown, files: Upload[] = []) {
   const m = c.memberships.find((x) => x.customerId === (customerId ?? c.memberships[0]?.customerId));
   if (!m || !c.email) throw forbidden();
-  if (!memberCan(m, "tickets")) throw new DomainError("forbidden", "Your access is view only. Ask the business owner to raise this, or to change your access.");
+  if (!memberCan(m, "tickets")) throw new DomainError("forbidden", "Your access is view only. Ask the company owner to raise this, or to change your access.");
   const i = createInput.parse(raw);
   const urgency = URGENCY.find((u) => u.id === i.urgency)!;
   return db.$transaction(async (tx) => {
@@ -66,7 +66,7 @@ export const clientTickets = (c: ClientCtx) =>
 
 /** A ticket and its public conversation. Internal notes never leave the building. */
 export async function clientTicket(c: ClientCtx, id: string) {
-  const t = await db.ticket.findFirst({ where: { id, ...clientScope(c) }, include: { project: { select: { name: true } }, contact: { select: { name: true } }, comments: { where: { internal: false }, orderBy: { createdAt: "asc" }, select: { id: true, authorKind: true, authorName: true, authorStaffId: true, body: true, createdAt: true } } } });
+  const t = await db.ticket.findFirst({ where: { id, ...clientScope(c) }, include: { project: { select: { name: true } }, contact: { select: { name: true } }, comments: { where: { internal: false }, orderBy: { createdAt: "asc" }, select: { id: true, authorKind: true, authorName: true, authorStaffId: true, authorUserId: true, body: true, createdAt: true } } } });
   return t;
 }
 
