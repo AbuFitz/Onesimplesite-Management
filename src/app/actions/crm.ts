@@ -37,7 +37,7 @@ function parseProposal(fd: FormData) {
     if (!d) continue;
     lines.push({ description: d, quantity: Number(fd.get(`l${i}q`) || 1), unitMinor: Math.round(Number(fd.get(`l${i}p`) || 0) * 100), recurring: fd.get(`l${i}r`) === "on" });
   }
-  const requirements = Object.fromEntries(["pages", "features", "integrations", "domainHosting", "contentBy", "timeline", "payment", "notes", "plan", "projectType", "promoLabel", "promoFreeMonths", "promoDiscount", "promoPercent", "depositPercent"].map((k) => [k, String(fd.get(["plan", "projectType", "promoLabel", "promoFreeMonths", "promoDiscount", "promoPercent", "depositPercent"].includes(k) ? k : `req_${k}`) ?? "")]).filter(([, v]) => v.trim()));
+  const requirements = Object.fromEntries(["pages", "features", "integrations", "domainHosting", "contentBy", "timeline", "payment", "notes", "plan", "projectType", "promoLabel", "promoFreeMonths", "promoDiscount", "promoPercent", "promoFreeEnds", "depositPercent"].map((k) => [k, String(fd.get(["plan", "projectType", "promoLabel", "promoFreeMonths", "promoDiscount", "promoPercent", "promoFreeEnds", "depositPercent"].includes(k) ? k : `req_${k}`) ?? "")]).filter(([, v]) => v.trim()));
   return { requirements, title: String(fd.get("title") ?? ""), scope: String(fd.get("scope") ?? ""), terms: String(fd.get("terms") ?? ""), validUntil: fd.get("validUntil") || undefined, recurringPeriod: (fd.get("recurringPeriod") || undefined) as "month" | "year" | undefined, lines };
 }
 

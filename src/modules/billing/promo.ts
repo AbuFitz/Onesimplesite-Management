@@ -1,5 +1,5 @@
 /** An offer agreed with one company on their order, such as "first month free". Stored with the quote's requirements so it is frozen with what they sign. */
-export type Promo = { label: string; freeMonths: number; discountMinor: number; percent: number };
+export type Promo = { label: string; freeMonths: number; discountMinor: number; percent: number; endsAfter: boolean };
 
 /** Reads the offer. Pass the website fee so a percentage can be turned into pounds; the discount can never be more than the fee. */
 export function promoFrom(req: Record<string, string | undefined> | null | undefined, oneOffMinor = 0): Promo | null {
@@ -9,7 +9,7 @@ export function promoFrom(req: Record<string, string | undefined> | null | undef
   const wanted = Math.round((oneOffMinor * percent) / 100) + fixed;
   const discountMinor = oneOffMinor > 0 ? Math.min(oneOffMinor, wanted) : fixed;
   if (freeMonths <= 0 && percent <= 0 && fixed <= 0) return null;
-  return { label: req?.promoLabel?.trim() || "Special offer", freeMonths, discountMinor, percent };
+  return { label: req?.promoLabel?.trim() || "Special offer", freeMonths, discountMinor, percent, endsAfter: freeMonths > 0 && req?.promoFreeEnds === "stop" };
 }
 /** How the discount reads on a document: "10% off", "£200.00 off", or both. */
 export const discountWords = (p: Promo, fmt: (n: number) => string) => (p.percent > 0 ? `${p.percent}% off${p.discountMinor > 0 ? ` (${fmt(p.discountMinor)})` : ""}` : `${fmt(p.discountMinor)} off`);

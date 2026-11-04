@@ -125,7 +125,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           </div>
           <Section title="Payments and plan" action={billing.length ? undefined : undefined}>
             {billing.length === 0 ? <p className="text-sm text-muted">Nothing to pay yet. Payments appear here once an order is signed.</p> : (
-              <ul>{billing.map((b) => { const st = plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt); return (
+              <ul>{billing.map((b) => { const st = plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt, b.paidVia === "free"); return (
                 <li key={b.id} className="row flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"><span><strong>{b.description ?? KIND_LABEL[b.kind] ?? b.kind}</strong> <span className="text-muted">· {chargeOf(b).title}{b.paidAt ? ` · paid ${fmtDateTime(b.paidAt)}` : ""}</span></span>
                   <span className="flex items-center gap-2"><span className="font-semibold">{money(b.amountMinor, b.currency)}{isMonthly(b.kind) ? " / month" : ""}</span><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${st.tone === "ok" ? "bg-[#e9f6ef] text-[#0a5a3d]" : st.tone === "warn" ? "bg-[#fde6dc] text-[#7a2e12]" : st.tone === "off" ? "bg-bone text-muted" : "bg-[#fbf3d5] text-[#5c4700]"}`}>{st.label}</span></span></li>); })}</ul>
             )}

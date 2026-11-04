@@ -19,7 +19,9 @@ export const KIND_LABEL: Record<string, string> = { one_off: "Website", deposit:
 export const isMonthly = (kind: string) => kind === "recurring_setup";
 
 /** Status in plain words. */
-export function plainStatus(kind: string, status: string, cancelsAt?: Date | null, trialEndsAt?: Date | null): { label: string; tone: "due" | "ok" | "warn" | "off" } {
+export function plainStatus(kind: string, status: string, cancelsAt?: Date | null, trialEndsAt?: Date | null, free = false): { label: string; tone: "due" | "ok" | "warn" | "off" } {
+  const d = (x: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(x);
+  if (free) return trialEndsAt && trialEndsAt > new Date() ? { label: `Free until ${d(trialEndsAt)}, then ends`, tone: "ok" } : { label: "Free period ended", tone: "off" };
   if (cancelsAt && (status === "active" || status === "past_due")) return { label: `Ends ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(cancelsAt)}`, tone: "warn" };
   if (status === "paid") return { label: "Paid", tone: "ok" };
   if (status === "active" && trialEndsAt && trialEndsAt > new Date()) return { label: `Free until ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(trialEndsAt)}`, tone: "ok" };
@@ -183,6 +185,18 @@ export async function setPlanOffer(ctx: StaffCtx, id: string, months: number, la
   await db.$transaction(async (tx) => {
     await tx.billingIntent.update({ where: { id }, data: { trialMonths: months, promoLabel: months > 0 ? (label.trim().slice(0, 60) || "Special offer") : null } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.offer_set", targetType: "billing_intent", targetId: id, customerId: b.customerId, visibility: "client", detail: { months, label } });
+  });
+}
+
+/** The customer decided to carry on after a free care period that was set to just end: it becomes a normal monthly plan they start with a card. */
+export async function continueFreePlan(ctx: StaffCtx, id: string) {
+  needWrite(ctx);
+  const b = await db.billingIntent.findFirst({ where: { id, workspaceId: ctx.workspaceId } });
+  if (!b) throw notFound();
+  if (b.paidVia !== "free" || !isMonthly(b.kind)) throw new DomainError("conflict", "This isn't a free care period.");
+  await db.$transaction(async (tx) => {
+    await tx.billingIntent.update({ where: { id }, data: { status: "pending", paidVia: null, paidAt: null, cancelsAt: null, trialEndsAt: null, trialMonths: 0, promoLabel: null, description: null } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.free_plan_continued", targetType: "billing_intent", targetId: id, customerId: b.customerId, visibility: "client" });
   });
 }
 

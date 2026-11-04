@@ -28,6 +28,11 @@ export function ProposalFields({ initial, defaults, plans = [] }: { initial?: In
           <div><label className="label" htmlFor="pd">Or pounds off (£)</label><input id="pd" name="promoDiscount" inputMode="decimal" className="field" placeholder="0" defaultValue={initial?.requirements?.promoDiscount ?? ""} /></div>
           <div><label className="label" htmlFor="pl">What to call it</label><input id="pl" name="promoLabel" className="field" placeholder="e.g. Launch offer" maxLength={60} defaultValue={initial?.requirements?.promoLabel ?? ""} /></div>
         </div>
+        <div className="mt-4 max-w-xl"><label className="label" htmlFor="pfe">When the free months end</label>
+          <select id="pfe" name="promoFreeEnds" className="field" defaultValue={initial?.requirements?.promoFreeEnds ?? ""}>
+            <option value="">Carry on as the paid monthly plan (they enter a card now, first payment after the free months)</option>
+            <option value="stop">Just end, nothing charged (no card needed, they can ask to continue)</option>
+          </select><p className="hint mt-1">Pick “just end” for someone who wants to look after the site themselves. Only used when free months are chosen.</p></div>
       </fieldset>
       <details className="rounded-xl border border-line px-4 py-3" open={filledReqs > 0}>
         <summary className="cursor-pointer text-sm font-semibold">More details <span className="font-normal text-muted">· website requirements, payment plan, extra terms{filledReqs ? ` (${filledReqs} filled)` : ""}</span></summary>

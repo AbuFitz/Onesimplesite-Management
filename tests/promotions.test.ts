@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { composeAgreement } from "@/modules/signing/service";
 import { promoFrom, addMonths, trialDays } from "@/modules/billing/promo";
 import { runCompletionWorkflow } from "@/modules/contracts/service";
-import { startPayment, applyStripeEvent, setPlanOffer, plainStatus } from "@/modules/billing/service";
+import { startPayment, applyStripeEvent, setPlanOffer, plainStatus, continueFreePlan } from "@/modules/billing/service";
 import { SERVICES_AGREEMENT } from "@/modules/settings/legal-text";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
@@ -11,8 +11,8 @@ import type { ClientCtx } from "@/modules/portal/service";
 describe("offers", () => {
   it("reads an offer from the order and counts months properly", () => {
     expect(promoFrom({})).toBeNull();
-    expect(promoFrom({ promoFreeMonths: "1", promoLabel: "Launch offer" })).toEqual({ label: "Launch offer", freeMonths: 1, discountMinor: 0, percent: 0 });
-    expect(promoFrom({ promoDiscount: "150.50" })).toEqual({ label: "Special offer", freeMonths: 0, discountMinor: 15050, percent: 0 });
+    expect(promoFrom({ promoFreeMonths: "1", promoLabel: "Launch offer" })).toEqual({ label: "Launch offer", freeMonths: 1, discountMinor: 0, percent: 0, endsAfter: false });
+    expect(promoFrom({ promoDiscount: "150.50" })).toEqual({ label: "Special offer", freeMonths: 0, discountMinor: 15050, percent: 0, endsAfter: false });
     expect(promoFrom({ promoPercent: "10" }, 120000)).toMatchObject({ percent: 10, discountMinor: 12000 });
     expect(promoFrom({ promoPercent: "10", promoDiscount: "50" }, 120000)).toMatchObject({ discountMinor: 17000 });      // both add up
     expect(promoFrom({ promoPercent: "100" }, 120000)!.discountMinor).toBe(120000); expect(promoFrom({ promoDiscount: "5000" }, 120000)!.discountMinor).toBe(120000);   // never more than the fee
@@ -72,5 +72,43 @@ describe("offers", () => {
     await expect(setPlanOffer(x.staff, x.fee.id, 1, "x")).rejects.toThrow(/monthly plan/);
     await db.billingIntent.update({ where: { id: x.plan.id }, data: { status: "active" } });
     await expect(setPlanOffer(x.staff, x.plan.id, 2, "x")).rejects.toThrow(/too late/);
+  });
+});
+
+describe("free months that simply end", () => {
+  async function freeWorld() {
+    const w = await db.workspace.create({ data: { name: `fe-${Math.random()}` } });
+    const m = await db.staffMembership.create({ data: { workspaceId: w.id, email: `s-${Math.random()}@x.test`, displayName: "A", role: "owner", status: "active" } });
+    const staff: StaffCtx = { userId: null as unknown as string, staffId: m.id, workspaceId: w.id, role: "owner", name: "A", email: m.email };
+    const c = await db.customer.create({ data: { workspaceId: w.id, reference: `OSS-CU-${Math.random().toString(36).slice(2, 8)}`, displayName: "Self Managed Ltd" } });
+    const p = await db.proposal.create({ data: { workspaceId: w.id, customerId: c.id, reference: `OSS-QT-${Math.random().toString(36).slice(2, 8)}`, title: "Site", currentVersion: 1 } });
+    const v = await db.proposalVersion.create({ data: { workspaceId: w.id, proposalId: p.id, number: 1, scope: "x", terms: "", currency: "GBP", oneOffMinor: 100000, recurringMinor: 2900, recurringPeriod: "month", requirements: { promoFreeMonths: "1", promoFreeEnds: "stop", promoLabel: "New Customer" } as never } });
+    const k = await db.contract.create({ data: { workspaceId: w.id, customerId: c.id, reference: `OSS-OF-${Math.random().toString(36).slice(2, 8)}`, title: "Website", status: "completed", scopeSnapshot: "x", oneOffMinor: 100000, recurringMinor: 2900, proposalVersionId: v.id } });
+    await db.$transaction((tx) => runCompletionWorkflow(tx, k.id));
+    await db.$transaction((tx) => runCompletionWorkflow(tx, k.id));                                   // safe to run twice
+    return { w, staff, c, k };
+  }
+
+  it("says so on the agreement, and takes no card or payment for the plan", async () => {
+    const t = composeAgreement({ reference: "OSS-OF-1", title: "Website", dateLabel: "4 November 2026", validUntilLabel: "4 December 2026", currency: "GBP", oneOffMinor: 100000, recurringMinor: 2900, recurringPeriod: "month", lines: [{ description: "Website", quantity: 1, unitMinor: 100000, recurring: false }, { description: "Care Plan", quantity: 1, unitMinor: 2900, recurring: true }], scope: "x", requirements: { promoFreeMonths: "1", promoFreeEnds: "stop", promoLabel: "New Customer" }, provider: { legalName: "OneSimpleSite LTD", companyNumber: "1", registeredAddress: "x", vatNumber: null }, client: { legalName: "Self Managed Ltd", kind: "company", companyNumber: null, billingAddress: "x", vatNumber: null }, docs: { terms: { number: 2, body: SERVICES_AGREEMENT } }, vars: {} } as never);
+    expect(t).toContain("with no payment details needed, and then it simply ends unless you ask us to continue");
+    expect(t).toContain("You do not need to give us a card, and nothing is charged. The plan then ends");
+    expect(t).not.toContain("You set the plan up with your card");
+    const x = await freeWorld();
+    const plan = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "recurring_setup" } });
+    expect(plan).toMatchObject({ status: "active", paidVia: "free", stripeSubscriptionId: null, amountMinor: 2900 });
+    expect(plan.trialEndsAt!.getTime()).toBeGreaterThan(Date.now() + 27 * 864e5); expect(plan.cancelsAt).toEqual(plan.trialEndsAt);
+    expect(plainStatus("recurring_setup", plan.status, plan.cancelsAt, plan.trialEndsAt, true).label).toMatch(/^Free until .*, then ends$/);
+    expect(await db.receipt.count({ where: { customerId: x.c.id } })).toBe(0);                         // nothing was paid, so no receipt
+  });
+
+  it("reminds the team a week before it ends, once, and can carry on as a paid plan", async () => {
+    const x = await freeWorld();
+    const tasks = await db.task.findMany({ where: { workspaceId: x.w.id } });
+    expect(tasks).toHaveLength(1); expect(tasks[0].title).toMatch(/free care plan ends .* Ask if they want to continue/);
+    const plan = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "recurring_setup" } });
+    await continueFreePlan(x.staff, plan.id);
+    expect(await db.billingIntent.findUniqueOrThrow({ where: { id: plan.id } })).toMatchObject({ status: "pending", paidVia: null, cancelsAt: null, trialEndsAt: null, trialMonths: 0 });
+    await expect(continueFreePlan(x.staff, plan.id)).rejects.toThrow(/isn't a free care period/);
   });
 });
