@@ -51,17 +51,18 @@ describe("choosing which emails are sent", () => {
 
   it("the daily summary bundles everything held into one email, once, and held rows are never sent on their own", async () => {
     const x = await world();
-    await q(x.w.id, "email.ticket_notice", "t1", { to: "internal", business: "Harbour Bakery", person: "Hana", title: "Form broken", ref: "OSS-TK-1", priority: "high", link: "https://m/x", isReply: false });
+    const U = Math.random().toString(36).slice(2, 8), FORM = `Form broken ${U}`;   // unique, so other runs' mail in the shared sink can't interfere
+    await q(x.w.id, "email.ticket_notice", "t1", { to: "internal", business: "Harbour Bakery", person: "Hana", title: FORM, ref: "OSS-TK-1", priority: "high", link: "https://m/x", isReply: false });
     await q(x.w.id, "email.payment_notice", "p1", { to: "internal", event: "paid", business: "Harbour Bakery", what: "Website", amount: "£1,200.00", link: "https://m/y" });
     await q(x.w.id, "email.access_request_notice", "a1", { to: "internal", business: "Quay", requester: "Sam", name: "Kim", link: "https://m/z" });
     await drainOutbox(300);
-    expect(sink().some((m) => m.text.includes("Form broken"))).toBe(false);                      // nothing sent individually
+    expect(sink().some((m) => m.text.includes(FORM))).toBe(false);                      // nothing sent individually
     expect(await sendDailyDigest(x.w.id, { now: new Date("2026-11-04T05:00:00Z") })).toMatchObject({ sent: 0, reason: "too early" });   // 05:00 London
     expect(await sendDailyDigest(x.w.id, { now: new Date("2026-11-04T09:00:00Z") })).toMatchObject({ sent: 1, items: 3 });
     expect(await sendDailyDigest(x.w.id, { now: new Date("2026-11-04T09:30:00Z") })).toMatchObject({ sent: 0 });
     await drainOutbox(300);
-    const d = sink().filter((m) => m.subject.startsWith("Your daily summary: 3") && m.text.includes("Harbour Bakery"));
-    expect(d).toHaveLength(1); for (const need of ["Form broken", "Payment received: Harbour Bakery", "asked to add Kim", "https://m/x"]) expect(d[0].text).toContain(need);
+    const d = sink().filter((m) => m.subject.startsWith("Your daily summary: 3") && m.text.includes(FORM));
+    expect(d).toHaveLength(1); for (const need of [FORM, "Payment received: Harbour Bakery", "asked to add Kim", "https://m/x"]) expect(d[0].text).toContain(need);
     expect(await db.outbox.count({ where: { workspaceId: x.w.id, status: "held" } })).toBe(0);
   });
 });
