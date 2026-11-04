@@ -66,7 +66,8 @@ describe("single-signer capture", () => {
     expect(sha256(canonical(rec.evidence))).toBe(rec.evidenceSha256);
     expect(rec.method).toBe("drawn");
     await expect(db.contractDocument.update({ where: { id: doc.id }, data: { sha256: "x" } })).rejects.toThrow(/append-only/);
-    await expect(db.signatureRecord.delete({ where: { id: rec.id } })).rejects.toThrow(/append-only/);
+    // the app role cannot remove a signature (only the company-erasure function can, and it runs as the owner)
+    await expect(db.$transaction(async (tx) => { await tx.$executeRawUnsafe("SET LOCAL ROLE oss_app"); await tx.$executeRawUnsafe(`DELETE FROM "SignatureRecord" WHERE "id" = '${rec.id}'`); })).rejects.toThrow(/append-only|permission denied/);
     await expect(db.signingRequest.update({ where: { id: rec.signingRequestId }, data: { contentText: "tampered" } })).rejects.toThrow(/frozen/);
   });
 
