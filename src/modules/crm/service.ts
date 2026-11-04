@@ -2,7 +2,7 @@ import { z } from "zod";
 import { checkAddress, printedAddress, hasAddress, normalisePostcode, parseAddress } from "@/lib/address";
 import { db } from "@/lib/db";
 import { audit, nextRef } from "@/lib/audit";
-import { DomainError, forbidden, stale } from "@/lib/errors";
+import { DomainError, forbidden, notFound, stale } from "@/lib/errors";
 import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
 
@@ -50,20 +50,71 @@ export async function getCustomer(ctx: StaffCtx, id: string) {
   });
 }
 
-export async function listCustomers(ctx: StaffCtx, q: { search?: string; page?: number; mine?: boolean }) {
+/** What each company status means, in the team's words. */
+export const LIFECYCLE = {
+  prospect: { label: "Prospect", help: "Someone we're talking to. Not a customer yet.", kind: "warn" },
+  active: { label: "Active", help: "A current customer.", kind: "good" },
+  paused: { label: "On hold", help: "Customer, but work or billing is paused for now.", kind: "neutral" },
+  former: { label: "Former", help: "Used to be a customer. Kept for the record.", kind: "neutral" },
+} as const;
+export type LifecycleKey = keyof typeof LIFECYCLE;
+export const LIFECYCLE_KEYS = Object.keys(LIFECYCLE) as LifecycleKey[];
+
+export type CompanyFilter = { search?: string; page?: number; mine?: boolean; status?: string; atRisk?: boolean; sort?: string };
+
+const companyWhere = (ctx: StaffCtx, q: CompanyFilter, ignoreStatus = false) => ({
+  workspaceId: ctx.workspaceId,
+  ...(q.status === "archived" ? { archivedAt: { not: null } } : { archivedAt: null }),
+  ...(!ignoreStatus && q.status && (LIFECYCLE_KEYS as string[]).includes(q.status) ? { lifecycle: q.status as LifecycleKey } : {}),
+  ...(q.atRisk ? { atRisk: true } : {}),
+  ...(q.mine ? { ownerId: ctx.staffId } : {}),
+  ...(q.search ? { OR: [{ displayName: { contains: q.search, mode: "insensitive" as const } }, { reference: { contains: q.search, mode: "insensitive" as const } }, { contacts: { some: { OR: [{ email: { contains: q.search, mode: "insensitive" as const } }, { name: { contains: q.search, mode: "insensitive" as const } }] } } }] } : {}),
+});
+
+export async function listCustomers(ctx: StaffCtx, q: CompanyFilter) {
   if (!can(ctx.role, "customer.read")) throw forbidden();
-  const take = 25;
-  const where = {
-    workspaceId: ctx.workspaceId,
-    archivedAt: null,
-    ...(q.mine ? { ownerId: ctx.staffId } : {}),
-    ...(q.search ? { OR: [{ displayName: { contains: q.search, mode: "insensitive" as const } }, { reference: { contains: q.search, mode: "insensitive" as const } }, { contacts: { some: { email: { contains: q.search, mode: "insensitive" as const } } } }] } : {}),
-  };
+  const take = 25, where = companyWhere(ctx, q);
+  const orderBy = q.sort === "name" ? { displayName: "asc" as const } : q.sort === "recent" ? { updatedAt: "desc" as const } : { createdAt: "desc" as const };
   const [rows, total] = await Promise.all([
-    db.customer.findMany({ where, orderBy: { createdAt: "desc" }, take, skip: ((q.page ?? 1) - 1) * take, include: { contacts: { where: { isPrimary: true }, take: 1 } } }),
+    db.customer.findMany({ where, orderBy, take, skip: ((q.page ?? 1) - 1) * take, include: { contacts: { where: { isPrimary: true }, take: 1 } } }),
     db.customer.count({ where }),
   ]);
   return { rows, total, pages: Math.max(1, Math.ceil(total / take)) };
+}
+
+/** How many companies are in each status, for the filter chips and the team's overview. Respects search and "mine", not the status chosen. */
+export async function customerStatusCounts(ctx: StaffCtx, q: CompanyFilter = {}) {
+  if (!can(ctx.role, "customer.read")) throw forbidden();
+  const base = { ...q, status: undefined };
+  const [live, archived, atRisk, ...by] = await Promise.all([
+    db.customer.count({ where: companyWhere(ctx, base) }),
+    db.customer.count({ where: companyWhere(ctx, { ...base, status: "archived" }) }),
+    db.customer.count({ where: companyWhere(ctx, { ...base, atRisk: true }) }),
+    ...LIFECYCLE_KEYS.map((k) => db.customer.count({ where: companyWhere(ctx, { ...base, status: k }) })),
+  ]);
+  return { all: live, archived, atRisk, ...Object.fromEntries(LIFECYCLE_KEYS.map((k, i) => [k, by[i]])) } as { all: number; archived: number; atRisk: number } & Record<LifecycleKey, number>;
+}
+
+/** Changes a company's status and the "at risk" flag. Recorded, so the team can see when and who. */
+export async function setCustomerStatus(ctx: StaffCtx, id: string, lifecycle: string, atRisk: boolean) {
+  if (!can(ctx.role, "customer.write")) throw forbidden();
+  if (!(LIFECYCLE_KEYS as string[]).includes(lifecycle)) throw new DomainError("validation", "Pick a status.");
+  await db.$transaction(async (tx) => {
+    const c = await tx.customer.findFirst({ where: { id, workspaceId: ctx.workspaceId }, select: { lifecycle: true, atRisk: true } });
+    if (!c) throw notFound("Company not found.");
+    await tx.customer.update({ where: { id }, data: { lifecycle: lifecycle as LifecycleKey, atRisk, version: { increment: 1 } } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "customer.status_changed", targetType: "customer", targetId: id, customerId: id, detail: { from: c.lifecycle, to: lifecycle, atRisk } });
+  });
+}
+
+/** Archiving hides a company from the everyday lists and pickers but keeps everything, and it still counts in the team's overview. It can be restored any time. */
+export async function setCustomerArchived(ctx: StaffCtx, id: string, archived: boolean) {
+  if (!can(ctx.role, "customer.archive")) throw forbidden();
+  await db.$transaction(async (tx) => {
+    const r = await tx.customer.updateMany({ where: { id, workspaceId: ctx.workspaceId, archivedAt: archived ? null : { not: null } }, data: { archivedAt: archived ? new Date() : null, version: { increment: 1 } } });
+    if (r.count === 0) throw new DomainError("conflict", archived ? "This company is already archived." : "This company isn't archived.");
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: archived ? "customer.archived" : "customer.restored", targetType: "customer", targetId: id, customerId: id });
+  });
 }
 
 export async function setOpportunityStage(ctx: StaffCtx, id: string, stage: "new" | "qualified" | "proposal_sent" | "contract_pending" | "won" | "lost", expectedVersion: number, lossReason?: string) {

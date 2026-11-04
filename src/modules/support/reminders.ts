@@ -71,7 +71,8 @@ export async function maybeRunReminders() {
   last = Date.now();
   await runTicketReminders();
   const { sendDailyDigest } = await import("@/modules/outbox/digest");
-  for (const w of await db.workspace.findMany({ select: { id: true } })) await sendDailyDigest(w.id);
+  const { syncLegalDocs } = await import("@/modules/settings/sync-legal");
+  for (const w of await db.workspace.findMany({ select: { id: true } })) { await sendDailyDigest(w.id); await syncLegalDocs(w.id).catch(() => undefined); }
   const { drainOutbox } = await import("@/modules/outbox/drain");
   await drainOutbox();
 }

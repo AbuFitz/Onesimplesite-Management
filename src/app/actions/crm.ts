@@ -135,3 +135,29 @@ export async function deleteBusinessAction(fd: FormData) {
   try { await deleteBusiness(ctx, id, String(fd.get("typed") ?? "")); } catch (e) { if (!(e instanceof DomainError)) { const { reportProblem } = await import("@/lib/problems"); await reportProblem({ workspaceId: ctx.workspaceId, area: "company_delete", error: e, customerId: id }); } redirect(`/customers/${id}?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't delete it. The reason has been recorded on the Testing page under Problems.")}`); }
   redirect("/customers?deleted=1");
 }
+
+/** Change a company's status and "at risk" flag. */
+export async function setCompanyStatusAction(fd: FormData) {
+  const ctx = await requireStaff("customer.write");
+  const id = String(fd.get("id"));
+  try { const { setCustomerStatus } = await import("@/modules/crm/service"); await setCustomerStatus(ctx, id, String(fd.get("lifecycle")), fd.get("atRisk") === "on"); }
+  catch (e) { redirect(`/customers/${id}?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't change the status.")}`); }
+  redirect(`/customers/${id}?status=saved`);
+}
+/** Archive a company, or restore it. */
+export async function archiveCompanyAction(fd: FormData) {
+  const ctx = await requireStaff("customer.archive");
+  const id = String(fd.get("id")), archive = fd.get("archive") === "1";
+  try { const { setCustomerArchived } = await import("@/modules/crm/service"); await setCustomerArchived(ctx, id, archive); }
+  catch (e) { redirect(`/customers/${id}?error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't do that.")}`); }
+  redirect(archive ? "/customers?status=archived&archived=1" : `/customers/${id}?restored=1`);
+}
+
+/** Change where a new-website ticket is up to, by hand. Goes back to the page it was changed from. */
+export async function setTicketStageAction(fd: FormData) {
+  const ctx = await requireStaff("opportunity.write");
+  const back = String(fd.get("back") ?? ""), to = back.startsWith("/") && !back.startsWith("//") ? back : "/tickets";
+  try { await setOpportunityStage(ctx, String(fd.get("id")), fd.get("stage") as never, Number(fd.get("version")), ""); }
+  catch (e) { redirect(`${to}${to.includes("?") ? "&" : "?"}error=${encodeURIComponent(e instanceof DomainError ? e.message : "Couldn't change the status.")}`); }
+  redirect(to);
+}

@@ -7,6 +7,9 @@ import { getCompany, companyMissing } from "@/modules/settings/service";
 import { documentValues } from "@/modules/settings/plans";
 import { emptyVars, labelFor } from "@/modules/settings/variables";
 import { customerDetailsMissing } from "@/modules/crm/service";
+import { AutoSelect } from "@/components/auto-form";
+import { setTicketStageAction } from "@/app/actions/crm";
+import { ONBOARDING_LABEL } from "@/modules/support/options";
 import { RecordHeader, Status, ErrorSummary, money, fmtDateTime } from "@/components/ui";
 import { ProposalFields } from "@/components/proposal-fields";
 import Link from "next/link";
@@ -20,6 +23,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   if (!p) notFound();
   const cur = p.versions.find((v) => v.number === p.currentVersion)!;
   const editable = p.status === "draft";
+  const opp = p.opportunityId ? await db.opportunity.findFirst({ where: { id: p.opportunityId, workspaceId: ctx.workspaceId }, select: { id: true, stage: true, version: true } }) : null;
   const contract = await db.contract.findFirst({ where: { workspaceId: ctx.workspaceId, proposalVersionId: { in: p.versions.map((v) => v.id) } } });
   const primary = p.customer.contacts.find((c) => c.isPrimary) ?? p.customer.contacts[0];
   const company = await getCompany(ctx);
@@ -39,7 +43,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const ready = checks.every(([, ok]) => ok);
   return (
     <>
-      <RecordHeader back={{ href: `/customers/${p.customerId}`, label: p.customer.displayName }} title={p.title} status={<Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} />} meta={<span>{p.reference} · version {cur.number}</span>} />
+      <RecordHeader back={{ href: `/customers/${p.customerId}`, label: p.customer.displayName }} title={p.title} status={<><Status label={p.status} kind={p.status === "accepted" ? "good" : "neutral"} />{opp && can(ctx.role, "opportunity.write") && <AutoSelect action={setTicketStageAction} name="stage" value={opp.stage} label="Where this ticket is up to" hidden={{ id: opp.id, version: String(opp.version), back: `/proposals/${p.id}` }} options={Object.entries(ONBOARDING_LABEL).map(([value, v]) => ({ value, label: v.label }))} />}</>} meta={<span>{p.reference} · version {cur.number}</span>} />
       <ErrorSummary message={sp.error} />
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved.</p>}
       {sp.sent && <p role="status" className="mb-4 text-sm text-moss">Agreement sent. The customer receives one email with the signing link.</p>}

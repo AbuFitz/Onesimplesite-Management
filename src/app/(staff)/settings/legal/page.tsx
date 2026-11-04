@@ -11,6 +11,7 @@ export const metadata = { title: "Legal documents" };
 
 export default async function LegalIndex() {
   const ctx = await requireStaff("settings.write");
+  await (await import("@/modules/settings/sync-legal")).syncLegalDocs(ctx.workspaceId).catch(() => undefined);   // the up-to-date set is published automatically
   const docs = await legalOverview(ctx);
   return (
     <>

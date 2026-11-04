@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Archive } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
-import { getCustomer, customerDetailsMissing } from "@/modules/crm/service";
+import { getCustomer, customerDetailsMissing, LIFECYCLE, LIFECYCLE_KEYS, type LifecycleKey } from "@/modules/crm/service";
 import { createNoteAction } from "@/app/actions/work";
-import { deleteBusinessAction } from "@/app/actions/crm";
+import { deleteBusinessAction, setCompanyStatusAction, archiveCompanyAction } from "@/app/actions/crm";
 import { db } from "@/lib/db";
 import { PeoplePanel } from "@/components/people-panel";
 import { listPeople, pendingRequests } from "@/modules/people/service";
@@ -17,7 +17,7 @@ import { RecordHeader, Status, Empty, ErrorSummary, Section, Stat, Tabs, money, 
 export const metadata = { title: "Company" };
 const TABS = ["overview", "people", "agreements", "projects", "notes", "activity"] as const;
 
-export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ invited?: string; error?: string; tab?: string; details?: string; done?: string; delete?: string }> }) {
+export default async function CustomerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ status?: string; restored?: string; invited?: string; error?: string; tab?: string; details?: string; done?: string; delete?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const { id } = await params;
   const sp = await searchParams;
@@ -38,7 +38,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
     <>
       <LiveRefresh seconds={20} />
       <RecordHeader avatar logoId={c.id} back={{ href: "/customers", label: "Companies" }} title={c.displayName}
-        status={<><Status label={c.lifecycle} kind={c.lifecycle === "active" ? "good" : "neutral"} />{c.atRisk && <Status label="at risk" kind="bad" />}</>}
+        status={<><Status label={LIFECYCLE[c.lifecycle as LifecycleKey]?.label ?? c.lifecycle} kind={LIFECYCLE[c.lifecycle as LifecycleKey]?.kind ?? "neutral"} />{c.atRisk && <Status label="at risk" kind="bad" />}{c.archivedAt && <Status label="Archived" kind="neutral" />}</>}
         meta={<span>{c.reference}</span>}
         action={<>
           {primary?.phone && <a className="btn btn-quiet" href={`tel:${primary.phone}`}>Call</a>}
@@ -46,14 +46,33 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           {can(ctx.role, "proposal.write") && <Link className="btn" href={`/tickets/new?business=${c.id}`}>New ticket</Link>}
           {can(ctx.role, "customer.write") && (
             <details className="relative">
+              <summary className="btn btn-quiet cursor-pointer list-none">Status</summary>
+              <form action={setCompanyStatusAction} className="absolute right-0 z-20 mt-1 w-[min(20rem,calc(100vw-2rem))] space-y-3 rounded-xl border border-line bg-white p-3 shadow-[0_8px_30px_rgba(14,19,17,.12)]">
+                <input type="hidden" name="id" value={c.id} />
+                <fieldset className="space-y-1.5"><legend className="mb-1 text-sm font-bold">Company status</legend>
+                  {LIFECYCLE_KEYS.map((k) => (
+                    <label key={k} className="flex min-h-11 cursor-pointer gap-3 rounded-lg border border-line p-2.5 text-sm has-[:checked]:border-ink has-[:checked]:bg-[#eef7f2]"><input type="radio" name="lifecycle" value={k} defaultChecked={c.lifecycle === k} className="mt-0.5 size-4 accent-[#0c6a49]" /><span><span className="block font-semibold">{LIFECYCLE[k].label}</span><span className="text-muted">{LIFECYCLE[k].help}</span></span></label>
+                  ))}
+                </fieldset>
+                <label className="flex min-h-10 cursor-pointer items-start gap-3 text-sm"><input type="checkbox" name="atRisk" defaultChecked={c.atRisk} className="mt-0.5 size-4 accent-[#b3261e]" /><span><span className="block font-semibold">At risk</span><span className="text-muted">Flag them if they might leave or aren't happy.</span></span></label>
+                <button className="btn w-full">Save status</button>
+              </form>
+            </details>
+          )}
+          {can(ctx.role, "customer.write") && (
+            <details className="relative">
               <summary className="btn btn-quiet cursor-pointer list-none" aria-label="More actions"><MoreHorizontal size={16} aria-hidden /> More</summary>
               <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-line bg-white p-1 shadow-[0_8px_30px_rgba(14,19,17,.12)]">
                 <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm hover:bg-bone" href={`/customers/${c.id}/details`}><Pencil size={15} aria-hidden /> Edit company details</Link>
+                {can(ctx.role, "customer.archive") && <form action={archiveCompanyAction}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="archive" value={c.archivedAt ? "0" : "1"} /><button className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm hover:bg-bone"><Archive size={15} aria-hidden /> {c.archivedAt ? "Restore from archive" : "Archive this company"}</button></form>}
                 <Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-[#b3261e] hover:bg-[#fde6dc]" href={`/customers/${c.id}?delete=1`}><Trash2 size={15} aria-hidden /> Delete this company</Link>
               </div>
             </details>
           )}
         </>} />
+      {c.archivedAt && <p role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-bone px-4 py-3 text-sm"><Archive size={16} aria-hidden /><span><strong>This company is archived.</strong> It's hidden from the everyday lists but nothing is lost, and it still counts in the overview.</span>{can(ctx.role, "customer.archive") && <form action={archiveCompanyAction} className="ml-auto"><input type="hidden" name="id" value={c.id} /><input type="hidden" name="archive" value="0" /><button className="btn btn-quiet">Restore</button></form>}</p>}
+      {sp.status === "saved" && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Status saved.</p>}
+      {sp.restored && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Restored from the archive.</p>}
       {sp.delete && can(ctx.role, "customer.write") && (
         <form action={deleteBusinessAction} className="mb-6 max-w-2xl space-y-3 rounded-2xl border border-[#e8b4ad] bg-[#fdf1ef] p-5 text-sm">
           <input type="hidden" name="id" value={c.id} />

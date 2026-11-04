@@ -1,0 +1,24 @@
+// Filters are dropdowns that apply themselves; a ticket's status can be changed from its header; company status and archive work.
+import { createRequire } from "node:module";
+const { chromium } = createRequire(import.meta.url)("playwright");
+const M = "http://manage.localhost:3000";
+const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
+const browser = await chromium.launch(); const pg = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+await pg.goto(`${M}/tickets`); await pg.selectOption("#tab", "done"); await pg.waitForURL(/tab=done/);
+ok(true, "choosing a status in the tickets dropdown filters straight away");
+await pg.selectOption("#type", "support"); await pg.waitForURL(/type=support/); ok(true, "the type dropdown filters too");
+await pg.goto(`${M}/tickets?tab=all&type=support`); const href = await pg.locator("a[href^='/support/']").first().getAttribute("href");
+await pg.goto(`${M}${href}`); const before = await pg.locator("#as-status").inputValue();
+const next = before === "in_progress" ? "waiting_customer" : "in_progress"; await pg.selectOption("#as-status", next); await pg.waitForURL(/saved=1/);
+ok((await pg.locator("#as-status").inputValue()) === next, "a ticket's status can be changed from its header in one click");
+await pg.goto(`${M}/customers`); await pg.selectOption("#status", "active"); await pg.waitForURL(/status=active/); ok(true, "companies filter by status from a dropdown");
+const cid = await pg.locator("a[href^='/customers/']:not([href='/customers/new'])").first().getAttribute("href");
+await pg.goto(`${M}${cid}`); await pg.click("summary:has-text('Status')"); await pg.check("input[name=lifecycle][value=paused]"); await pg.click("button:has-text('Save status')"); await pg.waitForSelector("text=Status saved");
+ok(true, "a company's status can be changed"); 
+await pg.click("summary[aria-label='More actions']"); await pg.click("button:has-text('Archive this company')"); await pg.waitForURL(/status=archived/);
+ok((await pg.locator("main").innerText()).includes("Company archived"), "a company can be archived and shows under Archived");
+await pg.goto(`${M}${cid}`); await pg.click("button.btn:has-text('Restore')"); await pg.waitForSelector("text=Restored from the archive");
+await pg.click("summary:has-text('Status')"); await pg.check("input[name=lifecycle][value=active]"); await pg.click("button:has-text('Save status')"); await pg.waitForSelector("text=Status saved");
+ok(true, "…and restored again");
+console.log("ALL OK"); await browser.close();

@@ -30,14 +30,14 @@ kv: People concerned | Website visitors, customers and enquirers of the Client
 2.1 The Supplier shall process the personal data only on the Client's documented instructions, including those in this agreement, unless the law requires otherwise. If it does, the Supplier shall tell the Client first, unless the law prohibits that.
 2.2 The Supplier shall make sure everyone authorised to process the data is bound by a duty of confidentiality.
 2.3 The Supplier shall apply appropriate technical and organisational security measures, including those in Annex A.
-2.4 The Supplier shall tell the Client without undue delay, and within [TBC: 48] hours, after becoming aware of a personal data breach affecting the data, and give the information the Client reasonably needs to meet its own obligations.
+2.4 The Supplier shall tell the Client without undue delay after becoming aware of a personal data breach affecting the data, and give the information the Client reasonably needs to meet its own obligations.
 2.5 The Supplier shall give reasonable help with requests from individuals exercising their rights, with data protection impact assessments, and with consultations with the regulator.
-2.6 At the end of the Services the Supplier shall, as the Client chooses, delete or return the personal data within [TBC: 30] days, unless the law requires it to be kept.
-2.7 The Supplier shall provide the information needed to show compliance and allow reasonable audits on [TBC: 14] days' notice, no more than once a year unless there has been a breach.
+2.6 At the end of the Services the Supplier shall, as the Client chooses, delete or return the personal data within 30 days of the Client's request, unless the law requires it to be kept.
+2.7 The Supplier shall provide the information needed to show compliance and allow audits on reasonable notice, no more than once in any 12 months unless there has been a breach.
 
 ## Sub-processors
 3.1 The Client gives general authorisation for the Supplier to use the sub-processors listed in Annex B.
-3.2 The Supplier shall give the Client at least [TBC: 14] days' notice of any change, and the Client may object on reasonable grounds.
+3.2 The Supplier shall give the Client reasonable notice of any material change, and the Client may object on reasonable grounds.
 3.3 The Supplier shall impose obligations on each sub-processor equivalent to this agreement and remains responsible for them.
 
 ## Transfers outside the UK
@@ -50,20 +50,21 @@ sign: For the Controller (Client)
 sign: For the Processor (Supplier)
 
 ## Annex A: Security measures
-- [TBC: access limited to named people, with unique accounts and two-factor authentication]
-- [TBC: data encrypted in transit and, where supported, at rest]
-- [TBC: regular backups with tested restores]
-- [TBC: software and dependencies kept up to date]
-- [TBC: credentials kept in a password manager or secrets store, never in code]
-- [TBC: incident response procedure in place]
-- [TBC: staff and contractors briefed on data protection]
+These are the measures described in clause 8 of the Terms. Which apply depends on the Client's plan.
+- Access limited to named people with individual accounts and strong passwords, with multi-factor authentication where available.
+- Data encrypted in transit (HTTPS and SSL).
+- Software and dependencies kept up to date, with monitoring and malware scanning depending on the plan.
+- Backups taken as described in the Client's Service Plan.
+- Credentials kept in a password manager or secrets store, never in code.
+- An incident response process, and notice of any personal data breach as set out in clause 12 of the Terms.
+- People with access are bound by confidentiality and briefed on data protection.
 
 ## Annex B: Sub-processors
-| Sub-processor | Service | Location |
-| Vercel | Hosting | [TBC: location] |
-| Supabase | Database | [TBC: location] |
-| Resend | Email delivery | [TBC: location] |
-| [TBC: analytics provider] | Analytics | [TBC: location] |`;
+| Type of sub-processor | Service |
+| Hosting provider | Hosting and running the Client's website |
+| Database provider | Storing the Client's website data |
+| Email delivery provider | Sending emails such as form notifications |
+note: The names and locations of the current sub-processors, and the lawful transfer mechanism used where a sub-processor is outside the UK, are provided on request (clause 12 of the Terms).`;
 
     case "change_request": return `Use this form to agree any change to the scope, price or timetable of a project before work on it begins.
 

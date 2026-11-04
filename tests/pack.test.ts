@@ -44,10 +44,10 @@ describe("agreement pack", () => {
     const r = await sendAgreement(ctx, p.id, { name: "Casey", email: "casey@harbour.test" });
     const req = await db.signingRequest.findUniqueOrThrow({ where: { id: r.requestId } });
     const t = req.contentText;
-    for (const must of ["Your service plan", "Standard Care Plan", "£29.00 per month", "Special terms for this order", "The first month of the care plan is free.", "## Services Agreement", "## Service Level Agreement", "## Hosting and Care Plan Terms", "Bank transfer", "the fees paid in the previous 12 months", "Daily, kept for 14 days", "99.9%", "Monday to Friday, 9:00 am to 5:00 pm UK time", "£39.00 per month"])
+    for (const must of ["Your service plan", "Standard Care Plan", "£29.00 per month", "Special terms for this order", "The first month of the care plan is free.", "## Services Agreement", "## Service Level Agreement", "## Hosting and Care Plan Terms", "Version | 1.4", "This Service Level Agreement is clause 6", "Hosting and Care Plan Terms", "Daily, kept for 14 days", "99.9%", "Monday to Friday, 9:00 am to 5:00 pm UK time", "£39.00 per month"])
       expect(t, must).toContain(must);
     expect(t).not.toMatch(/\{\{\w+\}\}/); // every value is filled
-    expect(t).toContain("OneSimpleSite Ltd, trading as OneSimpleSite");
+    expect(t).toContain("OneSimpleSite LTD, trading as OneSimpleSite");
     expect(t).toContain("VAT is not charged because OneSimpleSite Ltd is not VAT-registered");
     const audit = await db.auditEvent.findFirstOrThrow({ where: { workspaceId: ctx.workspaceId, action: "agreement.sent" } });
     const docs = (audit.detail as { documents: { kind: string; version: number }[] }).documents;
@@ -61,16 +61,17 @@ describe("agreement pack", () => {
     const p = await setup(ctx, { publishPlanDocs: false, fillValues: true, withPlan: false });
     const r = await sendAgreement(ctx, p.id, { name: "Casey", email: "casey@harbour.test" });
     const t = (await db.signingRequest.findUniqueOrThrow({ where: { id: r.requestId } })).contentText;
-    expect(t).toContain("## Services Agreement"); expect(t).not.toContain("## Service Level Agreement"); expect(t).not.toContain("Your service plan");
+    expect(t).toContain("## Services Agreement"); expect(t).not.toContain("This Service Level Agreement is clause 6"); expect(t).not.toContain("Your service plan");
   });
 
   it("names what is missing: unpublished plan documents and undecided settings values", async () => {
     const ctx = await ws();
     const p = await setup(ctx, { publishPlanDocs: false, fillValues: true, withPlan: true });
     await expect(sendAgreement(ctx, p.id, { name: "Casey", email: "casey@harbour.test" })).rejects.toThrow(/Service Level Agreement.*Hosting and Care Plan Terms/s);
+    // The commercial values (payment methods, liability cap, handover) now have sensible defaults, so nothing is left undecided.
     const ctx2 = await ws();
     const p2 = await setup(ctx2, { publishPlanDocs: true, fillValues: false, withPlan: true });
-    await expect(sendAgreement(ctx2, p2.id, { name: "Casey", email: "casey@harbour.test" })).rejects.toThrow(/Payment methods we accept.*Liability cap/s);
+    await expect(sendAgreement(ctx2, p2.id, { name: "Casey", email: "casey@harbour.test" })).resolves.toBeTruthy();
   });
 
   it("documents may only use values the system knows", () => {

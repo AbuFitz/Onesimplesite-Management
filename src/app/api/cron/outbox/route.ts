@@ -25,6 +25,7 @@ export async function GET(req: Request) {
     }
   }
   const reminders = await runTicketReminders();
-  for (const w of await db.workspace.findMany({ select: { id: true } })) await sendDailyDigest(w.id);
+  const { syncLegalDocs } = await import("@/modules/settings/sync-legal");
+  for (const w of await db.workspace.findMany({ select: { id: true } })) { await sendDailyDigest(w.id); await syncLegalDocs(w.id).catch(() => undefined); }
   return Response.json({ ...(await drainOutbox(100)), reminders });
 }

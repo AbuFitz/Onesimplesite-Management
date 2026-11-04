@@ -4,6 +4,8 @@ import { requireStaff } from "@/modules/identity/session";
 import { db } from "@/lib/db";
 import { STATUS_LABEL, CATEGORY_LABEL, ONBOARDING_LABEL } from "@/modules/support/options";
 import { RecordHeader, Status, Empty, timeAgo, money } from "@/components/ui";
+import { AutoGetForm } from "@/components/auto-form";
+import { Search } from "lucide-react";
 
 export const metadata = { title: "Tickets" };
 const TABS = [["needs", "Needs us"], ["waiting", "Waiting on customer"], ["done", "Done"], ["all", "All"]] as const;
@@ -12,18 +14,19 @@ const TYPES = [["all", "All types"], ["onboarding", "New website"], ["change_req
 type Row = { key: string; type: "onboarding" | "change_request" | "support"; href: string; title: string; business: string; businessId: string; person?: string; label: string; kind: "good" | "warn" | "bad" | "neutral"; bucket: "needs" | "waiting" | "done"; mine: boolean; at: Date; priority: string; extra?: string };
 
 /** Every kind of ticket in one list, in one set of plain statuses. */
-export default async function Tickets({ searchParams }: { searchParams: Promise<{ tab?: string; type?: string; q?: string; mine?: string }> }) {
+export default async function Tickets({ searchParams }: { searchParams: Promise<{ tab?: string; type?: string; q?: string; mine?: string; s?: string; c?: string; p?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const sp = await searchParams;
   const tab = TABS.find(([id]) => id === sp.tab)?.[0] ?? "needs";
   const type = TYPES.find(([id]) => id === sp.type)?.[0] ?? "all";
   const q = sp.q?.trim().toLowerCase();
   const mine = sp.mine === "1";
+  const st = sp.s?.trim() || "", company = sp.c?.trim() || "", pr = ["urgent", "high", "normal", "low", "attention"].includes(String(sp.p)) ? String(sp.p) : "";
   const [tickets, opps] = await Promise.all([
     type === "onboarding" ? [] : db.ticket.findMany({ where: { workspaceId: ctx.workspaceId, ...(type !== "all" ? { category: type } : {}) }, include: { customer: { select: { displayName: true } }, contact: { select: { name: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }),
     type === "all" || type === "onboarding" ? db.opportunity.findMany({ where: { workspaceId: ctx.workspaceId }, include: { customer: { select: { displayName: true } }, proposals: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true } } }, orderBy: { updatedAt: "desc" }, take: 300 }) : [],
   ]);
-  const rows: Row[] = [
+  const all: Row[] = [
     ...tickets.map((t): Row => {
       const s = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const };
       const quoted = t.chargeStatus === "quoted";
@@ -33,17 +36,43 @@ export default async function Tickets({ searchParams }: { searchParams: Promise<
       const s = ONBOARDING_LABEL[o.stage] ?? { label: o.stage, kind: "neutral" as const };
       return { key: o.id, type: "onboarding", href: o.proposals[0] ? `/proposals/${o.proposals[0].id}` : `/customers/${o.customerId}`, title: o.title, business: o.customer.displayName, businessId: o.customerId, label: s.label, kind: s.kind, bucket: o.stage === "won" || o.stage === "lost" ? "done" : o.stage === "proposal_sent" || o.stage === "contract_pending" ? "waiting" : "needs", mine: o.ownerId === ctx.staffId, at: o.updatedAt, priority: o.priority };
     }),
-  ].filter((r) => (tab === "all" ? true : r.bucket === tab)).filter((r) => !mine || r.mine).filter((r) => !q || `${r.title} ${r.business}`.toLowerCase().includes(q)).sort((a, b) => +b.at - +a.at);
-  const href = (t: string, ty: string, m = mine) => `/tickets?tab=${t}&type=${ty}${m ? "&mine=1" : ""}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`;
+  ];
+  // One place decides what a filter means, so the counts on every chip match what you will see when you click it.
+  const only = (skip: ("tab" | "type")[] = []) => all.filter((r) => (skip.includes("tab") || tab === "all" || r.bucket === tab) && (skip.includes("type") || type === "all" || r.type === type) && (!mine || r.mine) && (!q || `${r.title} ${r.business}`.toLowerCase().includes(q)) && (!st || r.label === st) && (!company || r.businessId === company) && (!pr || (pr === "attention" ? r.priority === "urgent" || r.priority === "high" : r.priority === pr)));
+  const rows = only().sort((a, b) => +b.at - +a.at);
+  const tabCount = (id: string) => only(["tab"]).filter((r) => id === "all" || r.bucket === id).length;
+  const typeCount = (id: string) => only(["type"]).filter((r) => id === "all" || r.type === id).length;
+  const labels = [...new Set(all.map((r) => r.label))].sort();
+  const companies = [...new Map(all.map((r) => [r.businessId, r.business])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const href = (o: Partial<{ tab: string; type: string; mine: boolean }> = {}) => {
+    const p = new URLSearchParams(); const t = o.tab ?? tab, ty = o.type ?? type, m = o.mine ?? mine;
+    if (t !== "needs") p.set("tab", t); if (ty !== "all") p.set("type", ty); if (m) p.set("mine", "1");
+    if (sp.q) p.set("q", sp.q); if (st) p.set("s", st); if (company) p.set("c", company); if (pr) p.set("p", pr);
+    const qs = p.toString(); return `/tickets${qs ? `?${qs}` : ""}`;
+  };
+  const extra = [!!st, !!company, !!pr, mine, !!q].filter(Boolean).length;
   return (
     <>
       <RecordHeader title="Tickets" meta="New websites, change requests and support, all in one place" action={<Link className="btn" href="/tickets/new"><Plus size={16} aria-hidden /> New ticket</Link>} />
-      <nav aria-label="Status" className="mb-3 flex flex-wrap gap-1.5">{TABS.map(([id, l]) => <Link key={id} href={href(id, type)} aria-current={tab === id ? "page" : undefined} className={`btn ${tab === id ? "btn-dark" : "btn-quiet"}`}>{l}</Link>)}</nav>
-      <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <nav aria-label="Type" className="flex flex-wrap gap-1.5 text-sm">{TYPES.map(([id, l]) => <Link key={id} href={href(tab, id)} aria-current={type === id ? "page" : undefined} className={`rounded-lg px-3 py-1.5 font-semibold ${type === id ? "bg-ink text-white" : "bg-bone hover:bg-[#e6e2d8]"}`}>{l}</Link>)}</nav>
-        <Link href={href(tab, type, !mine)} role="switch" aria-checked={mine} className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-lg border border-line bg-white px-3 text-sm font-semibold hover:bg-bone"><span className={`relative h-5 w-9 rounded-full transition-colors ${mine ? "bg-ink" : "bg-line"}`}><span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${mine ? "left-[1.1rem]" : "left-0.5"}`} /></span>Only mine</Link>
-        <form><input type="hidden" name="tab" value={tab} /><input type="hidden" name="mine" value={mine ? "1" : ""} /><input type="hidden" name="type" value={type} /><label className="sr-only" htmlFor="q">Search</label><input id="q" name="q" defaultValue={sp.q} className="field !min-h-11 sm:!min-h-9 w-56" placeholder="Search tickets" /></form>
-      </div>
+      <AutoGetForm className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(5,minmax(0,1fr))_auto]">
+        <div className="relative col-span-2 min-w-0 lg:col-span-1"><Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-[2.2rem] text-muted" /><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="q">Search</label>
+          <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Title or company" className="field !pl-9" /></div>
+        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="tab">Show</label>
+          <select id="tab" name="tab" defaultValue={tab} className="field">{TABS.map(([id, l]) => <option key={id} value={id}>{l} ({tabCount(id)})</option>)}</select></div>
+        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="type">Type</label>
+          <select id="type" name="type" defaultValue={type} className="field">{TYPES.map(([id, l]) => <option key={id} value={id}>{l} ({typeCount(id)})</option>)}</select></div>
+        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="f-s">Exact status</label>
+          <select id="f-s" name="s" defaultValue={st} className="field"><option value="">Any</option>{labels.map((l) => <option key={l} value={l}>{l}</option>)}</select></div>
+        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="f-c">Company</label>
+          <select id="f-c" name="c" defaultValue={company} className="field"><option value="">Any</option>{companies.map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></div>
+        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="f-p">Priority</label>
+          <select id="f-p" name="p" defaultValue={pr} className="field"><option value="">Any</option><option value="attention">Urgent or high</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select></div>
+        <div className="col-span-2 flex flex-wrap items-end gap-x-4 gap-y-1 lg:col-span-1">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="checkbox" name="mine" value="1" defaultChecked={mine} className="size-4 accent-[#0c6a49]" /> Only mine</label>
+          {(extra > 0 || tab !== "needs" || type !== "all") && <Link href="/tickets" className="min-h-11 py-2.5 text-sm underline">Clear</Link>}
+        </div>
+      </AutoGetForm>
+      <p className="-mt-2 mb-3 text-sm text-muted">{rows.length} {rows.length === 1 ? "ticket" : "tickets"}</p>
       {rows.length === 0 ? <Empty title="Nothing here">{tab === "needs" ? "You're all caught up." : "No tickets match."}</Empty> : (
         <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
           {rows.map((r) => (

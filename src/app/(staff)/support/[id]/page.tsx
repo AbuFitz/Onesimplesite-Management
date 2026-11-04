@@ -9,6 +9,7 @@ import { RecordHeader, Status, Avatar, ErrorSummary, fmtDateTime } from "@/compo
 import { FilePicker, Files } from "@/components/file-picker";
 import { Panel } from "@/components/panel";
 import { PoundSterling, ListChecks, UserRound, MessageSquare } from "lucide-react";
+import { AutoSelect } from "@/components/auto-form";
 import { LiveRefresh } from "@/components/live-refresh";
 import { STATUS_LABEL, CATEGORY_LABEL } from "@/modules/support/options";
 import { money } from "@/components/ui";
@@ -28,7 +29,7 @@ export default async function SupportTicket({ params, searchParams }: { params: 
   return (
     <>
       <LiveRefresh seconds={20} />
-      <RecordHeader back={{ href: "/support", label: "Support tickets" }} title={t.title} status={<Status label={s.label} kind={s.kind} />} meta={<><span className={`mr-2 rounded-md px-2 py-0.5 text-xs font-semibold ${CATEGORY_LABEL[t.category]?.cls ?? ""}`}>{CATEGORY_LABEL[t.category]?.label ?? "Support"}</span>{t.reference} · <Link className="underline" href={`/customers/${t.customer.id}`}>{t.customer.displayName}</Link>{t.contact ? ` · ${t.contact.name}${t.contact.position ? `, ${t.contact.position}` : ""}` : ""}{t.project ? ` · ${t.project.name}` : ""}</>} />
+      <RecordHeader back={{ href: "/support", label: "Support tickets" }} title={t.title} status={<AutoSelect action={supportUpdateAction} name="status" value={t.status} label="Ticket status" hidden={{ id: t.id }} options={STATUSES.map((x) => ({ value: x, label: STATUS_LABEL[x]?.label ?? x }))} />} meta={<><span className={`mr-2 rounded-md px-2 py-0.5 text-xs font-semibold ${CATEGORY_LABEL[t.category]?.cls ?? ""}`}>{CATEGORY_LABEL[t.category]?.label ?? "Support"}</span>{t.reference} · <Link className="underline" href={`/customers/${t.customer.id}`}>{t.customer.displayName}</Link>{t.contact ? ` · ${t.contact.name}${t.contact.position ? `, ${t.contact.position}` : ""}` : ""}{t.project ? ` · ${t.project.name}` : ""}</>} />
       <ErrorSummary message={sp.error} />
       {sp.sent && <p role="status" className="mb-3 text-sm text-moss">{sp.sent === "note" ? "Note saved. Only the team can see it." : "Reply sent."}</p>}
       {sp.saved && <p role="status" className="mb-3 text-sm text-moss">Saved.</p>}

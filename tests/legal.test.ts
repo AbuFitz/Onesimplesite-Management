@@ -20,13 +20,14 @@ describe("legal documents", () => {
     expect(dpa.body).toContain("Test Ltd");
     expect(dpa.body).toContain("12345678");
     expect(dpa.body).toContain("1 Test Road, Watford");
-    expect(dpa.body).toMatch(/\[TBC:/);
+    expect(dpa.body).not.toMatch(/\[TBC:/);   // the v1.4 wording leaves nothing undecided
     expect(dpa.status).toBe("draft");
   });
   it("cannot publish while TBC markers remain, and publishing one document never retires another", async () => {
     const c = await owner();
     await ensureStarter(c, "terms"); await ensureStarter(c, "dpa"); await ensureStarter(c, "change_request");
     const terms = (await listTerms(c, "terms"))[0], dpa = (await listTerms(c, "dpa"))[0], change_request = (await listTerms(c, "change_request"))[0];
+    await saveTermsDraft(c, dpa.id, { title: "DPA", body: "## Retention\n1.1 We keep it for [TBC: 30] days." }, "dpa");
     await expect(publishTerms(c, dpa.id)).rejects.toMatchObject({ code: "validation" });
     expect(change_request.body).not.toMatch(/\[TBC:/); // filled in per customer, so nothing to decide here
     await saveTermsDraft(c, terms.id, { title: "Terms", body: "## Services\n1.1 We build websites." }, "terms");
