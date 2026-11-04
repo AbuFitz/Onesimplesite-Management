@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { staffAuth, portalAuth, provisioningAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sha256 } from "@/lib/tokens";
+import { syncCodeRequirement } from "@/modules/identity/security";
 import { origins } from "@/lib/env";
 
 async function isPortalHost() {
@@ -21,6 +22,10 @@ export async function signOutPortal() {
   redirect("/login");
 }
 
+const mask = (e: string) => { const [u, d] = e.split("@"); return `${u.slice(0, 1)}${"*".repeat(Math.max(1, Math.min(6, u.length - 1)))}@${d}`; };
+const hostAuth2 = async () => ((await isPortalHost()) ? portalAuth() : staffAuth());
+const lastSend = new Map<string, number>();
+
 export async function login(_: unknown, fd: FormData) {
   let email = String(fd.get("email") ?? "").trim().toLowerCase();
   const password = String(fd.get("password") ?? "");
@@ -33,24 +38,42 @@ export async function login(_: unknown, fd: FormData) {
   const auth = portal ? portalAuth() : staffAuth();
   try {
     const remember = fd.get("remember") === "on";
+    // Match the account's "needs a one-time code" flag to the current security setting before checking the password.
+    await syncCodeRequirement(email).catch(() => false);
     const r = (await auth.api.signInEmail({ body: { email, password, rememberMe: remember }, headers: await headers() })) as { twoFactorRedirect?: boolean };
-    if (r?.twoFactorRedirect) return { mfa: true as const, error: undefined };
+    if (r?.twoFactorRedirect) {
+      const u = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { twoFactors: { where: { verified: true }, select: { id: true }, take: 1 } } });
+      return { mfa: (u?.twoFactors.length ? "totp" : "otp") as "totp" | "otp", hint: mask(email), error: undefined };
+    }
   } catch {
     return { error: portal ? "Email or password is incorrect." : "Username, email or password is incorrect." }; // same message for unknown user and bad password
   }
   redirect(portal ? "/overview" : "/");
 }
 
-export async function verifyMfa(_: unknown, fd: FormData) {
-  try {
-    await staffAuth().api.verifyTOTP({ body: { code: String(fd.get("code") ?? "") }, headers: await headers() });
-  } catch {
-    return { error: "That code did not work." };
-  }
-  redirect("/");
+/** Emails the 6-digit code for the sign-in in progress. At most one every 30 seconds per device. */
+export async function sendLoginCodeAction(): Promise<{ sent?: boolean; error?: string }> {
+  const h = await headers();
+  const key = `${h.get("host")}|${h.get("x-forwarded-for") ?? h.get("user-agent") ?? ""}`;
+  if (Date.now() - (lastSend.get(key) ?? 0) < 30_000) return { error: "Please wait a few seconds before asking for another code." };
+  lastSend.set(key, Date.now());
+  try { await (await hostAuth2()).api.sendTwoFactorOTP({ body: {}, headers: h }); return { sent: true }; }
+  catch { return { error: "Your sign-in timed out. Start again with your password." }; }
 }
 
-/** Accept an invitation: validates hashed single-use token, creates the user, links membership. */
+export async function verifyMfa(_: unknown, fd: FormData) {
+  const portal = await isPortalHost();
+  const code = String(fd.get("code") ?? "").replace(/\s+/g, ""), trustDevice = fd.get("trust") === "on";
+  try {
+    const auth = await hostAuth2(), h = await headers();
+    if (String(fd.get("method")) === "otp") await auth.api.verifyTwoFactorOTP({ body: { code, trustDevice }, headers: h });
+    else await auth.api.verifyTOTP({ body: { code, trustDevice }, headers: h });
+  } catch {
+    return { error: "That code didn't work. Check it, or ask for a new one." };
+  }
+  redirect(portal ? "/overview" : "/");
+}
+
 export async function acceptInvitation(_: unknown, fd: FormData) {
   const token = String(fd.get("token") ?? "");
   let name = String(fd.get("name") ?? "").trim();

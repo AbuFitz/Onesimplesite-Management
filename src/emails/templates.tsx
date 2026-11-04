@@ -12,6 +12,7 @@ export type EmailData = {
   invitation: { to: string; businessName: string; inviter: string; link: string; expires: string };
   password_reset: { to: string; name: string; link: string; minutes: number };
   password_changed: { to: string; name: string; when: string };
+  login_code: { to: string; name: string; code: string; minutes: number };
   backup_reminder: { to: string; lastBackup: string; link: string };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
   payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string; receiptRef?: string; receiptId?: string };
@@ -294,6 +295,18 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Reset your password\n\nHello ${d.name},\n\nChoose a new password: ${d.link}\n\nThis link works once and expires in ${d.minutes} minutes. If you did not ask for this, ignore this email and your password stays the same.\n\nOneSimpleSite`,
+  }),
+  login_code: (d) => ({
+    subject: `${d.code} is your OneSimpleSite sign-in code`,
+    node: (
+      <Layout preview={`Your sign-in code is ${d.code}`}>
+        <H>Your sign-in code</H>
+        <P>Hello {d.name}, enter this code to finish signing in on a new device.</P>
+        <p style={{ fontSize: 34, letterSpacing: 8, fontWeight: 700, margin: "18px 0" }}>{d.code}</p>
+        <P>It works once and expires in {d.minutes} minutes. If you did not just try to sign in, ignore this email and change your password.</P>
+      </Layout>
+    ),
+    text: `Your sign-in code\n\nHello ${d.name},\n\nEnter this code to finish signing in on a new device: ${d.code}\n\nIt works once and expires in ${d.minutes} minutes. If you did not just try to sign in, ignore this email and change your password.\n\nOneSimpleSite`,
   }),
   password_changed: (d) => ({
     subject: "Your OneSimpleSite password was changed",

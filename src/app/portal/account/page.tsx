@@ -6,6 +6,7 @@ import { levelLabel } from "@/modules/portal/access";
 import { Avatar } from "@/components/ui";
 import { MyDetailsForm } from "@/components/my-details-form";
 import { db } from "@/lib/db";
+import { SecurityPanel } from "@/components/security-panel";
 import { PhotoUpload } from "@/components/photo-upload";
 import { removeClientPhotoAction } from "@/app/actions/photo";
 
@@ -14,6 +15,7 @@ export const metadata = { title: "Settings" };
 export default async function Account({ searchParams }: { searchParams: Promise<{ error?: string; photo?: string }> }) {
   const c = await requireClient();
   const sp = await searchParams;
+  const hasTotp = !!(await db.twoFactor.count({ where: { userId: c.userId, verified: true } }));
   const me = c.email ? await db.contact.findFirst({ where: { customerId: { in: c.memberships.map((m) => m.customerId) }, email: { equals: c.email, mode: "insensitive" } }, select: { phone: true, position: true } }) : null;
   return (
     <div className="space-y-4">
@@ -47,6 +49,8 @@ export default async function Account({ searchParams }: { searchParams: Promise<
           <Link href="/help/new" className="btn btn-dark mt-4">Raise a ticket</Link>
         </section>
       </div>
+
+      <section className="tile bg-white" aria-labelledby="sec"><h2 id="sec" className="text-2xl">Sign-in security</h2><p className="mb-4 mt-1 text-sm text-muted">Optional extras that make your account safer.</p><SecurityPanel ns="portal" hasAuthenticator={hasTotp} /></section>
 
       <section className="tile bg-white" aria-labelledby="pw"><h2 id="pw" className="flex items-center gap-2 text-2xl"><KeyRound size={22} aria-hidden /> Change your password</h2>
         <div className="mt-4 max-w-md"><ChangePasswordForm /></div>

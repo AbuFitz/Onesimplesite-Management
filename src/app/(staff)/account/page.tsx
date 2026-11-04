@@ -5,6 +5,8 @@ import { getMyProfile, profileMissing } from "@/modules/identity/profile";
 import { ChangePasswordForm } from "@/components/password-forms";
 import { ProfileForm, ChangeEmailForm } from "@/components/profile-forms";
 import { RecordHeader, Avatar, ErrorSummary } from "@/components/ui";
+import { SecurityPanel } from "@/components/security-panel";
+import { db } from "@/lib/db";
 import { PhotoUpload } from "@/components/photo-upload";
 import { removePhotoAction } from "@/app/actions/photo";
 
@@ -14,6 +16,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
   const ctx = await requireStaff();
   const me = await getMyProfile(ctx);
   const missing = profileMissing(me);
+  const hasTotp = !!(await db.twoFactor.count({ where: { userId: ctx.userId, verified: true } }));
   const steps = [["Job title", !!me.jobTitle], ["Email signature", !!me.signature]] as const;
   return (
     <>
@@ -33,6 +36,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
       <section aria-labelledby="pr" className="mb-12"><h2 id="pr" className="mb-4">Profile and email signature</h2>
         <ProfileForm email={me.email} initial={{ name: me.displayName, jobTitle: me.jobTitle ?? "", phone: me.phone ?? "", signature: me.signature ?? "" }} /></section>
       <section aria-labelledby="em" className="mb-12"><h2 id="em" className="mb-4">Sign-in email</h2><ChangeEmailForm email={me.email} /></section>
+      <section aria-labelledby="sec" className="mb-10 max-w-2xl"><h2 id="sec" className="mb-3 text-lg">Sign-in security</h2><SecurityPanel ns="staff" hasAuthenticator={hasTotp} /></section>
       <section aria-labelledby="pw"><h2 id="pw" className="mb-3">Change password</h2><ChangePasswordForm /></section>
     </>
   );

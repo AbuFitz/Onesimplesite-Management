@@ -23,6 +23,7 @@ model User {
   sessions          Session[]
   accounts          Account[]
   twoFactors        TwoFactor[]
+  passkeys          Passkey[]
   staffMemberships  StaffMembership[]
   clientMemberships ClientMembership[]
 
@@ -88,6 +89,26 @@ model TwoFactor {
 
   @@index([userId])
   @@map("two_factor")
+}
+
+/// A passkey (Face ID, fingerprint, phone or security key) a person signed in with. Written by Better Auth.
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
 }
 
 // ───────── Workspace, access ─────────
