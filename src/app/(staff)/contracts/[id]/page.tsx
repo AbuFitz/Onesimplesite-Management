@@ -5,7 +5,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
-import { sendForSigningAction, voidSigningAction, completionAction } from "@/app/actions/crm";
+import { sendForSigningAction, voidSigningAction, completionAction, reviseProposalAction } from "@/app/actions/crm";
 import { RecordHeader, Status, ErrorSummary, money, fmtDateTime, fmtDate } from "@/components/ui";
 import { Panel, SummaryTile, FactRow } from "@/components/panel";
 import { FileText, PenLine, CreditCard, FolderKanban, Download } from "lucide-react";
@@ -17,7 +17,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
   const sp = await searchParams;
   const k = await db.contract.findFirst({
     where: { id, workspaceId: ctx.workspaceId },
-    include: { customer: { include: { contacts: { where: { isPrimary: true }, take: 1 } } }, project: true, billingIntents: true, signingRequests: { orderBy: { createdAt: "desc" }, include: { signature: true } }, documents: { select: { sha256: true, createdAt: true } } },
+    include: { customer: { include: { contacts: { where: { isPrimary: true }, take: 1 } } }, project: true, billingIntents: true, proposalVersion: { select: { proposalId: true, number: true, proposal: { select: { status: true } } } }, signingRequests: { orderBy: { createdAt: "desc" }, include: { signature: true } }, documents: { select: { sha256: true, createdAt: true } } },
   });
   if (!k) notFound();
   const pc = k.customer.contacts[0];
@@ -58,12 +58,18 @@ export default async function ContractPage({ params, searchParams }: { params: P
             {k.signingRequests.length > 0 && (
               <ul className={k.status === "completed" ? "mt-4 border-t border-[#eceeec] pt-3" : ""}>{k.signingRequests.map((r) => <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eceeec] py-2 text-[15px] last:border-0"><span className="font-medium">{r.signerName}</span><span className="flex items-center gap-2 text-ink/70"><Status label={r.status} kind={r.status === "signed" ? "good" : r.status === "pending" ? "warn" : "bad"} />{fmtDateTime(r.signature?.signedAt ?? r.createdAt)}</span>{r.declineReason && <span className="basis-full text-sm">“{r.declineReason}”</span>}</li>)}</ul>
             )}
+            {k.status === "awaiting_signature" && k.proposalVersion?.proposal.status === "sent" && can(ctx.role, "proposal.write") && (
+              <form action={reviseProposalAction} className="mt-4 rounded-xl border border-line bg-white p-4"><input type="hidden" name="id" value={k.proposalVersion.proposalId} />
+                <h3 className="text-[15px] font-bold">Need to change something?</h3>
+                <p className="mt-1 text-sm text-ink/65">Price, deposit, offer, care plan or wording. This withdraws the link they have and opens the agreement for editing as version {k.proposalVersion.number + 1}. Preview it, then send it, and they sign the new one.</p>
+                <button className="btn mt-3">Change it and send a new version</button></form>
+            )}
             {open && can(ctx.role, "contract.send") && (
               <form action={sendForSigningAction} className="mt-4 space-y-2 rounded-xl bg-[#f6f5f1] p-4"><input type="hidden" name="id" value={k.id} />
                 <h3 className="text-[15px] font-bold">{live ? "Send a fresh signing link" : "Send for signature"}</h3>
                 <div className="grid gap-3 sm:grid-cols-2"><div><label className="label" htmlFor="sn">Signer name</label><input id="sn" name="name" className="field" defaultValue={pc?.name} required /></div>
                   <div><label className="label" htmlFor="se">Signer email</label><input id="se" name="email" type="email" className="field" defaultValue={pc?.email ?? ""} required /></div></div>
-                <button className="btn">{live ? "Withdraw the old link and resend" : "Send for signature"}</button>
+                <button className="btn">{live ? "Resend the same agreement with a fresh link" : "Send for signature"}</button>
                 <p className="text-sm text-ink/65">One email, one signature. The link is personal, works once and expires in 14 days. Check the email address carefully.</p></form>
             )}
             {live && can(ctx.role, "contract.void") && <form action={voidSigningAction} className="mt-3"><input type="hidden" name="id" value={k.id} /><button className={btn}>Withdraw this agreement</button></form>}
