@@ -19,9 +19,17 @@ export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"
   const [totpOn, setTotpOn] = useState(hasAuthenticator);
   const [pw, setPw] = useState("");
   const [code, setCode] = useState("");
+  const [phoneQr, setPhoneQr] = useState("");
+  const [fromPhone, setFromPhone] = useState(false);
 
   const load = useCallback(async () => { const r = await c.$fetch<Pk[]>("/passkey/list-user-passkeys", { method: "GET" }); setKeys(r.error ? [] : (r.data ?? [])); }, [c]);
   useEffect(() => { setSupported(!!window.PublicKeyCredential); void load(); }, [load]);
+  // A code that opens this same page on a phone (after they sign in there), ready to add a passkey to that phone.
+  useEffect(() => {
+    const here = `${window.location.origin}${window.location.pathname}?passkey=phone#pk`;
+    void QRCode.toDataURL(here, { margin: 1, width: 360, color: { dark: "#0E1311", light: "#ffffff" } }).then(setPhoneQr);
+    if (new URLSearchParams(window.location.search).get("passkey") === "phone") { setFromPhone(true); setName("My phone"); }
+  }, []);
   const say = (kind: "ok" | "bad", text: string) => setMsg({ kind, text });
 
   async function addKey() {
@@ -67,6 +75,18 @@ export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"
           <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-white">{keys.map((k) => (
             <li key={k.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm"><span><strong>{k.name || "Passkey"}</strong><span className="block text-muted">Added {when(k.createdAt)}{k.backedUp ? " · synced across your devices" : ""}</span></span>
               <button type="button" onClick={() => removeKey(k.id)} aria-label={`Remove ${k.name || "passkey"}`} className="grid size-10 place-items-center rounded-lg hover:bg-bone"><Trash2 size={16} aria-hidden /></button></li>))}</ul>
+        )}
+        {fromPhone && supported && <p role="status" className="mt-3 rounded-lg bg-[#e9f6ef] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">You're on your phone. Tap “Add a passkey” and use Face ID or your fingerprint. It will be saved to this phone.</p>}
+        {phoneQr && !fromPhone && (
+          <div className="mt-4 hidden items-center gap-5 rounded-2xl border border-line bg-white p-4 md:flex">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={phoneQr} alt="QR code that opens this page on your phone" width={132} height={132} className="size-[132px] shrink-0 rounded-xl border border-line" />
+            <div className="min-w-0">
+              <p className="font-bold">Set one up on your phone</p>
+              <p className="mt-1 text-sm text-muted">Point your phone's camera at this code and sign in. Then tap <strong>Add a passkey</strong> to use Face ID or your fingerprint to sign in from now on.</p>
+              <p className="mt-2 text-[13px] text-muted">Adding one here on this computer? Choose <strong>Use a phone or tablet</strong> when your browser asks, and it shows its own code to scan.</p>
+            </div>
+          </div>
         )}
         {supported ? (
           <div className="mt-3 flex flex-wrap items-end gap-3">

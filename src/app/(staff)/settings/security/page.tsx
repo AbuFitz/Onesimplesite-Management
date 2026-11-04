@@ -3,7 +3,6 @@ import { requireStaff } from "@/modules/identity/session";
 import { db } from "@/lib/db";
 import { saveSecuritySettings, securityFrom, CODE_MODES, type CodeMode } from "@/modules/identity/security";
 import { DomainError } from "@/lib/errors";
-import { SettingsNav } from "@/components/settings-nav";
 import { SubmitButton } from "@/components/submit-button";
 import { RecordHeader, ErrorSummary } from "@/components/ui";
 
@@ -32,8 +31,7 @@ export default async function Security({ searchParams }: { searchParams: Promise
   const [keys, totp, staff] = await Promise.all([db.passkey.count(), db.twoFactor.count({ where: { verified: true } }), db.staffMembership.count({ where: { workspaceId: ctx.workspaceId, status: "active" } })]);
   return (
     <>
-      <RecordHeader title="Settings" meta="Company details, legal documents, emails and notifications" />
-      <SettingsNav current="security" />
+      <RecordHeader title="Sign-in security" meta="Two-step sign-in, passkeys and trusted devices" />
       {sp.saved && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Saved. It applies from the next sign-in.</p>}
       <ErrorSummary message={sp.error} />
       <form action={save} className="max-w-3xl">

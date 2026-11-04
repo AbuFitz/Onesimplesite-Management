@@ -2,7 +2,6 @@ import { requireStaff } from "@/modules/identity/session";
 import { getSettings, listPlans, money } from "@/modules/settings/plans";
 import { VARIABLES } from "@/modules/settings/variables";
 import { saveSettingsAction, savePlanAction } from "@/app/actions/work";
-import { SettingsNav } from "@/components/settings-nav";
 import { RecordHeader, ErrorSummary } from "@/components/ui";
 
 export const metadata = { title: "Plans and details" };
@@ -18,8 +17,7 @@ export default async function Plans({ searchParams }: { searchParams: Promise<{ 
   const [stored, plans] = await Promise.all([getSettings(ctx.workspaceId), listPlans(ctx.workspaceId)]);
   return (
     <>
-      <RecordHeader title="Settings" meta="Company details, plans, legal documents and emails" />
-      <SettingsNav current="plans" />
+      <RecordHeader title="Plans and details" meta="Care plans and the details quoted in every document" />
       <ErrorSummary message={sp.error} />
       {sp.saved && <p role="status" className="mb-4 text-sm text-moss">Saved. New orders use these values. Orders already sent keep the figures the customer agreed.</p>}
       <p className="mb-8 max-w-2xl text-sm text-muted">Prices, support hours and email addresses live here, not inside the legal wording. Change one here and every document that quotes it updates the next time an order is sent.</p>

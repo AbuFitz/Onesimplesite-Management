@@ -3,7 +3,6 @@ import { requireStaff } from "@/modules/identity/session";
 import { db } from "@/lib/db";
 import { saveNotifyPrefs } from "@/modules/settings/plans";
 import { NOTIFY_EVENTS, DELIVERY_LABEL, prefsFrom } from "@/modules/settings/notifications";
-import { SettingsNav } from "@/components/settings-nav";
 import { SubmitButton } from "@/components/submit-button";
 import { RecordHeader } from "@/components/ui";
 
@@ -24,8 +23,7 @@ export default async function Notifications({ searchParams }: { searchParams: Pr
   const sections = [["team", "Emails to the team", "Everything here is also in the app: Tickets, the suggestions bubble, Today and each order. An email is only a nudge."], ["customer", "Optional emails to customers", "Emails customers need (invitations, agreements, receipts, our replies, prices) are always sent and aren't listed."]] as const;
   return (
     <>
-      <RecordHeader title="Settings" meta="Company details, legal documents, emails and notifications" />
-      <SettingsNav current="notifications" />
+      <RecordHeader title="Notifications" meta="Which emails are sent, and when" />
       {sp.saved && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm text-[#0a5a3d]">Saved.</p>}
       <form action={save} className="max-w-3xl">
         {sections.map(([who, title, about]) => (

@@ -3,7 +3,6 @@ import { FileText } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { legalOverview } from "@/modules/settings/service";
 import { LEGAL } from "@/modules/settings/legal-docs";
-import { SettingsNav } from "@/components/settings-nav";
 import { RecordHeader, Status, fmtDate } from "@/components/ui";
 
 export const metadata = { title: "Legal documents" };
@@ -15,8 +14,7 @@ export default async function LegalIndex() {
   const docs = await legalOverview(ctx);
   return (
     <>
-      <RecordHeader title="Settings" meta="Company details, legal documents and emails" />
-      <SettingsNav current="legal" />
+      <RecordHeader title="Legal documents" meta="The pack customers sign. Versioned: a published version never changes" />
       <p className="mb-8 max-w-2xl text-sm text-muted">The legal documents we send to customers while onboarding them. Each is versioned: a published version never changes, and editing starts a new draft. Wording starts as a draft with <strong>[TBC: …]</strong> marks for anything still to decide, and a document can't be published until they are all filled in.</p>
       <ul className="grid gap-4 md:grid-cols-2">
         {docs.map(({ kind, published, latest, todo }) => {

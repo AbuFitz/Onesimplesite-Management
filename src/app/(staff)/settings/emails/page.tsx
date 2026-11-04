@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
 import { EMAILS, sampleEmail } from "@/modules/settings/email-samples";
 import { EmailTestButton } from "@/components/email-test-button";
-import { SettingsNav } from "@/components/settings-nav";
 import { RecordHeader } from "@/components/ui";
 
 export const metadata = { title: "Emails" };
@@ -16,8 +15,7 @@ export default async function Emails({ searchParams }: { searchParams: Promise<{
   const href = (e: string, w = phone ? "phone" : "desktop") => `/settings/emails?e=${e}&w=${w}`;
   return (
     <>
-      <RecordHeader title="Settings" meta="Company details, legal documents and emails" />
-      <SettingsNav current="emails" />
+      <RecordHeader title="Emails" meta="Preview and test every email we send" />
       <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
         <nav aria-label="Emails" className="space-y-5">
           {(["Customer", "Team"] as const).map((aud) => (
