@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { audit } from "@/lib/audit";
 import { DomainError, forbidden, notFound } from "@/lib/errors";
 import { can } from "@/modules/identity/permissions";
 import type { StaffCtx } from "@/modules/identity/session";
@@ -10,7 +11,7 @@ import type { StaffCtx } from "@/modules/identity/session";
  */
 export async function deleteBusiness(ctx: StaffCtx, customerId: string, typedName: string) {
   if (!can(ctx.role, "customer.write")) throw forbidden();
-  const cu = await db.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId }, select: { id: true, displayName: true } });
+  const cu = await db.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId }, select: { id: true, displayName: true, reference: true } });
   if (!cu) throw notFound("Company not found.");
   if (typedName.trim().toLowerCase() !== cu.displayName.trim().toLowerCase()) throw new DomainError("validation", "The name you typed doesn't match, so nothing was deleted.");
   const active = await db.billingIntent.count({ where: { customerId, stripeSubscriptionId: { not: null }, status: { in: ["active", "past_due"] } } });
@@ -20,6 +21,8 @@ export async function deleteBusiness(ctx: StaffCtx, customerId: string, typedNam
     const memberships = await tx.clientMembership.findMany({ where: { customerId }, select: { userId: true } });
     // The database does the erasure in one go (signed agreements and signatures are protected from everything else), see migration erase_company.
     await tx.$executeRaw`SELECT oss_erase_company(${ctx.workspaceId}::uuid, ${customerId}::uuid)`;
+    // One line that a company was deleted, so the log shows it happened, but nothing about who or what it was (just its reference number).
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "company.deleted", targetType: "customer", targetId: customerId, detail: { reference: cu.reference } });
     // A login that only ever belonged to this company goes too, so the email can be used again.
     for (const { userId } of memberships) {
       const other = await tx.clientMembership.count({ where: { userId } });
