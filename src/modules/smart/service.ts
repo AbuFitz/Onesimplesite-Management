@@ -62,10 +62,10 @@ export async function suggestionsFor(ctx: StaffCtx, now = new Date()): Promise<S
       for (const o of open) out.push({ id: `details:${o.customer.id}`, level: "normal", title: `${o.customer.displayName} needs company details`, reason: `We can't send their agreement without ${[!o.customer.legalName && "the legal name", !o.customer.billingAddress && "an address"].filter(Boolean).join(" and ")}.`, action: { label: "Add them", href: `/customers/${o.customer.id}/details` } });
     })());
     q.push((async () => {
-      const rows = await db.billingIntent.findMany({ where: { workspaceId: w, status: "pending", NOT: { kind: "recurring_setup" }, contract: { status: "completed", completedAt: { lt: new Date(+now - 7 * D) } } }, take: 2 });
+      const rows = await db.billingIntent.findMany({ where: { workspaceId: w, status: "pending", NOT: { kind: "recurring_setup" }, OR: [{ kind: { not: "balance" }, contract: { status: "completed", completedAt: { lt: new Date(+now - 7 * D) } } }, { kind: "balance", requestedAt: { lt: new Date(+now - 3 * D) } }] }, take: 2 });   // a final payment only counts once we have asked for it
       const names = await nameMap(rows.map((r) => r.customerId));
       for (const b of rows)
-        out.push({ id: `unpaid:${b.id}`, level: "normal", title: `${names.get(b.customerId) ?? "A customer"} hasn't paid the website fee`, reason: `${gbp(b.amountMinor)} has been due for over a week since they signed. If they're not using the portal, offer to take it over the phone or mark a bank payment.`, action: { label: "See the order", href: `/contracts/${b.contractId}` } });
+        out.push({ id: `unpaid:${b.id}`, level: "normal", title: `${names.get(b.customerId) ?? "A customer"} hasn't paid the ${b.kind === "balance" ? "final payment" : "website fee"}`, reason: `${gbp(b.amountMinor)} has been due for ${b.kind === "balance" ? "a few days since we asked for it" : "over a week since they signed"}. If they're not using the portal, offer to take it over the phone or mark a bank payment.`, action: { label: "See the order", href: `/contracts/${b.contractId}` } });
     })());
   }
 

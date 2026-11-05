@@ -1,7 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { db } from "@/lib/db";
 import { runCompletionWorkflow } from "@/modules/contracts/service";
-import { startPayment, requestFinalPayment, isScheduled } from "@/modules/billing/service";
+import { startPayment, requestFinalPayment, isScheduled, applyStripeEvent } from "@/modules/billing/service";
+import { todayData } from "@/modules/today/service";
+import { suggestionsFor } from "@/modules/smart/service";
 import { transitionProject } from "@/modules/projects/service";
 import type { StaffCtx } from "@/modules/identity/session";
 import type { ClientCtx } from "@/modules/portal/service";
@@ -48,5 +50,55 @@ describe("deposit and final payment", () => {
     const bal = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "balance" } });
     expect(bal.requestedAt).toBeTruthy();
     expect(await db.outbox.count({ where: { workspaceId: x.w.id, topic: "email.balance_requested" } })).toBe(1);
+  });
+});
+
+describe("the whole deposit and final payment journey, with Stripe faked", () => {
+  it("deposit paid, final payment locked then asked for then paid; each charge is the right amount and nothing is double-counted", async () => {
+    const x = await world();                                           // £1,000 less 10% = £900: 40% (£360) now, £540 later
+    const key = process.env.STRIPE_SECRET_KEY; process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
+    const sessions: URLSearchParams[] = [];
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (u, init) => { const url = String(u); const body = new URLSearchParams(String((init as RequestInit).body ?? "")); if (url.endsWith("/checkout/sessions")) sessions.push(body); return new Response(JSON.stringify(url.endsWith("/customers") ? { id: "cus_1" } : { id: `cs_${sessions.length}`, url: "https://checkout.stripe.test/x" }), { status: 200 }); });
+    try {
+      const dep = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "deposit" } });
+      const bal = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "balance" } });
+      const m = await db.staffMembership.findFirstOrThrow({ where: { workspaceId: x.w.id } });
+      // 1. Only the deposit can be paid. The locked final payment is not "due" and nobody is told to chase it.
+      await startPayment(x.client, dep.id);
+      expect(sessions[0].get("line_items[0][price_data][unit_amount]")).toBe("36000"); expect(sessions[0].get("mode")).toBe("payment");
+      await expect(startPayment(x.client, bal.id)).rejects.toThrow(/isn't due yet/);
+      await db.contract.update({ where: { id: x.k.id }, data: { completedAt: new Date(Date.now() - 20 * 864e5) } });
+      const t0 = await todayData(x.w.id, { staffId: m.id, seeBusiness: true });
+      expect(t0!.money.dueMinor).toBe(36000);                          // only the deposit is due now
+      // 2. Stripe says the deposit is paid. It is marked paid once, with one receipt, even if Stripe repeats the event.
+      const ev = { id: "cs_1", metadata: { intentId: dep.id }, payment_status: "paid", payment_intent: "pi_dep", customer_details: { email: "hana@client.test", name: "Hana" } };
+      await applyStripeEvent("checkout.session.completed", ev, x.w.id); await applyStripeEvent("checkout.session.completed", ev, x.w.id);
+      expect(await db.billingIntent.findUniqueOrThrow({ where: { id: dep.id } })).toMatchObject({ status: "paid", paidVia: "stripe" });
+      expect(await db.receipt.count({ where: { intentId: dep.id } })).toBe(1);
+      expect(await db.billingIntent.findUniqueOrThrow({ where: { id: bal.id } })).toMatchObject({ status: "pending", requestedAt: null });   // the final payment is untouched
+      // 3. The team asks for the final payment: the customer is emailed and can now pay exactly the rest.
+      await requestFinalPayment(x.staff, x.k.id);
+      await startPayment(x.client, bal.id);
+      expect(sessions[1].get("line_items[0][price_data][unit_amount]")).toBe("54000");
+      const total = Number(sessions[0].get("line_items[0][price_data][unit_amount]")) + Number(sessions[1].get("line_items[0][price_data][unit_amount]"));
+      expect(total).toBe(90000);                                       // the two halves add up to exactly what was agreed
+      // 4. The final payment is paid. Everything is paid, two receipts, nothing left due.
+      await applyStripeEvent("checkout.session.completed", { id: "cs_2", metadata: { intentId: bal.id }, payment_status: "paid", payment_intent: "pi_bal", customer_details: { email: "hana@client.test", name: "Hana" } }, x.w.id);
+      expect((await db.billingIntent.findMany({ where: { contractId: x.k.id } })).every((b) => b.status === "paid")).toBe(true);
+      expect(await db.receipt.count({ where: { customerId: x.c.id } })).toBe(2);
+      const t1 = await todayData(x.w.id, { staffId: m.id, seeBusiness: true });
+      expect(t1!.money.dueMinor).toBe(0);
+      expect((await suggestionsFor(x.staff)).filter((s) => s.id.startsWith("unpaid:"))).toHaveLength(0);
+    } finally { spy.mockRestore(); if (key === undefined) delete process.env.STRIPE_SECRET_KEY; else process.env.STRIPE_SECRET_KEY = key; }
+  });
+
+  it("does not tell the team to chase a final payment that has not been asked for yet, but does once it has been asked for and left", async () => {
+    const x = await world();
+    const bal = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "balance" } });
+    await db.billingIntent.updateMany({ where: { contractId: x.k.id, kind: "deposit" }, data: { status: "paid", paidAt: new Date() } });
+    await db.contract.update({ where: { id: x.k.id }, data: { completedAt: new Date(Date.now() - 30 * 864e5) } });
+    expect((await suggestionsFor(x.staff)).filter((s) => s.id === `unpaid:${bal.id}`)).toHaveLength(0);            // locked: no nag
+    await db.billingIntent.update({ where: { id: bal.id }, data: { requestedAt: new Date(Date.now() - 5 * 864e5) } });
+    expect((await suggestionsFor(x.staff)).filter((s) => s.id === `unpaid:${bal.id}`)).toHaveLength(1);            // asked 5 days ago and still unpaid: nudge
   });
 });
