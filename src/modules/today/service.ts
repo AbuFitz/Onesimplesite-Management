@@ -23,7 +23,7 @@ export async function todayData(workspaceId: string, opts: { staffId: string; se
     db.opportunity.groupBy({ by: ["stage"], where: { workspaceId: w }, _count: true }),
     db.contract.count({ where: { workspaceId: w, status: "awaiting_signature" } }),
     db.ticket.findMany({ where: { workspaceId: w, status: { in: ["open", "customer_replied"] } }, include: { customer: { select: { displayName: true } }, contact: { select: { name: true } } }, orderBy: { updatedAt: "asc" }, take: 6 }),
-    db.project.groupBy({ by: ["stage"], where: { workspaceId: w }, _count: true }),
+    db.project.groupBy({ by: ["stage"], where: { workspaceId: w, stage: { not: "cancelled" } }, _count: true }),
   ]);
   const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(+weekAgo + i * DAY); return { key: d.toDateString(), label: d.toLocaleString("en-GB", { weekday: "short", timeZone: "Europe/London" }).slice(0, 3), value: 0 }; });
   for (const t of recent) { const k = new Date(t.createdAt).toDateString(); const d = days.find((x) => x.key === k); if (d) d.value++; }

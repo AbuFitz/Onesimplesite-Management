@@ -27,7 +27,7 @@ export default async function Today() {
     todayData(w, { staffId: ctx.staffId, seeBusiness }),
     db.task.findMany({ where: { workspaceId: w, assigneeId: ctx.staffId, doneAt: null }, orderBy: { dueDate: "asc" }, take: 6 }),
     db.calendarEvent.findMany({ where: { workspaceId: w, status: "scheduled", startsAt: { gte: startOfDay, lt: endOfDay }, OR: [{ organiserId: ctx.staffId }, { attendees: { some: { staffId: ctx.staffId } } }] }, orderBy: { startsAt: "asc" } }),
-    seeBusiness ? db.contract.findMany({ where: { workspaceId: w, status: "completed", completedAt: { gte: new Date(Date.now() - 14 * 864e5) } }, orderBy: { completedAt: "desc" }, take: 4, include: { customer: true } }) : [],
+    seeBusiness ? db.contract.findMany({ where: { workspaceId: w, status: "completed", cancelledAt: null, completedAt: { gte: new Date(Date.now() - 14 * 864e5) } }, orderBy: { completedAt: "desc" }, take: 4, include: { customer: true } }) : [],
     db.project.findMany({ where: { workspaceId: w, stage: { notIn: ["completed", "cancelled", "launched"] }, ...mineOnly }, orderBy: { updatedAt: "desc" }, take: 5, select: { id: true, name: true, stage: true, dueDate: true, customer: { select: { displayName: true } } } }),
   ]);
   const greeting = hello();

@@ -12,7 +12,7 @@ export function activeAccount(c: ClientCtx, requested?: string) {
 
 export function clientProjects(c: ClientCtx, accountId?: string) {
   const a = activeAccount(c, accountId);
-  return db.project.findMany({ where: { customerId: a.customerId, workspaceId: a.customer.workspaceId }, orderBy: { updatedAt: "desc" } });
+  return db.project.findMany({ where: { customerId: a.customerId, workspaceId: a.customer.workspaceId, stage: { not: "cancelled" } }, orderBy: { updatedAt: "desc" } });
 }
 
 /** Client view omits internal tasks, internal updates, scope margins and staff ids. */
@@ -47,7 +47,7 @@ export const STAGE_COPY: Record<string, string> = {
 export async function clientOverview(c: ClientCtx) {
   const ids = c.memberships.map((m) => m.customerId);
   const [projects, assets, updates, documents] = await Promise.all([
-    db.project.findMany({ where: { customerId: { in: ids } }, orderBy: { updatedAt: "desc" }, select: { id: true, name: true, stage: true, dueDate: true } }),
+    db.project.findMany({ where: { customerId: { in: ids }, stage: { not: "cancelled" } }, orderBy: { updatedAt: "desc" }, select: { id: true, name: true, stage: true, dueDate: true } }),
     db.assetRequest.findMany({ where: { project: { customerId: { in: ids } }, receivedAt: null }, orderBy: { createdAt: "asc" }, select: { id: true, label: true, required: true, dueDate: true, projectId: true } }),
     db.projectUpdate.findMany({ where: { clientVisible: true, project: { customerId: { in: ids } } }, orderBy: { createdAt: "desc" }, take: 3, select: { id: true, body: true, createdAt: true, projectId: true } }),
     db.contract.findMany({ where: { customerId: { in: ids }, status: "completed", documents: { some: {} } }, orderBy: { completedAt: "desc" }, take: 3, select: { id: true, title: true, reference: true, completedAt: true } }),

@@ -169,3 +169,38 @@ describe("telling the customer how to pay, and the care plan opening at launch",
     expect((await db.billingIntent.findUniqueOrThrow({ where: { id: old.id } })).status).toBe("pending");
   });
 });
+
+import { cancelOrder } from "@/modules/contracts/service";
+describe("cancelling a signed order", () => {
+  it("closes the unpaid charges, the free care period, the deal and the project, keeps what was paid on record, and shows as cancelled not signed", async () => {
+    const x = await world();                                                                           // deposit £360 and final payment £540 (both unpaid), and a project
+    const dep = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "deposit" } });
+    await db.billingIntent.update({ where: { id: dep.id }, data: { status: "paid", paidAt: new Date(), paidVia: "stripe" } });   // the deposit was paid
+    const r = await cancelOrder(x.staff, x.k.id, "Customer changed their mind");
+    expect(r).toEqual({ chargesCancelled: 1, paidMinor: 36000 });                                      // the unpaid final payment is cancelled; the paid deposit is left alone (refund in Stripe)
+    expect(await db.billingIntent.findUniqueOrThrow({ where: { id: dep.id } })).toMatchObject({ status: "paid" });
+    expect((await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "balance" } })).status).toBe("cancelled");
+    const k = await db.contract.findUniqueOrThrow({ where: { id: x.k.id } });
+    expect(k).toMatchObject({ status: "completed", cancelReason: "Customer changed their mind" }); expect(k.cancelledAt).toBeTruthy();   // the signed copy stays "completed", marked cancelled
+    expect((await db.project.findFirstOrThrow({ where: { contractId: x.k.id } })).stage).toBe("cancelled");
+    expect(await db.auditEvent.count({ where: { workspaceId: x.w.id, action: "contract.cancelled" } })).toBe(1);
+    await expect(cancelOrder(x.staff, x.k.id, "again")).rejects.toThrow(/already cancelled/);
+    const m = await db.staffMembership.findFirstOrThrow({ where: { workspaceId: x.w.id } });
+    const t = await todayData(x.w.id, { staffId: m.id, seeBusiness: true });
+    expect(t!.projects.total).toBe(0);                                                                   // a cancelled project is not counted on the home page
+    expect(t!.money.dueMinor).toBe(0);                                                                   // and nothing cancelled is "to collect"
+  });
+
+  it("refuses when the site is live, when a monthly plan is running, or without a reason, and only for signed orders", async () => {
+    const x = await world();
+    await expect(cancelOrder(x.staff, x.k.id, " ")).rejects.toThrow(/Say why/);
+    const project = await db.project.findFirstOrThrow({ where: { contractId: x.k.id } });
+    await db.project.update({ where: { id: project.id }, data: { stage: "launched" } });
+    await expect(cancelOrder(x.staff, x.k.id, "too late")).rejects.toThrow(/already live/);
+    await db.project.update({ where: { id: project.id }, data: { stage: "planned" } });
+    await db.billingIntent.create({ data: { workspaceId: x.w.id, customerId: x.c.id, contractId: x.k.id, kind: "recurring_setup", amountMinor: 2900, status: "active", stripeSubscriptionId: "sub_1" } });
+    await expect(cancelOrder(x.staff, x.k.id, "plan running")).rejects.toThrow(/Cancel the monthly plan first/);
+    const draft = await db.contract.create({ data: { workspaceId: x.w.id, customerId: x.c.id, reference: `OSS-OF-${Math.random().toString(36).slice(2, 8)}`, title: "Unsigned", status: "awaiting_signature", scopeSnapshot: "x", oneOffMinor: 0, recurringMinor: 0 } });
+    await expect(cancelOrder(x.staff, draft.id, "not signed")).rejects.toThrow(/Only a signed order/);
+  });
+});

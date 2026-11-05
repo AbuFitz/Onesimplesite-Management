@@ -90,3 +90,27 @@ export async function runCompletionWorkflow(tx: Tx, contractId: string) {
   await enqueue(tx, c.workspaceId, "notify.contract_completed", `contract.completed:${contractId}`, { contractId, projectId: project.id });
   return project;
 }
+
+/** Calls off a signed order: unpaid charges and any free care period are cancelled, the deal is marked lost and the project is cancelled. The signed copy and anything already paid stay on record (refunds are done in Stripe). */
+export async function cancelOrder(ctx: StaffCtx, contractId: string, reason: string) {
+  if (!can(ctx.role, "contract.void")) throw forbidden();
+  const why = reason.trim();
+  if (why.length < 3) throw new DomainError("validation", "Say why it is being cancelled, so there is a record.");
+  return db.$transaction(async (tx) => {
+    const c = await tx.contract.findFirst({ where: { id: contractId, workspaceId: ctx.workspaceId }, include: { proposalVersion: { include: { proposal: true } }, billingIntents: true, project: true } });
+    if (!c) throw notFound();
+    if (c.status !== "completed") throw new DomainError("conflict", "Only a signed order can be cancelled this way. An agreement that has not been signed can be withdrawn instead.");
+    if (c.cancelledAt) throw new DomainError("conflict", "This order is already cancelled.");
+    if (c.project && ["launched", "completed"].includes(c.project.stage)) throw new DomainError("conflict", "The website is already live, so this isn't a cancellation. Close the care plan instead.");
+    if (c.billingIntents.some((b) => b.kind === "recurring_setup" && b.paidVia !== "free" && ["active", "past_due"].includes(b.status))) throw new DomainError("conflict", "A monthly plan is running. Cancel the monthly plan first, then cancel the order.");
+    const open = c.billingIntents.filter((b) => b.status === "pending" || (b.paidVia === "free" && b.status === "active"));
+    for (const b of open) await tx.billingIntent.update({ where: { id: b.id }, data: { status: "cancelled" } });
+    const paid = c.billingIntents.filter((b) => b.status === "paid").reduce((n, b) => n + b.amountMinor, 0);
+    await tx.contract.update({ where: { id: c.id }, data: { cancelledAt: new Date(), cancelReason: why, version: { increment: 1 } } });
+    if (c.project && !["completed", "cancelled"].includes(c.project.stage)) await tx.project.update({ where: { id: c.project.id }, data: { stage: "cancelled", version: { increment: 1 } } });
+    const oppId = c.proposalVersion?.proposal.opportunityId;
+    if (oppId) await tx.opportunity.updateMany({ where: { id: oppId, workspaceId: ctx.workspaceId }, data: { stage: "lost", version: { increment: 1 } } });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "contract.cancelled", targetType: "contract", targetId: c.id, customerId: c.customerId, detail: { reason: why, chargesCancelled: open.length, paidMinor: paid } });
+    return { chargesCancelled: open.length, paidMinor: paid };
+  });
+}

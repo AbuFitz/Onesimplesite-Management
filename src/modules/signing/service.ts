@@ -62,9 +62,11 @@ export async function sendForSigning(ctx: StaffCtx, contractId: string, raw: unk
       await tx.signingRequest.update({ where: { id: p.id }, data: { status: "voided" } });
       await tx.scopedLinkToken.updateMany({ where: { workspaceId: ctx.workspaceId, purpose: "contract_sign", entityId: p.id, revokedAt: null }, data: { revokedAt: new Date() } });
     }
-    const contentText = composeText(c, c.customer.displayName);
+    // A resend carries the exact words that were first sent (the order form and every legal document), never a shorter rebuilt copy.
+    const first = await tx.signingRequest.findFirst({ where: { contractId, workspaceId: ctx.workspaceId }, orderBy: { createdAt: "asc" }, select: { contentText: true, termsVersionId: true } });
+    const contentText = first?.contentText ?? composeText(c, c.customer.displayName);
     const expiresAt = new Date(Date.now() + EXPIRY_DAYS * 864e5);
-    const req = await tx.signingRequest.create({ data: { workspaceId: ctx.workspaceId, contractId, signerName: i.name, signerEmail: i.email, contentText, contentSha256: sha256(contentText), expiresAt, sentById: ctx.staffId } });
+    const req = await tx.signingRequest.create({ data: { workspaceId: ctx.workspaceId, contractId, signerName: i.name, signerEmail: i.email, contentText, contentSha256: sha256(contentText), expiresAt, sentById: ctx.staffId, ...(first?.termsVersionId ? { termsVersionId: first.termsVersionId } : {}) } });
     const { token, hash } = newToken();
     await tx.scopedLinkToken.create({ data: { workspaceId: ctx.workspaceId, purpose: "contract_sign", entityId: req.id, tokenHash: hash, recipientEmail: i.email, expiresAt } });
     await tx.contract.update({ where: { id: contractId }, data: { status: "awaiting_signature", signingMode: "original_capture", version: { increment: 1 } } });

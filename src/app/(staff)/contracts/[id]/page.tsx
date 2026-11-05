@@ -6,13 +6,13 @@ import { promoFrom } from "@/modules/billing/promo";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
-import { sendForSigningAction, voidSigningAction, completionAction, reviseProposalAction } from "@/app/actions/crm";
+import { sendForSigningAction, voidSigningAction, completionAction, reviseProposalAction, cancelOrderAction } from "@/app/actions/crm";
 import { RecordHeader, Status, ErrorSummary, money, fmtDateTime, fmtDate } from "@/components/ui";
 import { Panel, SummaryTile, FactRow } from "@/components/panel";
 import { FileText, PenLine, CreditCard, FolderKanban, Download } from "lucide-react";
 
 export const metadata = { title: "Contract" };
-export default async function ContractPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string; emailed?: string }> }) {
+export default async function ContractPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string; emailed?: string; cancelled?: string; paid?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const { id } = await params;
   const sp = await searchParams;
@@ -27,15 +27,16 @@ export default async function ContractPage({ params, searchParams }: { params: P
   const live = k.signingRequests.find((r) => r.status === "pending");
   const open = k.status === "draft" || k.status === "awaiting_signature";
   const TONE = { due: "bg-[#f8ecbf] text-[#5c4700]", ok: "bg-[#d7f3e6] text-[#0a5a3d]", warn: "bg-[#fbdccf] text-[#7a2e12]", off: "bg-[#ebe9e1] text-ink/70" } as const;
-  const stateTone = k.status === "completed" ? "green" : k.status === "declined" || k.status === "voided" ? "rose" : "amber";
-  const stateText = ({ completed: "Signed", awaiting_signature: "Waiting to sign", draft: "Not sent yet", declined: "Declined", voided: "Withdrawn" } as Record<string, string>)[k.status] ?? k.status.replaceAll("_", " ");
+  const stateTone = k.cancelledAt ? "rose" : k.status === "completed" ? "green" : k.status === "declined" || k.status === "voided" ? "rose" : "amber";
+  const stateText = k.cancelledAt ? "Cancelled" : ({ completed: "Signed", awaiting_signature: "Waiting to sign", draft: "Not sent yet", declined: "Declined", voided: "Withdrawn" } as Record<string, string>)[k.status] ?? k.status.replaceAll("_", " ");
   const btn = "btn btn-quiet !min-h-11 sm:!min-h-9";
   const offer = promoFrom((k.proposalVersion?.requirements ?? {}) as Record<string, string | undefined>, k.oneOffMinor);
   const freeEnds = !!(offer?.endsAfter && k.recurringMinor > 0);
   return (
     <>
-      <RecordHeader back={{ href: `/customers/${k.customerId}`, label: k.customer.displayName }} title={k.title} status={<Status label={stateText} kind={k.status === "completed" ? "good" : k.status === "declined" || k.status === "voided" ? "bad" : "warn"} />} meta={<span>{k.reference}</span>} />
+      <RecordHeader back={{ href: `/customers/${k.customerId}`, label: k.customer.displayName }} title={k.title} status={<Status label={stateText} kind={k.cancelledAt ? "bad" : k.status === "completed" ? "good" : k.status === "declined" || k.status === "voided" ? "bad" : "warn"} />} meta={<span>{k.reference}</span>} />
       <ErrorSummary message={sp.error} />
+      {sp.cancelled && <p role="status" className="mb-4 rounded-lg bg-[#fbf3d5] px-4 py-3 text-sm font-semibold text-[#5c4700]">Order cancelled. {sp.cancelled} unpaid charge{sp.cancelled === "1" ? "" : "s"} cancelled, the deal is marked lost and the project is cancelled.{Number(sp.paid) > 0 ? ` ${money(Number(sp.paid))} had already been paid. Refund it in Stripe if it should go back.` : ""}</p>}
       {sp.emailed && <p role="status" className="mb-4 rounded-lg bg-[#d7f3e6] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Payment link emailed to {sp.emailed}.</p>}
       {sp.sent && <p role="status" className="mb-4 rounded-lg bg-[#d7f3e6] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Signing email on its way.</p>}
 
@@ -75,6 +76,16 @@ export default async function ContractPage({ params, searchParams }: { params: P
                   <div><label className="label" htmlFor="se">Signer email</label><input id="se" name="email" type="email" className="field" defaultValue={pc?.email ?? ""} required /></div></div>
                 <button className="btn">{live ? "Resend the same agreement with a fresh link" : "Send for signature"}</button>
                 <p className="text-sm text-ink/65">One email, one signature. The link is personal, works once and expires in 14 days. Check the email address carefully.</p></form>
+            )}
+            {k.status === "completed" && !k.cancelledAt && can(ctx.role, "contract.void") && (
+              <details className="mt-4 rounded-xl border border-[#f1d3c8] bg-[#fff8f5] p-3">
+                <summary className="flex min-h-10 cursor-pointer items-center text-sm font-semibold text-[#7a2e12]">Cancel this order</summary>
+                <form action={cancelOrderAction} className="mt-2 space-y-2"><input type="hidden" name="id" value={k.id} />
+                  <p className="text-sm text-ink/70">Use this if the customer has pulled out after signing. It cancels every unpaid charge and any free care period, marks the deal lost and cancels the project. The signed copy stays on record, and anything already paid is not refunded here (do that in Stripe). It cannot be used once the site is live.</p>
+                  <label className="label" htmlFor="cr">Why is it being cancelled?</label><input id="cr" name="reason" className="field" required minLength={3} maxLength={300} placeholder="e.g. Customer changed their mind" />
+                  <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="checkbox" name="sure" className="size-4 accent-[#7a2e12]" /> I'm sure, cancel the whole order</label>
+                  <button className="btn btn-quiet !border-[#e0b3a2] !text-[#7a2e12]">Cancel the order</button></form>
+              </details>
             )}
             {live && can(ctx.role, "contract.void") && <form action={voidSigningAction} className="mt-3"><input type="hidden" name="id" value={k.id} /><button className={btn}>Withdraw this agreement</button></form>}
             {open && can(ctx.role, "contract.record_completion") && (

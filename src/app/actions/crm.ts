@@ -6,7 +6,7 @@ import { flushEmails } from "@/lib/flush-email";
 import { deleteBusiness } from "@/modules/crm/delete";
 import { createLead, setOpportunityStage } from "@/modules/crm/service";
 import { createProposal, saveDraft, sendProposal, reviseProposal } from "@/modules/sales/service";
-import { markContractSent, recordContractCompletion } from "@/modules/contracts/service";
+import { markContractSent, recordContractCompletion, cancelOrder } from "@/modules/contracts/service";
 import { DomainError } from "@/lib/errors";
 import { ZodError } from "zod";
 
@@ -103,6 +103,14 @@ export async function voidSigningAction(fd: FormData) {
   const id = String(fd.get("id"));
   try { await voidSigning(ctx, id); } catch (e) { return back(`/contracts/${id}`, e); }
   redirect(`/contracts/${id}`);
+}
+export async function cancelOrderAction(fd: FormData) {
+  const ctx = await requireStaff("contract.void");
+  const id = String(fd.get("id"));
+  if (fd.get("sure") !== "on") return back(`/contracts/${id}`, new DomainError("validation", "Tick the box to confirm."));
+  let r: { chargesCancelled: number; paidMinor: number };
+  try { r = await cancelOrder(ctx, id, String(fd.get("reason") ?? "")); } catch (e) { return back(`/contracts/${id}`, e); }
+  redirect(`/contracts/${id}?cancelled=${r.chargesCancelled}&paid=${r.paidMinor}`);
 }
 export async function inviteClientAction(fd: FormData) {
   const ctx = await requireStaff("customer.write");

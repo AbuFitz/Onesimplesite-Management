@@ -118,7 +118,8 @@ describe("single-signer capture", () => {
     const id = await contract(ctx);
     const { token } = await sendForSigning(ctx, id, { name: "Ann Acme", email: "ann-mail@acme.test" });
     await submitSignature(token, ok, {});
-    await drainOutbox(200); await drainOutbox(200);
+    for (let n = 0; n < 40 && (await db.outbox.count({ where: { workspaceId: ctx.workspaceId, status: { not: "done" } } })) > 0; n++) await drainOutbox(200);   // until this workspace's emails are all sent, however much other mail is queued
+    await drainOutbox(200);                                                                                                  // and once more: a replay must not duplicate anything
     const mails = readdirSync(".mail-sink").filter((f) => f.endsWith(".json")).map((f) => JSON.parse(readFileSync(`.mail-sink/${f}`, "utf8")));
     const mine = mails.filter((m) => m.to === "ann-mail@acme.test" || (m.subject.startsWith("New signature") && m.text.includes("ann-mail@acme.test")));
     expect(mine.map((m) => m.subject.split(":")[0]).sort()).toEqual(["New signature", "Please review and sign", "Signed"].concat(mine.some((m) => /is ready to pay/.test(m.subject)) ? [mine.find((m) => /is ready to pay/.test(m.subject))!.subject.split(":")[0]] : []).sort());   // plus "Your deposit/fee is ready to pay" when there is something to pay

@@ -14,7 +14,8 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
   const c = await requireClient();
   if (!clientCanAny(c, "billing")) redirect("/overview");
   const sp = await searchParams;
-  const [items, receipts] = await Promise.all([clientBilling(c), clientReceipts(c)]);
+  const [all, receipts] = await Promise.all([clientBilling(c), clientReceipts(c)]);
+  const items = all.filter((b) => b.status !== "cancelled");          // an order that was called off is not shown as something to pay
   const due = items.filter((b) => !isMonthly(b.kind) && b.status === "pending" && !isScheduled(b));
   const later = items.filter((b) => isScheduled(b) && b.kind === "balance");
   const monthly = items.filter((b) => isMonthly(b.kind) && b.status !== "cancelled");

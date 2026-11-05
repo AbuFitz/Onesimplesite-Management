@@ -7,12 +7,12 @@ import { Ring, CHART } from "@/components/charts";
 
 export const metadata = { title: "Projects" };
 const STEP = { planned: 0.1, awaiting_assets: 0.2, design: 0.4, development: 0.6, qa: 0.75, client_review: 0.85, ready_to_launch: 0.95, launched: 1, completed: 1 } as Record<string, number>;
-const FILTERS: [string, string][] = [["", "All"], ["planned", "Planning"], ["awaiting_assets", "Waiting"], ["design", "Design"], ["development", "Build"], ["qa", "Testing"], ["client_review", "Review"], ["ready_to_launch", "Launching"], ["launched", "Live"]];
+const FILTERS: [string, string][] = [["", "All"], ["planned", "Planning"], ["awaiting_assets", "Waiting"], ["design", "Design"], ["development", "Build"], ["qa", "Testing"], ["client_review", "Review"], ["ready_to_launch", "Launching"], ["launched", "Live"], ["cancelled", "Cancelled"]];
 
 export default async function Projects({ searchParams }: { searchParams: Promise<{ stage?: string }> }) {
   const ctx = await requireStaff();
   const { stage } = await searchParams;
-  const rows = await db.project.findMany({ where: { ...projectWhere(ctx), ...(stage ? { stage: stage as never } : {}) }, include: { customer: { select: { displayName: true } }, _count: { select: { tasks: true } } }, orderBy: { updatedAt: "desc" }, take: 100 });
+  const rows = await db.project.findMany({ where: { ...projectWhere(ctx), ...(stage ? { stage: stage as never } : { stage: { not: "cancelled" as never } }) }, include: { customer: { select: { displayName: true } }, _count: { select: { tasks: true } } }, orderBy: { updatedAt: "desc" }, take: 100 });
   const doneBy = new Map((await db.task.groupBy({ by: ["projectId"], where: { projectId: { in: rows.map((r) => r.id) }, doneAt: { not: null } }, _count: true })).map((t) => [t.projectId, t._count]));
   return (
     <>

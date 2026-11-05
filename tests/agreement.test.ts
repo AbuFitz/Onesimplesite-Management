@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { db } from "@/lib/db";
 import { createLead, updateCustomerDetails } from "@/modules/crm/service";
 import { createProposal, reviseProposal } from "@/modules/sales/service";
-import { sendAgreement, submitSignature, viewSigning } from "@/modules/signing/service";
+import { sendAgreement, sendForSigning, submitSignature, viewSigning } from "@/modules/signing/service";
 import { updateCompany, saveTermsDraft, publishTerms } from "@/modules/settings/service";
 import type { StaffCtx } from "@/modules/identity/session";
 
@@ -93,5 +93,20 @@ describe("single-step agreement", () => {
     const ctx = await ws("delivery");
     await expect(saveTermsDraft(ctx, null, { title: "T", body: "x" })).rejects.toMatchObject({ code: "forbidden" });
     await expect(updateCompany(ctx, { legalName: "X" })).rejects.toMatchObject({ code: "forbidden" });
+  });
+
+  it("a resend with a fresh link carries the exact same full agreement, with its terms, never a shorter copy", async () => {
+    const ctx = await ws("owner");
+    const { p } = await ready(ctx);
+    const sent = await sendAgreement(ctx, p.id, { name: "Casey", email: "casey@harbour.test" });
+    const first = await db.signingRequest.findUniqueOrThrow({ where: { id: sent.requestId } });
+    expect(first.contentText).toContain("The Services");                                             // the full pack, with the terms
+    const again = await sendForSigning(ctx, sent.contractId, { name: "Casey", email: "casey@harbour.test" });
+    const second = await db.signingRequest.findUniqueOrThrow({ where: { id: again.requestId } });
+    expect(second.contentText).toBe(first.contentText); expect(second.contentSha256).toBe(first.contentSha256); expect(second.termsVersionId).toBe(first.termsVersionId);
+    expect(second.contentText.length).toBeGreaterThan(1500);                                          // not a one-page summary
+    expect((await db.signingRequest.findUniqueOrThrow({ where: { id: sent.requestId } })).status).toBe("voided");   // and the old link stops working
+    const seen = await viewSigning(again.token);
+    expect(seen.ok && seen.contentText).toContain("The Services");                                    // what the customer is shown has the terms too
   });
 });
