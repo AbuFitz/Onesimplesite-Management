@@ -1,0 +1,36 @@
+# Runs on every push, before anything is deployed. A red tick here means: do not deploy this yet.
+name: checks
+on:
+  push:
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres, POSTGRES_DB: oss_ci }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/oss_ci
+      MIGRATE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/oss_ci
+      BETTER_AUTH_SECRET: ci-secret-ci-secret-ci-secret-1234
+      MANAGE_ORIGIN: http://manage.localhost:3000
+      PORTAL_ORIGIN: http://portal.localhost:3000
+      APP_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Build the database from nothing (proves every migration still applies)
+        run: npx prisma generate && npx prisma migrate deploy && psql "$DATABASE_URL" -q -f docs/db/roles.sql
+      - name: Types
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Build with no environment settings (exactly what Vercel does)
+        run: env -u DATABASE_URL -u MIGRATE_DATABASE_URL -u BETTER_AUTH_SECRET -u MANAGE_ORIGIN -u PORTAL_ORIGIN -u APP_ENV npm run build

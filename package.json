@@ -15,7 +15,10 @@
     "db:seed": "tsx prisma/seed.ts",
     "test": "vitest run",
     "e2e": "node tests/e2e/journey.mjs",
-    "showcase:data": "tsx --env-file=.env scripts/showcase-data.ts"
+    "showcase:data": "tsx --env-file=.env scripts/showcase-data.ts",
+    "verify": "bash scripts/verify.sh",
+    "verify:full": "FULL=1 bash scripts/verify.sh",
+    "smoke": "bash scripts/smoke.sh"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.7.16",

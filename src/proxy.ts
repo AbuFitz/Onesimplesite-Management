@@ -27,7 +27,7 @@ function route(req: NextRequest, hdrs: Headers): NextResponse {
   const h = req.headers.get("host");
   const { pathname } = req.nextUrl;
   if (h === portal) {
-    if (pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || /^\/(icon|apple-icon|favicon)(\.|$)/.test(pathname) || pathname === "/manifest.webmanifest" || /^\/icon-[\w-]+\.png$/.test(pathname) || pathname === "/login" || pathname === "/setup-security" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next({ request: { headers: hdrs } });
+    if (pathname === "/api/health" || pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || /^\/(icon|apple-icon|favicon)(\.|$)/.test(pathname) || pathname === "/manifest.webmanifest" || /^\/icon-[\w-]+\.png$/.test(pathname) || pathname === "/login" || pathname === "/setup-security" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next({ request: { headers: hdrs } });
     if (pathname.startsWith("/portal")) return NextResponse.next({ request: { headers: hdrs } });
     const url = req.nextUrl.clone();
     url.pathname = `/portal${pathname === "/" ? "/overview" : pathname}`;

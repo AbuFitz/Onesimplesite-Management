@@ -27,3 +27,8 @@ npm run build && npm start      # http://manage.localhost:3000 and http://portal
 npm run worker                  # separate process; local mail sink writes .mail-sink/
 ```
 Checks: `npm run typecheck` · `npm test` · `npm run e2e` (needs a running server; `NODE_PATH=$(npm root -g)`).
+
+
+## Deploying
+
+See [docs/DEPLOYING.md](docs/DEPLOYING.md): `npm run verify` before, `npm run smoke` after.

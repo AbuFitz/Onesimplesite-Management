@@ -56,8 +56,9 @@ export async function createProposalAction(fd: FormData) {
 export async function saveDraftAction(fd: FormData) {
   const ctx = await requireStaff("proposal.write");
   const id = String(fd.get("id"));
-  try { await saveDraft(ctx, id, Number(fd.get("version")), parseProposal(fd)); } catch (e) { return back(`/proposals/${id}`, e); }
-  redirect(`/proposals/${id}?saved=1`);
+  const from = Math.min(5, Math.max(1, Number(fd.get("from")) || 1)), go = Math.min(5, Math.max(1, Number(fd.get("go")) || from));
+  try { await saveDraft(ctx, id, Number(fd.get("version")), parseProposal(fd)); } catch (e) { return back(`/proposals/${id}?step=${from}`, e); }
+  redirect(`/proposals/${id}?step=${go}&saved=1`);
 }
 
 export async function sendProposalAction(fd: FormData) {

@@ -35,7 +35,7 @@ await pg.goto(`${M}/agreements/new?business=${biz}`); await pg.click("button:has
 ok(pg.url().split("?")[0] === first.split("?")[0], "a second agreement for the same company opens the first instead");
 ok(await pg.locator("text=already has an agreement in progress").count() === 1, "and says why");
 // Preview before sending: the real agreement, a PDF, and nothing sent
-await pg.goto(first.split("?")[0]); await pg.click("text=Preview what they will see"); await pg.waitForURL(/\/preview$/);
+await pg.goto(first.split("?")[0] + "?step=5"); await pg.click("text=Preview what they will see"); await pg.waitForURL(/\/preview$/);
 ok(await pg.locator("text=Nothing has been sent").count() === 1, "preview says nothing has been sent");
 ok((await pg.locator("article").first().innerText()).toLowerCase().includes("the project"), "preview shows the agreement document");
 ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "preview has no horizontal overflow on a phone");
@@ -50,14 +50,24 @@ await pg.goto(`${M}/agreements/new?business=${biz}&another=1`);
   await pg.fill("#rb-n", name2); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.fill("#rc-n", "Dee Lee"); await pg.fill("#rc-e", `dee${Date.now()}@guard.test`);
   await pg.click("button:has-text('Add company and start an agreement')"); await pg.waitForURL(/\/agreements\/new\?business=/);
   await pg.selectOption("#ag-w", "care"); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
+  await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=2/);
   ok(await pg.locator("input[name=l0d]").inputValue() === "Hosting set-up and move-over", "a hosting-only job names its price line for the job");
   ok((await pg.locator("#plan").inputValue()) !== "", "and the care plan is already chosen");
   const sum = await pg.locator("[aria-label='What the customer will pay']").innerText();
   ok(/a month, starting when the site goes live/.test(sum), "the summary says what the customer pays each month, and when it starts");
-  await pg.fill("input[name=l0p]", "100"); await pg.selectOption("#dp", "50");
+  await pg.fill("input[name=l0p]", "100");
+  await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=3/);
+  await pg.selectOption("#dp", "50");
   ok(/£50\.00 when they sign \(50% deposit\), then £50\.00 before the site goes live/.test(await pg.locator("[aria-label='What the customer will pay']").innerText()), "the summary updates live as the deposit is chosen");
   await pg.selectOption("#pfm", "1"); await pg.selectOption("#pfe", "stop");
   ok(/free for 1 month from the day the site goes live, then it simply ends/.test(await pg.locator("[aria-label='What the customer will pay']").innerText()), "and explains a free month that simply ends");
+  // going back keeps what was typed, and the review shows it all
+  await pg.click("button:has-text('Back')"); await pg.waitForURL(/step=2/);
+  ok(await pg.locator("input[name=l0p]").inputValue() === "100.00", "going back keeps what was saved");
+  await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=3/); await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=4/); await pg.click("button:has-text('Save and review')"); await pg.waitForURL(/step=5/);
+  const review = await pg.locator("main").innerText();
+  ok(/Deposit £50\.00 \(50%\) when they sign, then £50\.00 before the site goes live/.test(review) && /Offer/.test(review), "the review step shows the price, deposit and offer in plain words");
+  ok(await pg.locator("a:has-text('Change')").count() >= 4, "each part of the review has a Change link back to its step");
   ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "the form fits a phone");
   void first2;
 }
