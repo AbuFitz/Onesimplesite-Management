@@ -46,30 +46,30 @@ export default async function Today() {
       {d && (
         <>
           <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Link href="/tickets" className="block"><SummaryTile tone="blue" label="Needs us" value={d.tickets.open} sub={d.tickets.replied ? `${d.tickets.replied} customer ${d.tickets.replied === 1 ? "reply" : "replies"}` : "tickets open"} /></Link>
-            <Link href="/tickets?tab=waiting" className="block"><SummaryTile tone="amber" label="Waiting to sign" value={d.awaiting} sub={`${d.tickets.waiting} waiting on customers`} /></Link>
-            <SummaryTile tone="rose" label="To collect" value={gbp(d.money.dueMinor)} sub={d.money.pastDue ? `${d.money.pastDue} payment${d.money.pastDue === 1 ? "" : "s"} failed` : `${d.money.dueCount} unpaid`} />
-            <SummaryTile tone="lilac" label="Monthly plans" value={gbp(d.money.monthlyMinor)} sub={`${d.money.plans} active ${d.money.plans === 1 ? "plan" : "plans"}`} />
+            <Link href="/tickets" aria-label="Needs us: open the tickets" className="block rounded-2xl outline-offset-2 transition hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(14,19,17,.10)] focus-visible:outline focus-visible:outline-2"><SummaryTile tone="blue" label="Needs us" value={d.tickets.open} sub={d.tickets.replied ? `${d.tickets.replied} customer ${d.tickets.replied === 1 ? "reply" : "replies"}` : "tickets open"} /></Link>
+            <Link href="/agreements?show=awaiting" aria-label="Waiting to sign: open the agreements" className="block rounded-2xl outline-offset-2 transition hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(14,19,17,.10)] focus-visible:outline focus-visible:outline-2"><SummaryTile tone="amber" label="Waiting to sign" value={d.awaiting} sub={`${d.tickets.waiting} waiting on customers`} /></Link>
+            <Link href={d.money.pastDue && !d.money.dueCount ? "/payments?show=failed" : "/payments?show=due"} aria-label="To collect: see which payments" className="block rounded-2xl outline-offset-2 transition hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(14,19,17,.10)] focus-visible:outline focus-visible:outline-2"><SummaryTile tone="rose" label="To collect" value={gbp(d.money.dueMinor)} sub={d.money.pastDue ? `${d.money.pastDue} payment${d.money.pastDue === 1 ? "" : "s"} failed` : `${d.money.dueCount} unpaid`} /></Link>
+            <Link href="/payments?show=plans" aria-label="Monthly plans: see which plans" className="block rounded-2xl outline-offset-2 transition hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(14,19,17,.10)] focus-visible:outline focus-visible:outline-2"><SummaryTile tone="lilac" label="Monthly plans" value={gbp(d.money.monthlyMinor)} sub={`${d.money.plans} active ${d.money.plans === 1 ? "plan" : "plans"}`} /></Link>
           </div>
 
           <div className="mb-5 grid gap-5 lg:grid-cols-3">
-            <Panel title="Tickets right now" icon={Ticket} tone="blue" className="lg:col-span-1">
+            <Panel title="Tickets right now" icon={Ticket} tone="blue" className="lg:col-span-1" action={<Link className="text-sm font-semibold text-moss" href="/tickets?tab=all">See them</Link>}>
               <Donut slices={[{ label: "Needs us", value: d.tickets.open, color: CHART.green }, { label: "Waiting on customer", value: d.tickets.waiting, color: CHART.amber }, { label: "Done", value: d.tickets.done, color: CHART.teal }]} centre={<div><p className="font-[family-name:var(--font-display)] text-3xl font-bold leading-none">{d.tickets.open + d.tickets.waiting}</p><p className="text-xs text-ink/65">open</p></div>} />
             </Panel>
-            <Panel title="New tickets, last 7 days" icon={Ticket} tone="lilac"><Bars data={d.week} color={CHART.lilac} /></Panel>
-            <Panel title="Money in, last 6 months" icon={CreditCard} tone="green"><Bars data={d.months} color={CHART.teal} format={(n) => `£${n}`} /></Panel>
+            <Panel title="New tickets, last 7 days" icon={Ticket} tone="lilac" action={<Link className="text-sm font-semibold text-moss" href="/tickets?tab=all">See them</Link>}><Bars data={d.week} color={CHART.lilac} /></Panel>
+            <Panel title="Money in, last 6 months" icon={CreditCard} tone="green" action={<Link className="text-sm font-semibold text-moss" href="/payments?show=paid">See payments</Link>}><Bars data={d.months} color={CHART.teal} format={(n) => `£${n}`} /></Panel>
           </div>
 
           <div className="mb-5 grid gap-5 lg:grid-cols-3">
-            <Panel title="How we're doing" icon={Trophy} tone="amber">
+            <Panel title="How we're doing" icon={Trophy} tone="amber" action={<Link className="text-sm font-semibold text-moss" href="/projects">Projects</Link>}>
               <div className="space-y-5">
                 <Ring value={d.replyHealth} color={d.replyHealth > 0.8 ? CHART.teal : d.replyHealth > 0.5 ? CHART.amber : CHART.rose} label="Replied in time" sub="of tickets waiting on us" />
                 <Ring value={d.projects.total ? d.projects.live / d.projects.total : 0} color={CHART.green} label="Sites live" sub={`${d.projects.live} of ${d.projects.total} projects`} />
               </div>
             </Panel>
-            <Panel title="Sales pipeline" icon={PenLine} tone="rose">
+            <Panel title="Sales pipeline" icon={PenLine} tone="rose" action={<Link className="text-sm font-semibold text-moss" href="/agreements">All agreements</Link>}>
               <div className="space-y-3.5">
-                {([["new", "New enquiries", CHART.blue], ["qualified", "Quote in progress", CHART.lilac], ["proposal_sent", "Quote sent", CHART.amber], ["contract_pending", "Waiting to sign", CHART.rose], ["won", "Signed", CHART.teal]] as const).map(([k, l, c]) => <Meter key={k} label={l} value={d.pipeline[k] ?? 0} max={Math.max(1, ...Object.values(d.pipeline))} color={c} />)}
+                {([["new", "New enquiries", CHART.blue], ["qualified", "Quote in progress", CHART.lilac], ["proposal_sent", "Quote sent", CHART.amber], ["contract_pending", "Waiting to sign", CHART.rose], ["won", "Signed", CHART.teal]] as const).map(([k, l, c]) => <Link key={k} href={`/agreements?show=${({ new: "draft", qualified: "draft", proposal_sent: "awaiting", contract_pending: "awaiting", won: "signed" } as Record<string, string>)[k]}`} aria-label={`${l}: see them`} className="block rounded-lg px-1 -mx-1 hover:bg-bone/70"><Meter label={l} value={d.pipeline[k] ?? 0} max={Math.max(1, ...Object.values(d.pipeline))} color={c} /></Link>)}
               </div>
             </Panel>
             <Panel title="Needs your reply" icon={Repeat} tone="blue" action={<Link className="text-sm font-semibold text-moss" href="/tickets">All tickets</Link>}>

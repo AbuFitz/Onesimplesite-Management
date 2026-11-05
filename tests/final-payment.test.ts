@@ -102,3 +102,14 @@ describe("the whole deposit and final payment journey, with Stripe faked", () =>
     expect((await suggestionsFor(x.staff)).filter((s) => s.id === `unpaid:${bal.id}`)).toHaveLength(1);            // asked 5 days ago and still unpaid: nudge
   });
 });
+
+describe("money in on the home page", () => {
+  it("counts payments that were actually received, not plans that have only started", async () => {
+    const x = await world();
+    const m = await db.staffMembership.findFirstOrThrow({ where: { workspaceId: x.w.id } });
+    const dep = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "deposit" } });
+    expect((await todayData(x.w.id, { staffId: m.id, seeBusiness: true }))!.months.reduce((n, mo) => n + mo.value, 0)).toBe(0);
+    await applyStripeEvent("checkout.session.completed", { id: "cs_in", metadata: { intentId: dep.id }, payment_status: "paid", payment_intent: "pi_in", customer_details: { email: "hana@client.test", name: "Hana" } }, x.w.id);
+    expect((await todayData(x.w.id, { staffId: m.id, seeBusiness: true }))!.months.reduce((n, mo) => n + mo.value, 0)).toBe(360);   // the £360 deposit, once
+  });
+});

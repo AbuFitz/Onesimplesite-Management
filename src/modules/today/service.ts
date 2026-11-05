@@ -13,7 +13,8 @@ export async function todayData(workspaceId: string, opts: { staffId: string; se
   const [byStatus, recent, paid, monthly, due, pastDue, pipeline, awaiting, needsReply, projects] = await Promise.all([
     db.ticket.groupBy({ by: ["status"], where: { workspaceId: w }, _count: true }),
     db.ticket.findMany({ where: { workspaceId: w, createdAt: { gte: weekAgo } }, select: { createdAt: true } }),
-    db.billingIntent.findMany({ where: { workspaceId: w, status: { in: ["paid", "active"] }, paidAt: { gte: sixMonths } }, select: { paidAt: true, amountMinor: true } }),
+    // Money in is money actually received: one receipt per payment. A plan that has only started, or a free care period, has no receipt yet.
+    db.receipt.findMany({ where: { workspaceId: w, paidAt: { gte: sixMonths } }, select: { paidAt: true, amountMinor: true } }),
     // A free care period that simply ends is not income, so it is left out of the monthly total.
     db.billingIntent.aggregate({ where: { workspaceId: w, kind: "recurring_setup", status: "active", OR: [{ paidVia: null }, { paidVia: { not: "free" } }] }, _sum: { amountMinor: true }, _count: true }),
     // Money we can ask for now. A final payment not yet requested is shown as due before launch, not as overdue.

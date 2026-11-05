@@ -108,6 +108,7 @@ describe("free months that simply end", () => {
     const m = await db.staffMembership.findFirstOrThrow({ where: { workspaceId: x.w.id } });
     const t = await todayData(x.w.id, { staffId: m.id, seeBusiness: true });
     expect(t!.money.monthlyMinor).toBe(0); expect(t!.money.plans).toBe(0);
+    expect(t!.months.reduce((n, m) => n + m.value, 0)).toBe(0);                 // and not as "money in" either: nothing was received
   });
 
   it("reminds the team a week before it ends, once, and can carry on as a paid plan", async () => {

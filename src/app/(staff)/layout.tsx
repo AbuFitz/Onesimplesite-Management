@@ -27,7 +27,7 @@ export default async function StaffLayout({ children, modal }: { children: React
   // Only built modules appear. Unfinished modules are hidden, not faked.
   const groups: NavGroup[] = [
     { items: [{ href: "/", label: "Today", icon: "today" }] },
-    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Companies", icon: "customers" }, { href: "/agreements", label: "Agreements", icon: "contracts" }] }] : []),
+    ...(seeCustomers ? [{ label: "Sales", items: [{ href: "/customers", label: "Companies", icon: "customers" }, { href: "/agreements", label: "Agreements", icon: "contracts" }, { href: "/payments", label: "Payments", icon: "payments" }] }] : []),
     { label: "Work", items: [...(seeCustomers ? [{ href: "/tickets", label: "Tickets", icon: "pipeline", badge: supportOpen }] : []), { href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/board", label: "Board", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
     { label: "Company", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Settings", icon: "settings" }] : []),
