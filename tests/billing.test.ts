@@ -136,6 +136,8 @@ describe("checkout requests sent to Stripe", () => {
     });
     try {
       expect(await startPayment(client, one!.id)).toBe("https://checkout.stripe.test/pay/cs_abc");
+      await expect(startPayment(client, mon!.id)).rejects.toThrow(/starts when your website goes live/);   // the plan opens at launch
+      await db.billingIntent.update({ where: { id: mon!.id }, data: { requestedAt: new Date() } });
       expect(await startPayment(client, mon!.id)).toBe("https://checkout.stripe.test/pay/cs_abc");
       expect(calls.filter((x) => x.url.endsWith("/customers"))).toHaveLength(1);                        // created once, then reused
       expect((await db.customer.findUniqueOrThrow({ where: { id: c.id } })).stripeCustomerId).toBe("cus_123");

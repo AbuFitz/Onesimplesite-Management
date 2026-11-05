@@ -19,6 +19,8 @@ export type EmailData = {
   plan_started: { to: string; name: string; ref: string; amount: string; link: string; freeUntil?: string; receiptRef?: string; receiptId?: string };
   payment_failed: { to: string; name: string; ref: string; what: string; amount: string; link: string };
   balance_requested: { to: string; name: string; ref: string; amount: string; link: string; replyTo?: string };
+  payment_ready: { to: string; name: string; ref: string; what: string; amount: string; link: string };
+  plan_ready: { to: string; name: string; ref: string; amount: string; freeMonths: number; link: string };
   payment_notice: { to: string; event: "paid" | "plan_started" | "failed" | "cancelled"; business: string; ref: string; what: string; amount: string; link: string };
   access_request_notice: { to: string; business: string; requester: string; name: string; email: string; level: string; billing: boolean; reason: string; link: string };
   access_request_decision: { to: string; name: string; business: string; person: string; approved: boolean; note: string; link: string };
@@ -74,6 +76,30 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Your monthly plan is live\n\nHi ${d.name.split(" ")[0]}, your plan (${d.amount} a month, order ${d.ref}) is now active.${d.freeUntil ? ` You pay nothing until ${d.freeUntil}, when ${d.amount} is first taken.` : ""} Manage it any time: ${d.link}`,
+  }),
+  payment_ready: (d) => ({
+    subject: `Your ${d.what} of ${d.amount} is ready to pay (${d.ref})`,
+    node: (
+      <Layout preview={`Your ${d.what} of ${d.amount} is ready.`}>
+        <H>Thank you for signing. Your {d.what} is ready</H>
+        <P>Hi {d.name.split(" ")[0]}, your signed order {d.ref} is saved. The next step is your {d.what} of {d.amount}. Sign in to your portal and press <strong>Pay now</strong>, and you will be taken to a secure card payment page. You get a receipt straight away.</P>
+        <Action href={d.link}>Open your portal to pay</Action>
+        <P>First time? If you haven't set up your portal login yet, you will have a separate invitation from us, or just reply to this email and we will send one.</P>
+      </Layout>
+    ),
+    text: `Thank you for signing. Your ${d.what} is ready\n\nHi ${d.name.split(" ")[0]}, your signed order ${d.ref} is saved. The next step is your ${d.what} of ${d.amount}. Sign in to your portal and press Pay now: ${d.link}\n\nIf you haven't set up your portal login yet, reply and we will send an invitation.`,
+  }),
+  plan_ready: (d) => ({
+    subject: `Your website is live: start your care plan (${d.ref})`,
+    node: (
+      <Layout preview="Your website is live. Your care plan is ready to start.">
+        <H>Your website is live</H>
+        <P>Hi {d.name.split(" ")[0]}, congratulations, your site is now live. Your care plan ({d.amount} a month) is ready to start from your portal.{d.freeMonths > 0 ? ` Your first ${d.freeMonths} month${d.freeMonths === 1 ? " is" : "s are"} free: you save your card and nothing is taken until the free period ends.` : ""}</P>
+        <Action href={d.link}>Start your care plan</Action>
+        <P>Questions? Just reply to this email.</P>
+      </Layout>
+    ),
+    text: `Your website is live\n\nHi ${d.name.split(" ")[0]}, your site is now live. Your care plan (${d.amount} a month) is ready to start from your portal${d.freeMonths > 0 ? `. Your first ${d.freeMonths} month${d.freeMonths === 1 ? " is" : "s are"} free` : ""}: ${d.link}`,
   }),
   balance_requested: (d) => ({
     subject: `Your website is nearly ready: final payment of ${d.amount} (${d.ref})`,

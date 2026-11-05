@@ -42,7 +42,9 @@ export async function recordContractCompletion(ctx: StaffCtx, contractId: string
   });
 }
 
-import { promoFrom, addMonths } from "@/modules/billing/promo";
+import { promoFrom } from "@/modules/billing/promo";
+import { money } from "@/modules/billing/service";
+import { portalLink } from "@/lib/env";
 import { PROJECT_TYPES } from "@/modules/projects/service";
 
 type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
@@ -70,16 +72,18 @@ export async function runCompletionWorkflow(tx: Tx, contractId: string) {
     await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "balance" } }, create: { ...base, kind: "balance", amountMinor: oneOff - dep, description: "Website final payment" }, update: {} });
   } else if (oneOff > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "one_off" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "one_off", amountMinor: oneOff, currency: c.currency, ...(promo?.discountMinor ? { promoLabel: promo.label, description: `Website (${promo.label}: ${promo.percent > 0 ? `${promo.percent}%` : `£${(promo.discountMinor / 100).toFixed(2)}`} off)` } : {}) }, update: {} });
   if (c.recurringMinor > 0 && promo?.endsAfter) {
-    // Free months that simply end: no card, no Stripe plan. It is recorded as running until the free period ends, and the team gets a reminder to ask whether they want to continue.
+    // Free months that simply end: no card, no Stripe plan. It waits for the site to go live, then the free period starts counting and the team gets a reminder a week before it ends.
     const had = await tx.billingIntent.findUnique({ where: { contractId_kind: { contractId, kind: "recurring_setup" } }, select: { id: true } });
-    if (!had) {
-      const ends = addMonths(new Date(), promo.freeMonths);
-      await tx.billingIntent.create({ data: { ...base, kind: "recurring_setup", amountMinor: c.recurringMinor, status: "active", paidVia: "free", paidAt: new Date(), trialMonths: promo.freeMonths, trialEndsAt: ends, cancelsAt: ends, promoLabel: promo.label, description: `Care plan (free for ${promo.freeMonths} month${promo.freeMonths === 1 ? "" : "s"}, then ends)` } });
-      const cu = await tx.customer.findUnique({ where: { id: c.customerId }, select: { displayName: true } });
-      const remind = new Date(+ends - 7 * 864e5);
-      await tx.task.create({ data: { workspaceId: c.workspaceId, customerId: c.customerId, title: `${cu?.displayName ?? "Customer"}: free care plan ends ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(ends)}. Ask if they want to continue`, dueDate: remind > new Date() ? remind : ends } });
-    }
+    if (!had) await tx.billingIntent.create({ data: { ...base, kind: "recurring_setup", amountMinor: c.recurringMinor, status: "pending", paidVia: "free", trialMonths: promo.freeMonths, promoLabel: promo.label, description: `Care plan (free for ${promo.freeMonths} month${promo.freeMonths === 1 ? "" : "s"}, then ends)` } });
   } else if (c.recurringMinor > 0) await tx.billingIntent.upsert({ where: { contractId_kind: { contractId, kind: "recurring_setup" } }, create: { workspaceId: c.workspaceId, customerId: c.customerId, contractId, kind: "recurring_setup", amountMinor: c.recurringMinor, currency: c.currency, trialMonths: promo?.freeMonths ?? 0, promoLabel: promo?.freeMonths ? promo.label : null }, update: {} });
+  // The customer is told straight away that their deposit (or website fee) is ready, and where to pay it.
+  const payNow = await tx.billingIntent.findFirst({ where: { contractId, kind: { in: ["deposit", "one_off"] }, status: "pending" } });
+  if (payNow) {
+    const signer = await tx.signingRequest.findFirst({ where: { contractId, status: "signed" }, orderBy: { createdAt: "desc" }, select: { signerName: true, signerEmail: true } });
+    const primary = signer ? null : await tx.contact.findFirst({ where: { customerId: c.customerId, email: { not: null } }, orderBy: { isPrimary: "desc" }, select: { name: true, email: true } });
+    const to = signer?.signerEmail ?? primary?.email;
+    if (to) await enqueue(tx, c.workspaceId, "email.payment_ready", `pay.ready:${contractId}`, { to, name: signer?.signerName ?? primary?.name ?? "there", ref: c.reference, what: payNow.kind === "deposit" ? "deposit" : "website fee", amount: money(payNow.amountMinor, c.currency), link: portalLink("/billing") });
+  }
   const oppId = c.proposalVersion?.proposal.opportunityId;
   if (oppId) await tx.opportunity.updateMany({ where: { id: oppId, stage: { not: "won" } }, data: { stage: "won", version: { increment: 1 } } });
   await tx.customer.updateMany({ where: { id: c.customerId, lifecycle: "prospect" }, data: { lifecycle: "active" } });

@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { composeAgreement } from "@/modules/signing/service";
 import { promoFrom, addMonths, trialDays } from "@/modules/billing/promo";
 import { runCompletionWorkflow } from "@/modules/contracts/service";
-import { startPayment, applyStripeEvent, setPlanOffer, plainStatus, continueFreePlan } from "@/modules/billing/service";
+import { startPayment, applyStripeEvent, setPlanOffer, plainStatus, continueFreePlan, startCarePlanNow, isScheduled, scheduledLabel } from "@/modules/billing/service";
+import { transitionProject } from "@/modules/projects/service";
 import { todayData } from "@/modules/today/service";
 import { SERVICES_AGREEMENT } from "@/modules/settings/legal-text";
 import type { StaffCtx } from "@/modules/identity/session";
@@ -25,7 +26,7 @@ describe("offers", () => {
   it("writes the offer into the agreement the customer signs", () => {
     const base = { reference: "OSS-OF-2026-001", title: "Website", dateLabel: "4 November 2026", validUntilLabel: "4 December 2026", currency: "GBP", oneOffMinor: 120000, recurringMinor: 2900, recurringPeriod: "month", lines: [{ description: "Website", quantity: 1, unitMinor: 120000, recurring: false }, { description: "Care Plan", quantity: 1, unitMinor: 2900, recurring: true }], scope: "A site", provider: { legalName: "OneSimpleSite LTD", companyNumber: "17552675", registeredAddress: "3F Foxhill", vatNumber: null }, client: { legalName: "Harbour Bakery Ltd", kind: "business", companyNumber: null, billingAddress: "1 Quay", vatNumber: null }, docs: { terms: { number: 2, body: SERVICES_AGREEMENT } }, vars: {} };
     const t = composeAgreement({ ...base, requirements: { promoFreeMonths: "1", promoDiscount: "100", promoLabel: "Launch offer" } } as never);
-    expect(t).toContain("Launch offer: discount on the website fee"); expect(t).toContain("£1,100.00"); expect(t).toMatch(/first 1 month of your monthly plan is free/); expect(t).toContain("£29.00 is taken 1 month after the day the plan starts");
+    expect(t).toContain("Launch offer: discount on the website fee"); expect(t).toContain("£1,100.00"); expect(t).toMatch(/first 1 month of your monthly plan is free/); expect(t).toContain("the first payment of £29.00 is taken 1 month after that day"); expect(t).toContain("starts on the day your website goes live, not the day you sign");
     expect(composeAgreement({ ...base, requirements: {} } as never)).not.toContain("is free");
   });
 
@@ -49,6 +50,7 @@ describe("offers", () => {
     const calls: URLSearchParams[] = [];
     const key = process.env.STRIPE_SECRET_KEY; process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (u, init) => { const url = String(u); calls.push(new URLSearchParams(String((init as RequestInit).body ?? ""))); return new Response(JSON.stringify(url.endsWith("/customers") ? { id: "cus_1" } : { id: "cs_1", url: "https://checkout.stripe.test/x" }), { status: 200 }); });
+    await db.billingIntent.update({ where: { id: x.plan.id }, data: { requestedAt: new Date() } });      // the site is live, so the plan is open
     try { await startPayment(x.client, x.plan.id); } finally { spy.mockRestore(); if (key === undefined) delete process.env.STRIPE_SECRET_KEY; else process.env.STRIPE_SECRET_KEY = key; }
     const s = calls.find((c) => c.get("mode") === "subscription")!;
     expect(s.get("subscription_data[trial_period_days]")).toBe("30"); expect(s.get("payment_method_collection")).toBe("always");
@@ -87,7 +89,8 @@ describe("free months that simply end", () => {
     const k = await db.contract.create({ data: { workspaceId: w.id, customerId: c.id, reference: `OSS-OF-${Math.random().toString(36).slice(2, 8)}`, title: "Website", status: "completed", scopeSnapshot: "x", oneOffMinor: 100000, recurringMinor: 2900, proposalVersionId: v.id } });
     await db.$transaction((tx) => runCompletionWorkflow(tx, k.id));
     await db.$transaction((tx) => runCompletionWorkflow(tx, k.id));                                   // safe to run twice
-    return { w, staff, c, k };
+    const client: ClientCtx = { userId: "u", name: "Sam", email: "sam@self.test", memberships: [{ customerId: c.id, role: "admin", customer: { id: c.id, displayName: c.displayName, workspaceId: w.id } }] };
+    return { w, staff, c, k, client };
   }
 
   it("says so on the agreement, and takes no card or payment for the plan", async () => {
@@ -97,9 +100,11 @@ describe("free months that simply end", () => {
     expect(t).not.toContain("You set the plan up with your card");
     const x = await freeWorld();
     const plan = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "recurring_setup" } });
-    expect(plan).toMatchObject({ status: "active", paidVia: "free", stripeSubscriptionId: null, amountMinor: 2900 });
-    expect(plan.trialEndsAt!.getTime()).toBeGreaterThan(Date.now() + 27 * 864e5); expect(plan.cancelsAt).toEqual(plan.trialEndsAt);
-    expect(plainStatus("recurring_setup", plan.status, plan.cancelsAt, plan.trialEndsAt, true).label).toMatch(/^Free until .*, then ends$/);
+    // Signing does not start the free month. It waits for the site to go live.
+    expect(plan).toMatchObject({ status: "pending", paidVia: "free", stripeSubscriptionId: null, amountMinor: 2900, trialEndsAt: null, cancelsAt: null, requestedAt: null });
+    expect(isScheduled(plan)).toBe(true); expect(scheduledLabel(plan)).toBe("Free for 1 month from launch, then ends");
+    const key = process.env.STRIPE_SECRET_KEY; process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
+    try { await expect(startPayment(x.client, plan.id)).rejects.toThrow(/starts when your website goes live/); } finally { if (key === undefined) delete process.env.STRIPE_SECRET_KEY; else process.env.STRIPE_SECRET_KEY = key; }   // locked until launch
     expect(await db.receipt.count({ where: { customerId: x.c.id } })).toBe(0);                         // nothing was paid, so no receipt
   });
 
@@ -111,25 +116,32 @@ describe("free months that simply end", () => {
     expect(t!.months.reduce((n, m) => n + m.value, 0)).toBe(0);                 // and not as "money in" either: nothing was received
   });
 
-  it("reminds the team a week before it ends, once, and can carry on as a paid plan", async () => {
+  it("starts counting the free month when the site goes live, reminds the team a week before it ends, once, and can carry on as a paid plan", async () => {
     const x = await freeWorld();
+    expect(await db.task.count({ where: { workspaceId: x.w.id } })).toBe(0);                            // nothing to remind about at signing
+    const plan = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "recurring_setup" } });
+    const project = await db.project.findFirstOrThrow({ where: { contractId: x.k.id } });
+    await transitionProject(x.staff, project.id, "launched", project.version);
+    const live = await db.billingIntent.findUniqueOrThrow({ where: { id: plan.id } });
+    expect(live).toMatchObject({ status: "active", paidVia: "free" }); expect(live.requestedAt).toBeTruthy();
+    expect(live.trialEndsAt!.getTime()).toBeGreaterThan(Date.now() + 27 * 864e5); expect(live.cancelsAt).toEqual(live.trialEndsAt);   // a month from launch, not from signing
+    expect(plainStatus("recurring_setup", live.status, live.cancelsAt, live.trialEndsAt, true).label).toMatch(/^Free until .*, then ends$/);
     const tasks = await db.task.findMany({ where: { workspaceId: x.w.id } });
     expect(tasks).toHaveLength(1); expect(tasks[0].title).toMatch(/free care plan ends .* Ask if they want to continue/);
-    const plan = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "recurring_setup" } });
+    const again = await db.project.findFirstOrThrow({ where: { id: project.id } });                       // moving the project around does not start it a second time
+    await transitionProject(x.staff, project.id, "design", again.version); const back = await db.project.findFirstOrThrow({ where: { id: project.id } });
+    await transitionProject(x.staff, project.id, "launched", back.version, "reopened to test");
+    expect((await db.billingIntent.findUniqueOrThrow({ where: { id: plan.id } })).trialEndsAt).toEqual(live.trialEndsAt); expect(await db.task.count({ where: { workspaceId: x.w.id } })).toBe(1);
     await continueFreePlan(x.staff, plan.id);
     expect(await db.billingIntent.findUniqueOrThrow({ where: { id: plan.id } })).toMatchObject({ status: "pending", paidVia: null, cancelsAt: null, trialEndsAt: null, trialMonths: 0 });
     await expect(continueFreePlan(x.staff, plan.id)).rejects.toThrow(/isn't a free care period/);
   });
-});
 
-describe("a care plan that is free and then ends is never shown as a charge", () => {
-  it("shows £0 and 'free, then it ends' in the price table, the totals and the plan section", () => {
-    const t = composeAgreement({ reference: "OSS-OF-1", title: "Website", dateLabel: "4 November 2026", validUntilLabel: "4 December 2026", currency: "GBP", oneOffMinor: 34000, recurringMinor: 2900, recurringPeriod: "month", lines: [{ description: "Website design and build", quantity: 1, unitMinor: 34000, recurring: false }, { description: "Standard Care Plan", quantity: 1, unitMinor: 2900, recurring: true }], scope: "x", requirements: { promoFreeMonths: "1", promoFreeEnds: "stop", promoLabel: "New Customer" }, provider: { legalName: "OneSimpleSite LTD", companyNumber: "1", registeredAddress: "x", vatNumber: null }, client: { legalName: "Poke Ltd", kind: "company", companyNumber: null, billingAddress: "x", vatNumber: null }, plan: { name: "Standard Care Plan", monthlyMinor: 2900, revisionsPerMonth: 3, backupFrequency: "Daily", backupRetention: "14 days" }, docs: { terms: { number: 2, body: SERVICES_AGREEMENT } }, vars: {} } as never);
-    expect(t).toContain("| Standard Care Plan | Care plan, optional | Free for the first 1 month, then it ends |");
-    expect(t).toContain("| Total (recurring) |  | £0.00 (free for the first 1 month, then it ends) |");
-    expect(t).toContain("kv: Monthly price | Free for the first 1 month, then it ends. £29.00 per month only if you ask us to continue");
-    expect(t).not.toContain("£29.00 per month |");                       // no table cell still reads as a £29 charge
-    const paid = composeAgreement({ reference: "OSS-OF-1", title: "Website", dateLabel: "x", validUntilLabel: "x", currency: "GBP", oneOffMinor: 34000, recurringMinor: 2900, recurringPeriod: "month", lines: [{ description: "Standard Care Plan", quantity: 1, unitMinor: 2900, recurring: true }], scope: "x", requirements: { promoFreeMonths: "1" }, provider: { legalName: "A", companyNumber: "1", registeredAddress: "x", vatNumber: null }, client: { legalName: "B", kind: "company", companyNumber: null, billingAddress: "x", vatNumber: null }, docs: { terms: { number: 2, body: SERVICES_AGREEMENT } }, vars: {} } as never);
-    expect(paid).toContain("| Total (recurring) |  | £29.00 per month |");     // the normal free-trial-then-paid version is unchanged
+  it("the team can start the free month by hand before the site is live", async () => {
+    const x = await freeWorld();
+    await startCarePlanNow(x.staff, x.k.id);
+    const plan = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "recurring_setup" } });
+    expect(plan).toMatchObject({ status: "active", paidVia: "free" }); expect(plan.trialEndsAt!.getTime()).toBeGreaterThan(Date.now() + 27 * 864e5);
+    await expect(startCarePlanNow(x.staff, x.k.id)).rejects.toThrow(/no care plan waiting/);               // asking twice is safe
   });
 });

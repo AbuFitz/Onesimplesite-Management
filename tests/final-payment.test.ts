@@ -113,3 +113,59 @@ describe("money in on the home page", () => {
     expect((await todayData(x.w.id, { staffId: m.id, seeBusiness: true }))!.months.reduce((n, mo) => n + mo.value, 0)).toBe(360);   // the £360 deposit, once
   });
 });
+
+import { readFileSync } from "node:fs";
+import { emailPaymentLink, startCarePlanNow } from "@/modules/billing/service";
+
+describe("telling the customer how to pay, and the care plan opening at launch", () => {
+  it("emails the deposit straight after signing, and again whenever the team asks", async () => {
+    const x = await world();
+    const first = await db.outbox.findMany({ where: { workspaceId: x.w.id, topic: "email.payment_ready" } });
+    expect(first).toHaveLength(1); expect(first[0].payload).toMatchObject({ to: "hana@client.test", what: "deposit", amount: "£360.00", ref: x.k.reference });
+    const dep = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "deposit" } });
+    const bal = await db.billingIntent.findFirstOrThrow({ where: { contractId: x.k.id, kind: "balance" } });
+    await expect(emailPaymentLink(x.staff, bal.id)).rejects.toThrow(/isn't due yet/);                      // a locked final payment has no link to send yet
+    expect(await emailPaymentLink(x.staff, dep.id)).toBe("hana@client.test");
+    expect(await db.outbox.count({ where: { workspaceId: x.w.id, topic: "email.payment_ready" } })).toBe(2);
+    await db.billingIntent.update({ where: { id: dep.id }, data: { status: "paid", paidAt: new Date() } });
+    await expect(emailPaymentLink(x.staff, dep.id)).rejects.toThrow(/isn't waiting to be paid/);           // nothing to send once it is paid
+    expect(await db.auditEvent.count({ where: { workspaceId: x.w.id, action: "billing.link_emailed" } })).toBe(1);
+  });
+
+  it("opens a paid care plan when the site goes live, with one email, and lets the team open it early", async () => {
+    const w = await db.workspace.create({ data: { name: `cp-${Math.random()}` } });
+    const m = await db.staffMembership.create({ data: { workspaceId: w.id, email: `s-${Math.random()}@x.test`, displayName: "A", role: "owner", status: "active" } });
+    const staff: StaffCtx = { userId: null as unknown as string, staffId: m.id, workspaceId: w.id, role: "owner", name: "A", email: m.email };
+    const c = await db.customer.create({ data: { workspaceId: w.id, reference: `OSS-CU-${Math.random().toString(36).slice(2, 8)}`, displayName: "Card Plan Ltd" } });
+    await db.contact.create({ data: { workspaceId: w.id, customerId: c.id, name: "Cara Lee", email: "cara@card.test", isPrimary: true } });
+    const p = await db.proposal.create({ data: { workspaceId: w.id, customerId: c.id, reference: `OSS-QT-${Math.random().toString(36).slice(2, 8)}`, title: "Site", currentVersion: 1 } });
+    const v = await db.proposalVersion.create({ data: { workspaceId: w.id, proposalId: p.id, number: 1, scope: "x", terms: "", currency: "GBP", oneOffMinor: 50000, recurringMinor: 2900, recurringPeriod: "month", requirements: { promoFreeMonths: "2" } as never } });
+    const k = await db.contract.create({ data: { workspaceId: w.id, customerId: c.id, reference: `OSS-OF-${Math.random().toString(36).slice(2, 8)}`, title: "Website", status: "completed", scopeSnapshot: "x", oneOffMinor: 50000, recurringMinor: 2900, proposalVersionId: v.id } });
+    await db.$transaction((tx) => runCompletionWorkflow(tx, k.id));
+    const plan = await db.billingIntent.findFirstOrThrow({ where: { contractId: k.id, kind: "recurring_setup" } });
+    expect(plan).toMatchObject({ status: "pending", requestedAt: null, trialMonths: 2 }); expect(isScheduled(plan)).toBe(true);     // locked: it does not start at signing
+    const project = await db.project.findFirstOrThrow({ where: { contractId: k.id } });
+    await transitionProject(staff, project.id, "launched", project.version);
+    expect((await db.billingIntent.findUniqueOrThrow({ where: { id: plan.id } })).requestedAt).toBeTruthy();
+    const mail = await db.outbox.findMany({ where: { workspaceId: w.id, topic: "email.plan_ready" } });
+    expect(mail).toHaveLength(1); expect(mail[0].payload).toMatchObject({ to: "cara@card.test", freeMonths: 2, amount: "£29.00" });
+    await expect(startCarePlanNow(staff, k.id)).rejects.toThrow(/no care plan waiting/);                     // already open: pressing again is safe
+    expect(await emailPaymentLink(staff, plan.id)).toBe("cara@card.test");                                   // and the team can resend the link
+  });
+
+  it("puts a free care period that started at signing back to waiting for launch (the repair for orders signed before this change)", async () => {
+    const x = await world();
+    const k2 = await db.contract.create({ data: { workspaceId: x.w.id, customerId: x.c.id, reference: `OSS-OF-${Math.random().toString(36).slice(2, 8)}`, title: "Old order", status: "completed", scopeSnapshot: "x", oneOffMinor: 0, recurringMinor: 2900 } });
+    await db.project.create({ data: { workspaceId: x.w.id, customerId: x.c.id, contractId: k2.id, reference: `OSS-PR-${Math.random().toString(36).slice(2, 8)}`, name: "Old", scopeSnapshot: "x" } });
+    const ends = new Date(Date.now() + 30 * 864e5);
+    const old = await db.billingIntent.create({ data: { workspaceId: x.w.id, customerId: x.c.id, contractId: k2.id, kind: "recurring_setup", amountMinor: 2900, status: "active", paidVia: "free", paidAt: new Date(), trialMonths: 1, trialEndsAt: ends, cancelsAt: ends } });
+    const remind = await db.task.create({ data: { workspaceId: x.w.id, customerId: x.c.id, title: "Old Co: free care plan ends 4 Dec 2026. Ask if they want to continue" } });
+    const sql = readFileSync("prisma/migrations/20261105100000_free_care_starts_at_launch/migration.sql", "utf8");
+    for (const stmt of sql.split(/;\s*\n/).map((t) => t.replace(/^--.*$/gm, "").trim()).filter(Boolean)) await db.$executeRawUnsafe(stmt);
+    expect(await db.billingIntent.findUniqueOrThrow({ where: { id: old.id } })).toMatchObject({ status: "pending", paidAt: null, trialEndsAt: null, cancelsAt: null, paidVia: "free" });
+    expect(await db.task.findUnique({ where: { id: remind.id } })).toBeNull();
+    // running it again changes nothing
+    for (const stmt of sql.split(/;\s*\n/).map((t) => t.replace(/^--.*$/gm, "").trim()).filter(Boolean)) await db.$executeRawUnsafe(stmt);
+    expect((await db.billingIntent.findUniqueOrThrow({ where: { id: old.id } })).status).toBe("pending");
+  });
+});

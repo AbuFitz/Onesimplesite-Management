@@ -1,5 +1,5 @@
-import { plainStatus, KIND_LABEL, isMonthly, isScheduled } from "@/modules/billing/service";
-import { continueFreePlanAction, requestFinalPaymentAction, markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction, setPlanOfferAction } from "@/app/actions/billing";
+import { plainStatus, KIND_LABEL, isMonthly, isScheduled, scheduledLabel } from "@/modules/billing/service";
+import { emailPaymentLinkAction, startCarePlanAction, continueFreePlanAction, requestFinalPaymentAction, markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction, setPlanOfferAction } from "@/app/actions/billing";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { promoFrom } from "@/modules/billing/promo";
@@ -12,7 +12,7 @@ import { Panel, SummaryTile, FactRow } from "@/components/panel";
 import { FileText, PenLine, CreditCard, FolderKanban, Download } from "lucide-react";
 
 export const metadata = { title: "Contract" };
-export default async function ContractPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string }> }) {
+export default async function ContractPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string; emailed?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const { id } = await params;
   const sp = await searchParams;
@@ -36,6 +36,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
     <>
       <RecordHeader back={{ href: `/customers/${k.customerId}`, label: k.customer.displayName }} title={k.title} status={<Status label={stateText} kind={k.status === "completed" ? "good" : k.status === "declined" || k.status === "voided" ? "bad" : "warn"} />} meta={<span>{k.reference}</span>} />
       <ErrorSummary message={sp.error} />
+      {sp.emailed && <p role="status" className="mb-4 rounded-lg bg-[#d7f3e6] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Payment link emailed to {sp.emailed}.</p>}
       {sp.sent && <p role="status" className="mb-4 rounded-lg bg-[#d7f3e6] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Signing email on its way.</p>}
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -89,7 +90,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
           <Panel title="Payments" icon={CreditCard} tone="lilac">
             {k.billingIntents.length === 0 ? <p className="text-[15px] text-ink/70">Payments appear here once the agreement is signed.</p> : (
               <>
-                <ul className="space-y-3">{k.billingIntents.map((b) => { const st = isScheduled(b) ? { label: "Due before launch", tone: "off" as const } : plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt, b.paidVia === "free"); return (
+                <ul className="space-y-3">{k.billingIntents.map((b) => { const st = isScheduled(b) ? { label: scheduledLabel(b), tone: "off" as const } : plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt, b.paidVia === "free"); return (
                   <li key={b.id} className="rounded-xl border border-[#e3e7e3] bg-[#fafaf8] p-3">
                     <div className="flex items-start justify-between gap-3"><p className="font-semibold">{b.description ?? KIND_LABEL[b.kind] ?? b.kind}</p><p className="font-bold">{b.paidVia === "free" ? "Free" : money(b.amountMinor, b.currency)}{isMonthly(b.kind) && b.paidVia !== "free" ? <span className="text-sm font-medium text-ink/60"> /mo</span> : ""}</p></div>
                     <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm"><span className={`rounded-md px-2 py-0.5 font-semibold ${TONE[st.tone]}`}>{st.label}</span>{b.paidAt && <span className="text-ink/65">{b.paidVia === "stripe" ? "by card" : "by bank or other"}</span>}</p>
@@ -100,7 +101,9 @@ export default async function ContractPage({ params, searchParams }: { params: P
                     <div className="mt-2 flex flex-wrap gap-2">
                       {isMonthly(b.kind) && b.stripeSubscriptionId && ["active", "past_due"].includes(b.status) && !b.cancelsAt && <form action={cancelPlanAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Stops the monthly payments after the month they've already paid for">Cancel the monthly plan</button></form>}
                       {b.paidVia === "free" && <form action={continueFreePlanAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="They want to carry on after the free months. It becomes a normal monthly plan that they start with a card in their portal.">They want to continue as a paid plan</button></form>}
-                      {isScheduled(b) && <form action={requestFinalPaymentAction}><input type="hidden" name="contractId" value={k.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Emails them and lets them pay. This also happens by itself when the project reaches Ready to launch.">Ask for the final payment now</button></form>}
+                      {b.status === "pending" && !isScheduled(b) && b.contractId && <form action={emailPaymentLinkAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Sends them an email with a button to your portal, where they press Pay now. Safe to send again.">Email them the payment link</button></form>}
+                      {isScheduled(b) && b.kind === "recurring_setup" && <form action={startCarePlanAction}><input type="hidden" name="contractId" value={k.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Starts the care plan now instead of waiting for the site to go live. A free care period starts counting from today.">{b.paidVia === "free" ? "Start the free month now" : "Open the care plan now"}</button></form>}
+                      {isScheduled(b) && b.kind === "balance" && <form action={requestFinalPaymentAction}><input type="hidden" name="contractId" value={k.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn} title="Emails them and lets them pay. This also happens by itself when the project reaches Ready to launch.">Ask for the final payment now</button></form>}
                       {b.status === "pending" && !isMonthly(b.kind) && <form action={markPaidAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} /><button className={btn}>Mark as paid (bank)</button></form>}
                       {isMonthly(b.kind) && b.status === "pending" && <details className="w-full rounded-lg border border-line bg-white px-3 py-1"><summary className="min-h-9 cursor-pointer py-1.5 text-[13px] font-semibold">{b.trialMonths > 0 ? "Change the free period" : "Give free months"}</summary>
                         <form action={setPlanOfferAction} className="mb-2 mt-1 flex flex-wrap items-end gap-2"><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value={`/contracts/${k.id}`} />

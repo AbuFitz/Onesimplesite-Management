@@ -4,13 +4,13 @@ import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { RecordHeader, Status, Empty, fmtDate, money } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
-import { KIND_LABEL, isMonthly, isScheduled, plainStatus } from "@/modules/billing/service";
+import { KIND_LABEL, isMonthly, isScheduled, plainStatus, scheduledLabel } from "@/modules/billing/service";
 
 export const metadata = { title: "Payments" };
 const SHOW = [["due", "Due now"], ["later", "Due before launch"], ["plans", "Monthly plans"], ["free", "Free care periods"], ["failed", "Failed"], ["paid", "Paid"], ["all", "Everything"]] as const;
 const HELP: Record<string, string> = {
   due: "Money we can ask for right now: deposits, website fees, change requests and monthly plans not started yet.",
-  later: "Final payments waiting until the site is ready to launch. They are asked for automatically at Ready to launch, or by hand.",
+  later: "Waiting for launch: final payments (asked for at Ready to launch) and care plans, including free care periods (start when the site is live). Both can also be started by hand from the order.",
   plans: "Monthly plans that are running. This is the monthly income on the home page.",
   free: "Care plans that are free for a set time and then simply end. Nothing is ever charged. They are not counted as income.",
   failed: "A monthly payment that did not go through.",
@@ -20,7 +20,7 @@ const HELP: Record<string, string> = {
 
 type B = Awaited<ReturnType<typeof load>>[number] & { customer: { displayName: string } };
 const load = (workspaceId: string) => db.billingIntent.findMany({ where: { workspaceId }, include: { contract: { select: { id: true, reference: true, title: true } }, ticket: { select: { id: true, reference: true, title: true } } }, orderBy: { createdAt: "desc" }, take: 500 });
-const group = (b: B) => (b.paidVia === "free" ? "free" : isScheduled(b) ? "later" : b.status === "past_due" ? "failed" : b.status === "paid" ? "paid" : isMonthly(b.kind) && b.status === "active" ? "plans" : b.status === "pending" ? "due" : "other");
+const group = (b: B) => (isScheduled(b) ? "later" : b.paidVia === "free" ? "free" : b.status === "past_due" ? "failed" : b.status === "paid" ? "paid" : isMonthly(b.kind) && b.status === "active" ? "plans" : b.status === "pending" ? "due" : "other");
 
 /** Where the money numbers on the home page come from: every charge, grouped the same way, with a link to the order behind it. */
 export default async function Payments({ searchParams }: { searchParams: Promise<{ show?: string; q?: string }> }) {
@@ -49,7 +49,7 @@ export default async function Payments({ searchParams }: { searchParams: Promise
       {rows.length === 0 ? <Empty title="Nothing here">{show === "due" ? "Nothing is waiting to be paid right now." : "No charges match."}</Empty> : (
         <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
           {rows.map((b) => {
-            const st = b.paidVia === "free" || !isScheduled(b) ? plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt, b.paidVia === "free") : { label: "Due before launch", tone: "off" as const };
+            const st = !isScheduled(b) ? plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt, b.paidVia === "free") : { label: scheduledLabel(b), tone: "off" as const };
             const href = b.contract ? `/contracts/${b.contract.id}` : b.ticket ? `/support/${b.ticket.id}` : `/customers/${b.customerId}`;
             const of = b.contract?.reference ?? b.ticket?.reference ?? "";
             return (

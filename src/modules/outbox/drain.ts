@@ -65,6 +65,8 @@ async function handle(topic: string, key: string, p: Record<string, unknown>) {
     case "email.invitation": return send("invitation", p as EmailData["invitation"], "noreply", String(p.to));
     case "email.payment_received": return send("payment_received", p as EmailData["payment_received"], "support", String(p.to), { attachments: await receiptPdf(p.receiptId) });
     case "email.plan_started": return send("plan_started", p as EmailData["plan_started"], "support", String(p.to), { attachments: await receiptPdf(p.receiptId) });
+    case "email.payment_ready": return send("payment_ready", p as EmailData["payment_ready"], "support", String(p.to));
+    case "email.plan_ready": return send("plan_ready", p as EmailData["plan_ready"], "support", String(p.to));
     case "email.balance_requested": return send("balance_requested", p as EmailData["balance_requested"], "support", String(p.to));
     case "email.payment_failed": return send("payment_failed", p as EmailData["payment_failed"], "support", String(p.to));
     case "email.payment_notice": return send("payment_notice", p as EmailData["payment_notice"], "noreply", internalNoticeTo());

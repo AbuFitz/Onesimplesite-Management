@@ -62,6 +62,7 @@ export async function startPayment(c: ClientCtx, intentId: string): Promise<stri
   if (b.status === "paid" || b.status === "active") throw new DomainError("conflict", "This one is already paid.");
   if (b.status === "cancelled") throw new DomainError("conflict", "This charge was cancelled. Please contact us.");
   if (b.kind === "balance" && !b.requestedAt) throw new DomainError("conflict", "Your final payment isn't due yet. We'll email you as soon as your website is ready to launch.");
+  if (b.kind === "recurring_setup" && !b.requestedAt) throw new DomainError("conflict", "Your monthly plan starts when your website goes live. We'll email you then.");
   const monthly = isMonthly(b.kind);
   const make = async (fresh: boolean) => {
     const customer = await stripeCustomer(b.customerId, c.email || undefined, c.name ?? "", fresh);
@@ -127,7 +128,10 @@ export async function staffBilling(ctx: StaffCtx, customerId: string) {
 }
 
 /** True while a final payment has not been asked for yet: shown to the customer as "due before launch" with no Pay button. */
-export const isScheduled = (b: { kind: string; status: string; requestedAt?: Date | null }) => b.kind === "balance" && b.status === "pending" && !b.requestedAt;
+export const isScheduled = (b: { kind: string; status: string; requestedAt?: Date | null }) => (b.kind === "balance" || b.kind === "recurring_setup") && b.status === "pending" && !b.requestedAt;
+/** What a locked charge says instead of "Due": the final payment waits for launch, and so does the care plan and its free months. */
+export const scheduledLabel = (b: { kind: string; paidVia?: string | null; trialMonths?: number }) =>
+  b.kind === "balance" ? "Due before launch" : b.paidVia === "free" ? `Free for ${b.trialMonths ?? 1} month${(b.trialMonths ?? 1) === 1 ? "" : "s"} from launch, then ends` : "Starts when your site is live";
 
 /** Asks the customer for the final payment: unlocks Pay now and emails them. Safe to run twice. Used by the team's button and when a project is ready to launch. */
 export async function requestBalance(tx: Tx, workspaceId: string, contractId: string, actor: { userId: string | null; label: string } | null) {
@@ -141,6 +145,62 @@ export async function requestBalance(tx: Tx, workspaceId: string, contractId: st
   await audit(tx, { workspaceId, actor: actor ? { userId: actor.userId as string, label: actor.label } : null, action: "billing.final_payment_requested", targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { amountMinor: b.amountMinor } });
   if (primary?.email) await enqueue(tx, workspaceId, "email.balance_requested", `pay.balance:${b.id}`, { to: primary.email, name: primary.name, ref: k.reference, amount: money(b.amountMinor, b.currency), link: portalLink("/billing") });
   return true;
+}
+/** When the website goes live the care plan starts: a free care period begins counting from that day, and a paid plan is opened for the customer to start. Safe to run twice. */
+export async function startCarePlan(tx: Tx, workspaceId: string, contractId: string, actor: { userId: string | null; label: string } | null) {
+  const b = await tx.billingIntent.findFirst({ where: { workspaceId, contractId, kind: "recurring_setup", status: "pending", requestedAt: null } });
+  if (!b) return false;
+  const now = new Date();
+  const who = actor ? { userId: actor.userId as string, label: actor.label } : null;
+  const [k, cu, signer, primary] = await Promise.all([
+    tx.contract.findUniqueOrThrow({ where: { id: contractId }, select: { reference: true } }),
+    tx.customer.findUnique({ where: { id: b.customerId }, select: { displayName: true } }),
+    tx.signingRequest.findFirst({ where: { contractId, status: "signed" }, orderBy: { createdAt: "desc" }, select: { signerName: true, signerEmail: true } }),
+    tx.contact.findFirst({ where: { customerId: b.customerId, email: { not: null } }, orderBy: { isPrimary: "desc" }, select: { name: true, email: true } }),
+  ]);
+  if (b.paidVia === "free") {
+    const ends = addMonths(now, b.trialMonths);
+    await tx.billingIntent.update({ where: { id: b.id }, data: { status: "active", paidAt: now, trialEndsAt: ends, cancelsAt: ends, requestedAt: now } });
+    const d = (x: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(x);
+    const remind = new Date(+ends - 7 * 864e5);
+    await tx.task.create({ data: { workspaceId, customerId: b.customerId, title: `${cu?.displayName ?? "Customer"}: free care plan ends ${d(ends)}. Ask if they want to continue`, dueDate: remind > now ? remind : ends } });
+    await audit(tx, { workspaceId, actor: who, action: "billing.free_plan_started", targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { ends: ends.toISOString() } });
+    return true;
+  }
+  await tx.billingIntent.update({ where: { id: b.id }, data: { requestedAt: now } });
+  await audit(tx, { workspaceId, actor: who, action: "billing.plan_opened", targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "client", detail: { freeMonths: b.trialMonths } });
+  const to = signer?.signerEmail ?? primary?.email, name = signer?.signerName ?? primary?.name ?? "there";
+  if (to) await enqueue(tx, workspaceId, "email.plan_ready", `pay.plan_ready:${b.id}`, { to, name, ref: k.reference, amount: money(b.amountMinor, b.currency), freeMonths: b.trialMonths, link: portalLink("/billing") });
+  return true;
+}
+export async function startCarePlanNow(ctx: StaffCtx, contractId: string) {
+  needWrite(ctx);
+  const done = await db.$transaction((tx) => startCarePlan(tx, ctx.workspaceId, contractId, { userId: ctx.userId, label: ctx.name }));
+  if (!done) throw new DomainError("conflict", "There's no care plan waiting to be started on this order.");
+}
+/** Emails the customer how to pay a charge that is ready: a deposit or website fee, a final payment that has been asked for, or a care plan that is open. Can be sent again any time. */
+export async function emailPaymentLink(ctx: StaffCtx, id: string) {
+  needWrite(ctx);
+  const b = await db.billingIntent.findFirst({ where: { id, workspaceId: ctx.workspaceId } });
+  if (!b) throw notFound();
+  if (b.status !== "pending") throw new DomainError("conflict", "That one isn't waiting to be paid.");
+  if (!b.contractId) throw new DomainError("conflict", "A change request is paid from its ticket, which the customer already has.");
+  if (isScheduled(b)) throw new DomainError("conflict", b.kind === "balance" ? "The final payment isn't due yet. Use \"Ask for the final payment now\" first." : "The care plan hasn't started yet. Use the start button first, or wait until the site goes live.");
+  const [k, signer, primary] = await Promise.all([
+    db.contract.findUniqueOrThrow({ where: { id: b.contractId }, select: { reference: true } }),
+    db.signingRequest.findFirst({ where: { contractId: b.contractId, status: "signed" }, orderBy: { createdAt: "desc" }, select: { signerName: true, signerEmail: true } }),
+    db.contact.findFirst({ where: { customerId: b.customerId, email: { not: null } }, orderBy: { isPrimary: "desc" }, select: { name: true, email: true } }),
+  ]);
+  const to = signer?.signerEmail ?? primary?.email, name = signer?.signerName ?? primary?.name ?? "there";
+  if (!to) throw new DomainError("validation", "There's no email address for this company yet. Add one under People first.");
+  const amount = money(b.amountMinor, b.currency), link = portalLink("/billing"), key = `pay.link:${b.id}:${Date.now()}`;
+  await db.$transaction(async (tx) => {
+    if (b.kind === "balance") await enqueue(tx, ctx.workspaceId, "email.balance_requested", key, { to, name, ref: k.reference, amount, link });
+    else if (b.kind === "recurring_setup") await enqueue(tx, ctx.workspaceId, "email.plan_ready", key, { to, name, ref: k.reference, amount, freeMonths: b.trialMonths, link });
+    else await enqueue(tx, ctx.workspaceId, "email.payment_ready", key, { to, name, ref: k.reference, what: b.kind === "deposit" ? "deposit" : "website fee", amount, link });
+    await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.link_emailed", targetType: "billing_intent", targetId: b.id, customerId: b.customerId, visibility: "internal", detail: { to, kind: b.kind } });
+  });
+  return to;
 }
 export async function requestFinalPayment(ctx: StaffCtx, contractId: string) {
   needWrite(ctx);

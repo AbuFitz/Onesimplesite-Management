@@ -62,6 +62,16 @@ export async function suggestionsFor(ctx: StaffCtx, now = new Date()): Promise<S
       for (const o of open) out.push({ id: `details:${o.customer.id}`, level: "normal", title: `${o.customer.displayName} needs company details`, reason: `We can't send their agreement without ${[!o.customer.legalName && "the legal name", !o.customer.billingAddress && "an address"].filter(Boolean).join(" and ")}.`, action: { label: "Add them", href: `/customers/${o.customer.id}/details` } });
     })());
     q.push((async () => {
+      // They have signed and a deposit is waiting, but nobody at the company can sign in to the portal to see it, so they cannot pay.
+      const owed = await db.billingIntent.findMany({ where: { workspaceId: w, status: "pending", kind: { in: ["deposit", "one_off"] }, contract: { status: "completed" } }, select: { customerId: true, contractId: true }, take: 20 });
+      const ids = [...new Set(owed.map((o) => o.customerId))];
+      if (!ids.length) return;
+      const has = new Set((await db.clientMembership.findMany({ where: { customerId: { in: ids }, revokedAt: null }, select: { customerId: true } })).map((m) => m.customerId));
+      const names = await nameMap(ids);
+      for (const id of ids.filter((x) => !has.has(x)).slice(0, 2))
+        out.push({ id: `noportal:${id}`, level: "high", title: `${names.get(id) ?? "A customer"} can't pay yet`, reason: "They have signed, but nobody there has a portal login, so they can't see their deposit. Invite them from the People tab.", action: { label: "Invite them", href: `/customers/${id}?tab=people` } });
+    })());
+    q.push((async () => {
       const rows = await db.billingIntent.findMany({ where: { workspaceId: w, status: "pending", NOT: { kind: "recurring_setup" }, OR: [{ kind: { not: "balance" }, contract: { status: "completed", completedAt: { lt: new Date(+now - 7 * D) } } }, { kind: "balance", requestedAt: { lt: new Date(+now - 3 * D) } }] }, take: 2 });   // a final payment only counts once we have asked for it
       const names = await nameMap(rows.map((r) => r.customerId));
       for (const b of rows)

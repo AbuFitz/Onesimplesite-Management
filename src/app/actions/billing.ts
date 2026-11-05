@@ -2,7 +2,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireClient, requireStaff } from "@/modules/identity/session";
-import { startPayment, continueFreePlan, requestFinalPayment, openBillingPortal, markPaidManually, cancelCharge, splitWebsiteFee, cancelPlan, setPlanOffer } from "@/modules/billing/service";
+import { startPayment, emailPaymentLink, startCarePlanNow, continueFreePlan, requestFinalPayment, openBillingPortal, markPaidManually, cancelCharge, splitWebsiteFee, cancelPlan, setPlanOffer } from "@/modules/billing/service";
+import { flushEmails } from "@/lib/flush-email";
 import { DomainError } from "@/lib/errors";
 
 const why = (e: unknown) => (e instanceof DomainError ? e.message : "We couldn't start that. Please try again.");
@@ -30,6 +31,19 @@ export async function requestFinalPaymentAction(fd: FormData) {
   const ctx = await requireStaff("billing.write");
   const back = String(fd.get("back") || "/");
   try { await requestFinalPayment(ctx, String(fd.get("contractId"))); } catch (e) { redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent(e instanceof DomainError ? e.message : "Something went wrong.")}`); }
+  revalidatePath(back);
+}
+export async function emailPaymentLinkAction(fd: FormData) {
+  const ctx = await requireStaff("billing.write");
+  const back = String(fd.get("back") || "/");
+  let sentTo = "";
+  try { sentTo = await emailPaymentLink(ctx, String(fd.get("id"))); flushEmails(); } catch (e) { redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent(e instanceof DomainError ? e.message : "Something went wrong.")}`); }
+  redirect(`${back}${back.includes("?") ? "&" : "?"}emailed=${encodeURIComponent(sentTo)}`);
+}
+export async function startCarePlanAction(fd: FormData) {
+  const ctx = await requireStaff("billing.write");
+  const back = String(fd.get("back") || "/");
+  try { await startCarePlanNow(ctx, String(fd.get("contractId"))); } catch (e) { redirect(`${back}${back.includes("?") ? "&" : "?"}error=${encodeURIComponent(e instanceof DomainError ? e.message : "Something went wrong.")}`); }
   revalidatePath(back);
 }
 export async function continueFreePlanAction(fd: FormData) {
