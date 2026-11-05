@@ -1,5 +1,6 @@
 import { money } from "./ui";
 import { PriceLines } from "./price-lines";
+import { PaySummary } from "./pay-summary";
 import { REQUIREMENT_FIELDS } from "@/modules/sales/service";
 import { PROJECT_TYPES } from "@/modules/projects/service";
 
@@ -7,16 +8,14 @@ type Line = { description: string; quantity: number; unitMinor: number; recurrin
 type Initial = { title: string; scope: string; terms: string; validUntil?: Date | null; recurringPeriod?: string | null; lines: Line[]; requirements?: Record<string, string | undefined> | null };
 
 /** The short version first: name, what it covers, the price. Everything else is tucked under "More details". */
-export function ProposalFields({ initial, defaults, plans = [] }: { initial?: Initial; defaults?: { title: string; scope: string }; plans?: { id: string; name: string; price: string }[] }) {
+export function ProposalFields({ initial, defaults, plans = [] }: { initial?: Initial; defaults?: { title: string; scope: string }; plans?: { id: string; name: string; price: string; monthlyMinor: number }[] }) {
   const filledReqs = REQUIREMENT_FIELDS.filter(([k]) => initial?.requirements?.[k]).length;
   return (
     <>
       <div><label className="label" htmlFor="title">Name</label><input id="title" name="title" className="field" defaultValue={initial?.title ?? defaults?.title} required /></div>
       <div><label className="label" htmlFor="scope">What we are building</label><textarea id="scope" name="scope" className="field min-h-24" defaultValue={initial?.scope ?? defaults?.scope} required /></div>
       <PriceLines lines={initial?.lines ?? []} />
-      <div className="max-w-sm">
-        <div><label className="label" htmlFor="rp">Items marked “Repeats” are charged</label><select id="rp" name="recurringPeriod" className="field" defaultValue={initial?.recurringPeriod ?? ""}><option value="">Not applicable</option><option value="month">Monthly</option><option value="year">Yearly</option></select></div>
-      </div>
+      <input type="hidden" name="recurringPeriod" value={initial?.recurringPeriod ?? "month"} />
       {plans.length > 0 && <div><label className="label" htmlFor="plan">Care plan</label><select id="plan" name="plan" className="field" defaultValue={initial?.requirements?.plan ?? ""}><option value="">No care plan</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.name}, {p.price} a month</option>)}</select><p className="hint mt-1">Choosing a plan adds its monthly price and brings the Service Level Agreement and Hosting terms into the pack.</p></div>}
       <h3 className="-mb-2 mt-2 text-base font-bold">Payment and offer</h3>
       <div><label className="label" htmlFor="dp">Deposit due when they sign</label><select id="dp" name="depositPercent" className="field" defaultValue={initial?.requirements?.depositPercent ?? ""}><option value="">No deposit, pay the website fee in one go</option>{["10", "20", "25", "30", "40", "50", "60", "70", "75"].map((n) => <option key={n} value={n}>{n}% deposit, the rest before launch</option>)}</select><p className="hint mt-1">Shown on the agreement they sign, so there are no surprises. The two payments are created for you once they sign.</p></div>
@@ -34,6 +33,7 @@ export function ProposalFields({ initial, defaults, plans = [] }: { initial?: In
             <option value="stop">Just end, nothing charged (no card needed, they can ask to continue)</option>
           </select><p className="hint mt-1">Pick “just end” for someone who wants to look after the site themselves. Only used when free months are chosen.</p></div>
       </fieldset>
+      <PaySummary plans={plans.map((p) => ({ id: p.id, name: p.name, monthlyMinor: p.monthlyMinor }))} />
       <details className="rounded-xl border border-line px-4 py-3" open={filledReqs > 0}>
         <summary className="cursor-pointer text-sm font-semibold">More details <span className="font-normal text-muted">· website requirements, payment plan, extra terms{filledReqs ? ` (${filledReqs} filled)` : ""}</span></summary>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">

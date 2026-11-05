@@ -13,14 +13,14 @@ export function PriceLines({ lines }: { lines: Line[] }) {
       <div className="space-y-2">
         {Array.from({ length: count }, (_, i) => lines[i]).map((l, i) => (
           <div key={i} className="grid grid-cols-[1fr_6.5rem] gap-2 sm:grid-cols-[1fr_7rem_auto] sm:items-center">
-            <input aria-label={`Item ${i + 1}`} name={`l${i}d`} className="field" placeholder={i === 0 ? "Website design and build" : "Hosting and maintenance"} defaultValue={l?.description} />
+            <input aria-label={`Item ${i + 1}`} name={`l${i}d`} className="field" placeholder={i === 0 ? "e.g. Website design and build" : "Another one-off price (optional)"} defaultValue={l?.description} />
             <input aria-label={`Price for item ${i + 1}`} name={`l${i}p`} type="number" min={0} step="0.01" inputMode="decimal" className="field" placeholder="0.00" defaultValue={l ? (l.unitMinor / 100).toFixed(2) : ""} />
             <label className="col-span-2 flex min-h-9 items-center gap-2 text-sm text-muted sm:col-span-1"><input type="checkbox" name={`l${i}r`} defaultChecked={l?.recurring} />Repeats</label>
             <input type="hidden" name={`l${i}q`} value={l?.quantity ?? 1} />
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[13px] text-muted">Tick <strong>Repeats</strong> for the monthly care plan, so it is charged every month and any free months apply to it. Leave it unticked for one-off prices. Unticking the care plan would add it to the website fee.</p>
+      <p className="mt-2 text-[13px] text-muted">One-off prices go here. <strong>The monthly care plan is added for you</strong> when you pick a Care plan below, so you do not type it in. Only tick <strong>Repeats</strong> for some other monthly charge, and never on a one-off price (it would be charged every month).</p>
       {count < MAX && <button type="button" className="mt-2 text-sm underline" onClick={() => setCount(count + 1)}>Add another item</button>}
     </fieldset>
   );

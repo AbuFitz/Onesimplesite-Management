@@ -78,7 +78,7 @@ async function writeVersion(tx: Tx, workspaceId: string, proposalId: string, num
   return tx.proposalVersion.create({
     data: {
       workspaceId, proposalId, number, scope: i.scope, terms: i.terms, validUntil: i.validUntil ?? null,
-      recurringPeriod: i.recurringPeriod ?? null, requirements: i.requirements ?? undefined, ...t,
+      recurringPeriod: t.recurringMinor > 0 ? (i.recurringPeriod ?? "month") : null, requirements: i.requirements ?? undefined, ...t,
       lines: { create: i.lines.map((l, idx) => ({ position: idx + 1, ...l })) },
     },
   });
@@ -100,7 +100,7 @@ export async function saveDraft(ctx: StaffCtx, proposalId: string, expectedVersi
     await tx.proposalLine.deleteMany({ where: { versionId: v.id } });
     await tx.proposalVersion.update({
       where: { id: v.id },
-      data: { scope: i.scope, terms: i.terms, validUntil: i.validUntil ?? null, recurringPeriod: i.recurringPeriod ?? null, requirements: i.requirements ?? undefined, ...t, lines: { create: i.lines.map((l, idx) => ({ position: idx + 1, ...l })) } },
+      data: { scope: i.scope, terms: i.terms, validUntil: i.validUntil ?? null, recurringPeriod: t.recurringMinor > 0 ? (i.recurringPeriod ?? "month") : null, requirements: i.requirements ?? undefined, ...t, lines: { create: i.lines.map((l, idx) => ({ position: idx + 1, ...l })) } },
     });
   });
 }

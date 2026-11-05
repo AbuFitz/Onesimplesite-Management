@@ -1,8 +1,16 @@
 // Agreements area: separate from tickets, one open agreement per company, works on a phone.
 import { createRequire } from "node:module";
 const { chromium } = createRequire(import.meta.url)("playwright");
+import { execSync } from "node:child_process";
+import { writeFileSync, rmSync } from "node:fs";
 const M = "http://manage.localhost:3000";
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
+// the demo workspace needs a care plan to choose from, as the live one has
+writeFileSync("seed-plan.tmp.ts", `import { db } from "@/lib/db";
+const m = await db.staffMembership.findFirstOrThrow({ where: { email: "demo.owner@example.test" } });
+if (!(await db.servicePlan.findFirst({ where: { workspaceId: m.workspaceId, active: true } }))) await db.servicePlan.create({ data: { workspaceId: m.workspaceId, key: "standard", name: "Standard Care Plan", kind: "standard", monthlyMinor: 2900 } });
+process.exit(0);`);
+execSync("npx tsx --env-file=.env seed-plan.tmp.ts", { stdio: "ignore" }); rmSync("seed-plan.tmp.ts");
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 375, height: 800 } });
 const pg = await ctx.newPage();
@@ -33,4 +41,24 @@ ok((await pg.locator("article").first().innerText()).toLowerCase().includes("the
 ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "preview has no horizontal overflow on a phone");
 const pdf = await pg.evaluate(async (u) => { const r = await fetch(u); const t = new Uint8Array(await r.arrayBuffer()); return { s: r.status, h: String.fromCharCode(...t.slice(0, 5)) }; }, first.split("?")[0] + "/preview/pdf");
 ok(pdf.s === 200 && pdf.h === "%PDF-", "PDF preview downloads");
+// A hosting-only job fills itself in: care plan chosen, price line named for the job, and a plain summary that updates as you type
+await pg.goto(`${M}/agreements/new?business=${biz}`); await pg.waitForLoadState("networkidle");
+await pg.goto(`${M}/agreements/new?business=${biz}&another=1`);
+{
+  const first2 = pg.url();
+  await pg.goto(`${M}/customers/new`); const name2 = `Care ${Date.now()}`;
+  await pg.fill("#rb-n", name2); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.fill("#rc-n", "Dee Lee"); await pg.fill("#rc-e", `dee${Date.now()}@guard.test`);
+  await pg.click("button:has-text('Add company and start an agreement')"); await pg.waitForURL(/\/agreements\/new\?business=/);
+  await pg.selectOption("#ag-w", "care"); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
+  ok(await pg.locator("input[name=l0d]").inputValue() === "Hosting set-up and move-over", "a hosting-only job names its price line for the job");
+  ok((await pg.locator("#plan").inputValue()) !== "", "and the care plan is already chosen");
+  const sum = await pg.locator("[aria-label='What the customer will pay']").innerText();
+  ok(/a month, starting when the site goes live/.test(sum), "the summary says what the customer pays each month, and when it starts");
+  await pg.fill("input[name=l0p]", "100"); await pg.selectOption("#dp", "50");
+  ok(/£50\.00 when they sign \(50% deposit\), then £50\.00 before the site goes live/.test(await pg.locator("[aria-label='What the customer will pay']").innerText()), "the summary updates live as the deposit is chosen");
+  await pg.selectOption("#pfm", "1"); await pg.selectOption("#pfe", "stop");
+  ok(/free for 1 month from the day the site goes live, then it simply ends/.test(await pg.locator("[aria-label='What the customer will pay']").innerText()), "and explains a free month that simply ends");
+  ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "the form fits a phone");
+  void first2;
+}
 await b.close(); console.log("ALL OK");

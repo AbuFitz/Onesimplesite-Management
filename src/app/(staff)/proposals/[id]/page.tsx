@@ -64,7 +64,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
           <h2 id="ed" className="mb-3">{editable ? "The agreement" : "Sent version (read-only)"}</h2>
           {editable ? (
             <form action={saveDraftAction} className="space-y-4"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} />
-              <ProposalFields plans={(await db.servicePlan.findMany({ where: { workspaceId: ctx.workspaceId, active: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })).map((x) => ({ id: x.id, name: x.name, price: `£${(x.monthlyMinor / 100).toFixed(2)}` }))} initial={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil, recurringPeriod: cur.recurringPeriod, lines: cur.lines, requirements: cur.requirements as Record<string, string | undefined> | null }} />
+              <ProposalFields plans={(await db.servicePlan.findMany({ where: { workspaceId: ctx.workspaceId, active: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })).map((x) => ({ id: x.id, name: x.name, price: `£${(x.monthlyMinor / 100).toFixed(2)}`, monthlyMinor: x.monthlyMinor }))} initial={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil, recurringPeriod: cur.recurringPeriod, lines: cur.lines, requirements: cur.requirements as Record<string, string | undefined> | null }} />
               <button className="btn btn-quiet">Save changes</button></form>
           ) : <div className="whitespace-pre-wrap text-sm">{cur.scope}</div>}
         </section>
