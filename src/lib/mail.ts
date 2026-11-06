@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { env } from "./env";
 
 /** True when real delivery is possible (Resend key) or we are in local development (file sink). */
-export const mailConfigured = () => !!env().RESEND_API_KEY || env().APP_ENV === "development" || env().APP_ENV === "test";
+export const mailConfigured = () => !!env().RESEND_API_KEY || ["development", "test", "staging"].includes(env().APP_ENV);
 
 export type Mail = { from: string; to: string; subject: string; text: string; html?: string; replyTo?: string; attachments?: { filename: string; content: Buffer }[] };
 
@@ -16,7 +16,7 @@ export async function sendMail(m: Mail, idempotencyKey?: string) {
   const e = env();
   if (!e.RESEND_API_KEY) {
     if (!mailConfigured()) throw new Error("Email is not configured: set RESEND_API_KEY");
-    const dir = path.join(process.cwd(), ".mail-sink");
+    const dir = process.env.VERCEL ? "/tmp/.mail-sink" : path.join(process.cwd(), ".mail-sink");   // a server's code folder is read-only
     await mkdir(dir, { recursive: true });
     const id = randomUUID();
     const { attachments, ...rest } = m;

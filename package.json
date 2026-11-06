@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "prisma generate && next build",
+    "build": "bash scripts/vercel-build.sh",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "worker": "tsx workers/index.ts",

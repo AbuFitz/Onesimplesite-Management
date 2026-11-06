@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { databaseMixUp } from "./db-guard";
+
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
   MANAGE_ORIGIN: z.url().default("http://manage.localhost:3000"),
@@ -11,7 +13,7 @@ const schema = z.object({
   MAIL_ALLOWLIST: z.string().optional(),
   // Optional. Without it the vault key is derived from BETTER_AUTH_SECRET.
   VAULT_KEY: z.string().optional(),
-});
+}).superRefine((v, ctx) => { const m = databaseMixUp(v.APP_ENV, v.DATABASE_URL); if (m) ctx.addIssue({ code: "custom", path: ["DATABASE_URL"], message: m }); });
 
 let cached: z.infer<typeof schema> | undefined;
 export function env() {

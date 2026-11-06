@@ -16,7 +16,8 @@ async function user(email: string, name: string, password: string) {
 
 async function main() {
   const ws = (await db.workspace.findFirst({ where: { name: "OneSimpleSite" } })) ?? (await db.workspace.create({ data: { name: "OneSimpleSite" } }));
-  const pending = [
+  const staging = process.env.APP_ENV === "staging";
+  const pending = staging ? [] : [
     ["abukar.sharif@onesimplesite.co.uk", "Abukar Sharif", "owner"],
     ["farhan.mahmood@onesimplesite.co.uk", "Farhan Mahmood", "client_director"],
     ["matthew.redican@onesimplesite.co.uk", "Matthew Redican", "delivery"],
@@ -27,9 +28,9 @@ async function main() {
     await db.invitation.create({ data: { workspaceId: ws.id, kind: "staff", email, tokenHash: hash, staffRole: role, expiresAt: new Date(Date.now() + 7 * 864e5) } });
     console.log(`Pending invitation (${role}) ${email}: /invite/${token}`);
   }
-  if (process.env.APP_ENV !== "development") return;
+  if (process.env.APP_ENV !== "development" && !staging) return;
 
-  const pw = "demo-password-123";
+  const pw = process.env.DEMO_PASSWORD || "demo-password-123";
   const owner = await user("demo.owner@example.test", "Demo Owner", pw);
   const delivery = await user("demo.delivery@example.test", "Demo Delivery", pw);
   const om = await db.staffMembership.upsert({ where: { workspaceId_email: { workspaceId: ws.id, email: owner.email } }, create: { workspaceId: ws.id, userId: owner.id, email: owner.email, displayName: "Demo Owner", role: "owner", status: "active" }, update: { status: "active", userId: owner.id } });
@@ -47,6 +48,6 @@ async function main() {
     const cu = await user(who, `${n} user`, pw);
     await db.clientMembership.upsert({ where: { userId_customerId: { userId: cu.id, customerId: c.id } }, create: { userId: cu.id, customerId: c.id, role: "admin" }, update: {} });
   }
-  console.log("Dev accounts (password demo-password-123): demo.owner@example.test, demo.delivery@example.test, client.a@example.test, client.b@example.test");
+  console.log("Dev accounts (password from DEMO_PASSWORD, else demo-password-123): demo.owner@example.test, demo.delivery@example.test, client.a@example.test, client.b@example.test");
 }
 main().then(() => db.$disconnect()).catch((e) => { console.error(e); process.exit(1); });
