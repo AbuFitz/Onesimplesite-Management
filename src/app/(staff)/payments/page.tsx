@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { RecordHeader, Status, Empty, fmtDate, money } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
+import { QuickChips } from "@/components/filter-bar";
 import { KIND_LABEL, isMonthly, isScheduled, plainStatus, scheduledLabel } from "@/modules/billing/service";
 
 export const metadata = { title: "Payments" };
@@ -38,10 +39,11 @@ export default async function Payments({ searchParams }: { searchParams: Promise
   return (
     <>
       <RecordHeader title="Payments" meta="What is owed, what is coming and what has been paid" />
+      <QuickChips label="Show payments" items={SHOW.map(([id, l]) => ({ label: l, count: count(id), href: `/payments?show=${id}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`, on: show === id }))} />
       <AutoGetForm className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="relative col-span-2 min-w-0 lg:col-span-1"><Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-[2.2rem] text-muted" /><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="q">Search</label>
           <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Company, order or item" className="field !pl-9" /></div>
-        <div className="col-span-2 lg:col-span-1"><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="show">Show</label>
+        <div className="hidden lg:block"><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="show">Show</label>
           <select id="show" name="show" defaultValue={show} className="field">{SHOW.map(([id, l]) => <option key={id} value={id}>{l} ({count(id)})</option>)}</select></div>
       </AutoGetForm>
       <p className="mb-1 max-w-3xl text-sm text-muted">{HELP[show]}</p>

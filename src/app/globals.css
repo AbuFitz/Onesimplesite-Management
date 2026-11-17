@@ -535,3 +535,24 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
 .fbody { display: none; }
 .fbody.open { display: contents; }
 @media (min-width: 1024px) { .fbody { display: contents; } }
+
+/* Segmented control (OpenGlass idea): a white glass thumb that springs between the choices. Set data-i to the chosen index (two choices). */
+.seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 999px; background: rgba(20, 30, 12, .08); box-shadow: inset 0 1px 2px rgba(20, 30, 12, .12); }
+.seg > i { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 999px; background: #fff; box-shadow: 0 1px 0 #fff inset, 0 6px 14px -6px rgba(20, 30, 12, .45); transition: transform .45s var(--spring); }
+.seg[data-i="1"] > i { transform: translateX(100%); }
+.seg button { position: relative; z-index: 1; min-height: 40px; padding: 0 18px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--color-muted); cursor: pointer; transition: color .2s; white-space: nowrap; }
+.seg button[aria-checked="true"] { color: var(--color-ink); }
+
+/* Signing: glass panel, plain labels, a visible list of what is left, reading progress. */
+.sign-aside { background: linear-gradient(160deg, rgba(255, 255, 255, .95), rgba(247, 250, 240, .86)); -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5); border: 1px solid rgba(255, 255, 255, .85); box-shadow: 0 1.5px 0 #fff inset, 0 24px 44px -14px rgba(18, 28, 12, .5); }
+.sign-panel .d-row .lb, .sign-panel .d-sig .lb { font-family: var(--font-sans); text-transform: none; letter-spacing: 0; font-size: 13.5px; font-weight: 600; color: var(--color-ink-2); }
+.sign-need { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.25rem; }
+.sign-need li { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px 0 8px; border-radius: 999px; font-size: 13px; color: var(--color-ink-2); background: rgba(20, 30, 12, .06); transition: background-color .3s, color .3s; }
+.sign-need li span { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; border: 1.5px solid rgba(20, 30, 12, .3); transition: all .35s var(--spring); }
+.sign-need li.ok { background: var(--color-lime); color: var(--color-olive-950); }
+.sign-need li.ok span { background: var(--color-olive-700); border-color: var(--color-olive-700); color: #fff; transform: scale(1.1); }
+.read-bar { height: 3px; background: rgba(20, 30, 12, .08); }
+.read-bar i { display: block; height: 100%; background: var(--color-olive-700); transition: width .15s linear; }
+.sign-foot { position: sticky; bottom: calc(-1.25rem - env(safe-area-inset-bottom)); z-index: 2; margin: 1rem -1.25rem 0; padding: .25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); background: #fafcf5; border-top: 1px solid rgba(20, 30, 12, .08); box-shadow: 0 -14px 18px -10px rgba(250, 252, 245, .95); }
+.sign-foot .sign-need { margin-top: 0; }
+@media (min-width: 1024px) { .sign-foot { position: static; margin: 1rem 0 0; padding: 0; background: none; border: 0; box-shadow: none; } }

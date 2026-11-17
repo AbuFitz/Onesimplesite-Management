@@ -8,6 +8,7 @@ export function SignForm({ token, defaultName, consent, company }: { token: stri
   const [method, setMethod] = useState<"typed" | "drawn">("drawn");
   const [name, setName] = useState(defaultName);
   const [image, setImage] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const dirty = useRef(false);
@@ -38,16 +39,17 @@ export function SignForm({ token, defaultName, consent, company }: { token: stri
         <ErrorSummary message={state?.error} />
         <div className="d-row">
           <span className="lb" id="sig-l">Signature</span>
-          <div className="mb-2 mt-1 flex gap-2" role="radiogroup" aria-label="Signature method">
+          <div className="seg mb-3 mt-1" role="radiogroup" aria-label="Signature method" data-i={method === "drawn" ? 0 : 1}>
+            <i aria-hidden />
             {(["drawn", "typed"] as const).map((m) => (
-              <button type="button" key={m} role="radio" aria-checked={method === m} onClick={() => setMethod(m)} className={`btn !min-h-10 ${method === m ? "" : "btn-quiet"}`}>{m === "drawn" ? "Draw" : "Type my name"}</button>
+              <button type="button" key={m} role="radio" aria-checked={method === m} onClick={() => setMethod(m)}>{m === "drawn" ? "Draw" : "Type my name"}</button>
             ))}
           </div>
           {method === "typed" ? (
             <div aria-live="polite" aria-labelledby="sig-l" className="ln tall typed break-words">{name || <span className="text-base not-italic text-muted">Your typed name appears here</span>}</div>
           ) : (
             <div>
-              <canvas ref={canvas} aria-labelledby="sig-l" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} className="h-40 w-full rounded-[8px] border border-[#8f9993] bg-white/80" style={{ touchAction: "none" }} />
+              <canvas ref={canvas} aria-labelledby="sig-l" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} className="h-32 w-full rounded-[14px] sm:h-40 border border-[#8f9993] bg-white/80" style={{ touchAction: "none" }} />
               <div className="mt-2 flex items-center justify-between"><button type="button" className="btn btn-quiet !min-h-11 sm:!min-h-9" onClick={clear}>Clear</button><span className="d-small">{image ? "Signature captured" : "Sign in the box above"}</span></div>
             </div>
           )}
@@ -56,8 +58,18 @@ export function SignForm({ token, defaultName, consent, company }: { token: stri
         <div className="d-row"><label className="lb" htmlFor="position">Position <span className="normal-case tracking-normal text-muted">(optional)</span></label><input id="position" name="position" className="field" autoComplete="organization-title" placeholder="e.g. Director" /></div>
         <div className="d-row"><span className="lb">Date</span><div className="ln">{today}</div></div>
       </div>
-      <label className="mt-6 flex items-start gap-3 text-sm"><input className="mt-1 size-5 shrink-0 accent-[#0c6a49]" type="checkbox" name="consent" required /><span>{consent}</span></label>
-      <button className="btn mt-5 w-full sm:w-auto sm:px-10" disabled={pending || (method === "drawn" && !image)}>{pending ? "Signing…" : "Sign and submit"}</button>
+      <label className="mt-6 flex items-start gap-3 text-sm"><input className="mt-1 size-5 shrink-0 accent-[#4a6024]" type="checkbox" name="consent" required checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /><span>{consent}</span></label>
+      {(() => {
+        const need = [["Your signature", method === "typed" ? !!name.trim() : !!image], ["Your name", !!name.trim()], ["Your confirmation", agreed]] as const;
+        const ready = need.every(([, ok]) => ok);
+        return (
+          <div className="sign-foot">
+            <ul className="sign-need" aria-label="What is left to do">{need.map(([l, ok]) => <li key={l} className={ok ? "ok" : ""}><span aria-hidden>{ok ? "✓" : ""}</span>{l}</li>)}</ul>
+            <button className="btn mt-4 w-full" disabled={pending || !ready}>{pending ? "Signing…" : "Sign and submit"}</button>
+            {!ready && <p className="d-small mt-2 text-center" aria-live="polite">The button unlocks when all three are done.</p>}
+          </div>
+        );
+      })()}
     </form>
   );
 }
