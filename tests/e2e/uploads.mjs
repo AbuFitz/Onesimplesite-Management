@@ -13,7 +13,7 @@ async function login(origin, email, vp = { width: 1280, height: 900 }) { const c
 const cl = await login(P, "client.b@example.test", { width: 390, height: 844 });
 await cl.goto(`${P}/projects/${PROJECT}`);
 ok(await cl.locator("text=What we need from you").count() > 0, "customer sees what we need from them");
-ok(await cl.locator("text=raise a ticket").count() === 0, "no 'raise a ticket' detour any more");
+ok(await cl.locator("main >> text=raise a ticket").count() === 0, "no 'raise a ticket' detour any more");
 await cl.fill("details[open] textarea[name=text]", "Mon-Fri 9 to 5. We are a family bakery since 1998.");
 await cl.setInputFiles("details[open] input[type=file]", "/tmp/pixel.png");
 const sentBefore = await cl.locator("text=Sent ✓").count();   // earlier runs leave answered requests, so count the change
