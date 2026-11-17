@@ -4,53 +4,63 @@ import type { ReactNode } from "react";
 import { origins } from "@/lib/env";
 import { LegalLinks } from "./legal-links";
 import { CookieNotice } from "./cookie-notice";
+import { FolderKanban, FileText, CreditCard, LifeBuoy } from "lucide-react";
 
 /**
- * One layout for every page reached from sign-in or an emailed link.
- * Customers (portal host) get the bold brand panel. The team (manage host) gets a plain, quick sign-in with no marketing.
+ * One layout for every page reached from sign-in or an emailed link, in the OSS Commerce language (floating glass, olive and lime).
+ * Customers (portal host) get a framed brand panel that says what the portal is for. The team (manage host) gets a focused, quick sign-in.
+ * On phones the brand panel shrinks to a short banner so the form is on screen straight away.
  */
 export async function AuthShell({ title, intro, children, footer }: { title: string; intro?: string; children: ReactNode; footer?: ReactNode }) {
   const portal = (await headers()).get("host") === new URL(origins().portal).host;
+  const other = portal ? { href: origins().manage + "/login", text: "Are you part of the OneSimpleSite team?", link: "Team sign-in" } : { href: origins().portal + "/login", text: "Are you a customer?", link: "Customer portal sign-in" };
   const foot = footer ?? (portal ? <>Need a hand? <a className="font-semibold text-ink underline" href="mailto:support@onesimplesite.co.uk">support@onesimplesite.co.uk</a></> : null);
 
   if (!portal) {
     return (
-      <div className="grid min-h-dvh place-items-center bg-bone px-5 py-10">
-        <main id="main" className="w-full max-w-sm">
-          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={220} height={45} priority className="mx-auto mb-8" />
-          <div className="card p-7">
-            <h1 className="text-2xl">{title}</h1>
-            {intro && <p className="mt-1.5 text-muted">{intro}</p>}
-            <div className="mt-6">{children}</div>
+      <div className="auth-wrap">
+        <main id="main" className="auth-card">
+          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={190} height={39} priority />
+          <div className="auth-head">
+            <h1>{title}</h1>
+            {intro && <p>{intro}</p>}
           </div>
-          {foot && <div className="mt-5 text-center text-sm text-muted">{foot}</div>}
-          <LegalLinks className="mt-4" />
+          <div className="auth-body">{children}</div>
+          {foot && <div className="auth-foot">{foot}</div>}
         </main>
+        <p className="auth-other">{other.text} <a href={other.href}>{other.link}</a></p>
+        <LegalLinks className="mt-3" />
       </div>
     );
   }
 
   return (
-    <div className="grid min-h-dvh bg-bone lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <div className="auth-split">
       <CookieNotice />
-      <aside className="relative isolate overflow-hidden bg-ink px-6 pb-12 pt-8 text-white lg:flex lg:flex-col lg:justify-between lg:px-16 lg:py-14" style={{ paddingTop: "max(2rem, env(safe-area-inset-top))" }}>
-        <div className="absolute inset-0 -z-10 bg-[url(/brand/doc/mast-bg.webp)] bg-cover bg-center opacity-90" aria-hidden />
-        <div className="absolute -bottom-24 -right-24 -z-10 size-80 rounded-full bg-spring/25 blur-3xl" aria-hidden />
-        <Image src="/brand/wordmark-reversed-colour.svg" alt="OneSimpleSite" width={230} height={47} priority className="h-auto w-48 lg:w-64" />
-        <div className="mt-12 lg:mt-0">
-          <p className="max-w-lg font-[family-name:var(--font-display)] text-[2.4rem] font-bold leading-[1.04] tracking-tight sm:text-5xl lg:text-[4.25rem]">Your website, all in <span className="text-spring">one place.</span></p>
-          <p className="mt-5 hidden max-w-md text-xl leading-snug text-white/80 lg:block lg:text-2xl">Follow your project, find your documents, pay online and get help from a real person.</p>
+      <aside className="auth-hero" style={{ paddingTop: "max(1.4rem, env(safe-area-inset-top))" }}>
+        <Image src="/brand/wordmark-reversed-colour.svg" alt="OneSimpleSite" width={210} height={43} priority className="auth-hero-logo" />
+        <div className="auth-hero-copy">
+          <p className="auth-hero-title">Your website, all in one place.</p>
+          <ul className="auth-points">
+            <li><FolderKanban size={18} aria-hidden /><span><b>Follow your project</b> from first plan to launch day</span></li>
+            <li><FileText size={18} aria-hidden /><span><b>Find every document</b> you have signed or been sent</span></li>
+            <li><CreditCard size={18} aria-hidden /><span><b>Pay securely online</b> and keep your receipts</span></li>
+            <li><LifeBuoy size={18} aria-hidden /><span><b>Get help</b> from a real person, fast</span></li>
+          </ul>
         </div>
-        <p className="hidden text-base text-white/60 lg:block">onesimplesite.co.uk</p>
+        <p className="auth-hero-url">onesimplesite.co.uk</p>
       </aside>
-      <main id="main" className="flex flex-col px-5 py-8 sm:px-10 lg:justify-center lg:px-16">
-        <div className="card mx-auto w-full max-w-md p-7 sm:p-9 lg:max-w-lg lg:p-11">
-          <h1 className="text-[1.9rem] lg:text-4xl">{title}</h1>
-          {intro && <p className="mt-2 text-muted lg:text-lg">{intro}</p>}
-          <div className="mt-7 lg:text-lg">{children}</div>
+      <main id="main" className="auth-main">
+        <div className="auth-card">
+          <div className="auth-head">
+            <h1>{title}</h1>
+            {intro && <p>{intro}</p>}
+          </div>
+          <div className="auth-body">{children}</div>
+          {foot && <div className="auth-foot">{foot}</div>}
         </div>
-        {foot && <div className="mx-auto mt-6 max-w-md text-center text-sm text-muted lg:text-base">{foot}</div>}
-        <LegalLinks className="mt-4" />
+        <p className="auth-other">{other.text} <a href={other.href}>{other.link}</a></p>
+        <LegalLinks className="mt-3" />
       </main>
     </div>
   );

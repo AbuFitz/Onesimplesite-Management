@@ -46,3 +46,45 @@ export async function todayData(workspaceId: string, opts: { staffId: string; se
     projects: { total, live, building: total - live - stageOf("cancelled") - stageOf("planned") - stageOf("awaiting_assets"), starting: stageOf("planned") + stageOf("awaiting_assets"), stages: projects },
   };
 }
+
+/** One chart point: a label and a value. */
+export type Point = { label: string; value: number };
+export type Trend = { series: Point[]; total: number; prev: number };
+
+/**
+ * Trends for the dashboard widgets over a chosen number of days, each with the total for the same-length period before it, so a change can be shown honestly.
+ * Seven days shows each day; thirty shows three-day blocks; ninety shows weeks, so charts stay readable.
+ * Money is receipts only (money actually received), the same rule as everywhere else.
+ */
+export async function todayTrends(workspaceId: string, days: number) {
+  const now = new Date(), w = workspaceId;
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1));
+  const prevStart = new Date(+start - days * DAY);
+  const block = days <= 7 ? 1 : days <= 30 ? 3 : 7;
+  const [tix, rec, signed, enq] = await Promise.all([
+    db.ticket.findMany({ where: { workspaceId: w, createdAt: { gte: prevStart } }, select: { createdAt: true } }),
+    db.receipt.findMany({ where: { workspaceId: w, paidAt: { gte: prevStart } }, select: { paidAt: true, amountMinor: true } }),
+    db.contract.findMany({ where: { workspaceId: w, status: "completed", cancelledAt: null, completedAt: { gte: prevStart } }, select: { completedAt: true } }),
+    db.opportunity.findMany({ where: { workspaceId: w, createdAt: { gte: prevStart } }, select: { createdAt: true } }),
+  ]);
+  const label = (d: Date) => (block === 1 ? d.toLocaleString("en-GB", { weekday: "short", timeZone: "Europe/London" }).slice(0, 3) : d.toLocaleString("en-GB", { day: "numeric", month: "short", timeZone: "Europe/London" }));
+  const buckets = Math.ceil(days / block);
+  const build = (rows: { at: Date | null; v: number }[]): Trend => {
+    const series: Point[] = Array.from({ length: buckets }, (_, i) => ({ label: label(new Date(+start + i * block * DAY)), value: 0 }));
+    let total = 0, prev = 0;
+    for (const r of rows) {
+      if (!r.at) continue;
+      if (r.at < start) { prev += r.v; continue; }
+      const i = Math.min(buckets - 1, Math.floor((+r.at - +start) / (block * DAY)));
+      series[i].value += r.v; total += r.v;
+    }
+    return { series, total, prev };
+  };
+  return {
+    days,
+    tickets: build(tix.map((t) => ({ at: t.createdAt, v: 1 }))),
+    money: build(rec.map((r) => ({ at: r.paidAt, v: Math.round(r.amountMinor / 100) }))),
+    signed: build(signed.map((c) => ({ at: c.completedAt, v: 1 }))),
+    enquiries: build(enq.map((o) => ({ at: o.createdAt, v: 1 }))),
+  };
+}

@@ -13,7 +13,7 @@ Companion to `docs/ARCHITECTURE.md` (how the platform works today). This file is
 | Dev environment, separate DB, auto-deploy, logins, health, smoke | Done and verified |
 | Test suites runnable against dev (14 suites, dev hooks) | Done; 13 of 14 pass on dev, page crawl in progress |
 | Architecture document of the current system | Done (`ARCHITECTURE.md`) |
-| Design system adopted from OSS Commerce | **Specified below; implementation starting (Phase 1)** |
+| Design system adopted from OSS Commerce | **Phase 1 in progress: tokens, glass frame, rail, phone tab bar, sign-in screens, widget system and Today page done; remaining pages need individual review** |
 | Mobile composition (no sticky top bar on phones) | Phase 1 |
 | Cross-cutting primitives (activity, approvals, events, inbox, files, service register) | Phase 2 |
 | Domains: cases, changes, projects, websites, monitoring, referrals, reports, automations | Phases 3 to 8 |
@@ -271,7 +271,9 @@ Mobile: bottom tab bar of the five most-used (Home, Customers, Delivery, Service
 | Files | DB bytes, Supabase Storage, S3 | **Supabase Storage, private buckets, signed URLs, server-checked authorisation** | Private by default; RLS governs reads; free plan limits (reported 50 MB per file, no CDN or transforms) to be verified in the dashboard. [Docs](https://supabase.com/docs/guides/storage/buckets/fundamentals) |
 | Tables | TanStack Table | Adopt for the long lists (companies, cases, payments) | Headless, MIT, small |
 | Drag and drop | dnd-kit | Adopt for pipeline and task boards | MIT, accessible keyboard sensors |
-| Charts | existing hand-rolled rings and bars, Recharts | Keep the light hand-rolled charts; reports use a defined-metric table first | Avoid decorative graphs |
+| Charts and widgets | Recharts (MIT), Tremor and shadcn charts (both wrap Recharts), visx, existing SVG | **Keep dependency-free SVG shapes** (sparkline, series, funnel, ring, donut) for widgets: small, server rendered, accessible; **adopt Recharts only for the Reports module** where axes, tooltips and brushing are needed | Bundle sizes in the sources conflict, so measure before adding. [Comparison](https://www.pkgpulse.com/guides/recharts-v3-vs-tremor-vs-nivo-react-charting-2026) |
+| Widget layout | react-grid-layout, dnd-kit, snapgrid | **dnd-kit sortable grid with fixed size classes** (not free resize) | Best keyboard and screen-reader support of the options (Space to lift, arrows, Space to drop); free-form resizing adds fragility with little value for ops dashboards. [dnd-kit accessibility](https://mintlify.com/clauderic/dnd-kit/guides/accessibility) |
+| KPI design | Twenty, Linear, dashboard-pattern guides | Headline number, colour-coded change against the previous period with the comparison named, trend line, whole tile links to the filtered list; every widget has defined empty and error states with an action | [Dashboard patterns](https://www.saasui.design/pattern/dashboard) |
 | Signing | Documenso patterns | Keep our engine (already immutable, evidenced); borrow audit-trail PDF ideas only | AGPL: patterns, not code |
 | Support UX | Zammad, Chatwoot, Linear | Take queue views, SLA clocks, macros, keyboard-first triage | Patterns only |
 | Visual workflows | React Flow | **Defer**: build reliable rules and a rule list first; visual builder later on the same engine | Your instruction |
