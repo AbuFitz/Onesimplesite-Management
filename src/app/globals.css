@@ -493,3 +493,17 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
   :root { --dock-h: 4.75rem; }
   .page { padding-top: .25rem; }
 }
+
+/* Phones, forest glass (Solum / Steps references): the one hero per page is a deep-green glass card with light type; stats are round glass bubbles with thin numerals. */
+@media (max-width: 1023px) {
+  .nx, .nx-lilac, .nx-peach, .nx-sky { color: #fff; border: 1px solid rgba(255, 255, 255, .22); background: radial-gradient(120% 90% at 85% 0%, rgba(150, 190, 120, .45), transparent 60%), linear-gradient(165deg, rgba(38, 60, 32, .92), rgba(16, 26, 14, .95)); box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 28px 44px -22px rgba(16, 26, 14, .7); }
+  .nx h2 { font-weight: 300; }
+  .nx-body, .nx-tag { color: rgba(255, 255, 255, .86); }
+  .nx-tag { background: rgba(255, 255, 255, .16); }
+  .nx-b1 { background: rgba(255, 255, 255, .1); } .nx-b2 { background: rgba(214, 232, 167, .28); box-shadow: none; } .nx-b3 { border-color: rgba(255, 255, 255, .3); }
+  .nx-act .btn-dark, .nx-act .btn:first-child { background: #fff; color: var(--color-olive-950); border-color: #fff; }
+  .nx-act .btn:not(:first-child) { background: rgba(255, 255, 255, .14); color: #fff; border-color: rgba(255, 255, 255, .34); }
+  .stat, .stat-sky, .stat-peach, .stat-mint, .stat-lilac { background: rgba(255, 255, 255, .62); border: 1px solid rgba(255, 255, 255, .75); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-radius: 40px; }
+  .stat-v { font-weight: 300; font-size: 40px; }
+  .tile[class*="bg-"] { background: rgba(255, 255, 255, .66) !important; border: 1px solid rgba(255, 255, 255, .75); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+}
