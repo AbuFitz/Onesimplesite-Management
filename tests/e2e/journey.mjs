@@ -45,8 +45,7 @@ await staff.click("input[type=checkbox]"); await staff.waitForSelector("[role=st
 ok(await staff.locator("input[type=checkbox]").isChecked(), "ticking a to-do in a post is saved");
 await staff.fill("#cm-body", "Added the domain step too"); await staff.click("button:has-text('Comment')"); await staff.waitForSelector("text=Added the domain step too");
 ok(true, "comments appear under the post");
-staff.once("dialog", (d) => d.accept());
-await staff.click("button[aria-label='Delete this post']"); await staff.waitForURL(/\/board$/);
+await staff.click("button[aria-label='Delete this post']"); await staff.click(".cfm-yes"); await staff.waitForURL(/\/board$/);
 ok(await staff.locator(`a:has-text("${postTitle}")`).count() === 0, "a deleted post is gone from the feed");
 await staff.goto(`${M}/calendar?add=1`); await staff.waitForSelector("dialog[open]"); await staff.fill("#ev-t", "Team sync"); await staff.click("dialog button:has-text('Add event')"); await staff.waitForURL(/added=1/);
 ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar quick-add shows the event on the day");
@@ -102,8 +101,8 @@ await staff.goto(`${M}/customers/new`); await staff.waitForLoadState("networkidl
 await staff.click(".wz-next"); await staff.fill("#rb-n", name); await staff.selectOption("#rb-t", "Food and drink"); await staff.fill("input[name=town]", "Bristol");
 await staff.click(".wz-next"); await staff.fill("#rc-n", "Casey Morgan"); await staff.fill("#rc-e", email); await staff.click(".wz-next");
 await staff.click("button:has-text('Add company and start an agreement')"); await staff.waitForURL(/\/agreements\/new\?business=/);
-await staff.fill("#ag-d", "A website with bookings for their bakery.");
-await staff.click(".wz-next"); await staff.click(".wz-next"); await staff.click(".wz-next"); await staff.click("button:has-text('Start the agreement')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
+await staff.click(".wz-next"); await staff.click(".wz-next"); await staff.fill("#ag-d", "A website with bookings for their bakery.");
+await staff.click(".wz-next"); await staff.click("button:has-text('Start the agreement')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
 // the agreement, one step at a time
 ok(await staff.locator("h2:has-text('Step 1: The job')").count() === 1, "the agreement opens on step 1");
 await staff.fill("#title", title); await staff.fill("#scope", "A website with bookings in Bristol");
