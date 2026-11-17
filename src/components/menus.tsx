@@ -20,8 +20,8 @@ function usePopover() {
   return { open, setOpen, ref };
 }
 
-const panel = "absolute right-0 top-full z-40 mt-2 w-60 rounded-xl border border-line bg-white p-1.5 shadow-[0_8px_30px_rgba(14,19,17,.08)]";
-const item = "flex min-h-10 items-center rounded-lg px-3 text-sm text-ink hover:bg-soft";
+const panel = "pop absolute right-0 top-full z-40 mt-2 w-60";
+const item = "pop-item";
 
 export function NewMenu({ links }: { links: { href: string; label: string }[] }) {
   const { open, setOpen, ref } = usePopover();
@@ -42,7 +42,7 @@ export function UserMenu({ name, role, staffId, children }: { name: string; role
       {open && (
         <div role="menu" className={panel}>
           <div className="px-3 py-2"><p className="text-sm font-semibold">{name}</p><p className="text-xs text-muted">{role}</p></div>
-          <div className="my-1 h-px bg-line" />
+          <div className="pop-rule" />
           <Link role="menuitem" href="/account" className={item}>My account</Link>
           {children}
         </div>
