@@ -103,7 +103,7 @@ await staff.click(".wz-next"); await staff.fill("#rb-n", name); await staff.sele
 await staff.click(".wz-next"); await staff.fill("#rc-n", "Casey Morgan"); await staff.fill("#rc-e", email); await staff.click(".wz-next");
 await staff.click("button:has-text('Add company and start an agreement')"); await staff.waitForURL(/\/agreements\/new\?business=/);
 await staff.fill("#ag-d", "A website with bookings for their bakery.");
-await staff.click("button:has-text('Start the agreement')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
+await staff.click(".wz-next"); await staff.click(".wz-next"); await staff.click(".wz-next"); await staff.click("button:has-text('Start the agreement')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
 // the agreement, one step at a time
 ok(await staff.locator("h2:has-text('Step 1: The job')").count() === 1, "the agreement opens on step 1");
 await staff.fill("#title", title); await staff.fill("#scope", "A website with bookings in Bristol");
