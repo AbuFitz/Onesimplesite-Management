@@ -803,3 +803,18 @@ body:has(.wz) .sb { display: none; }
 .wz-foot.last .wz-back { justify-content: center; }
 .wz-foot.last .wz-submit { width: 100%; }
 @media (min-width: 1024px) { .wz-foot.last { flex-direction: row-reverse; justify-content: flex-end; } .wz-foot.last .wz-submit { width: auto; } }
+
+/* Team members: a calm row, one Manage button. */
+.mem { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 0; border-top: 1px solid rgba(20, 30, 12, .07); }
+.mem:first-child { border-top: 0; }
+.mem-n { font-size: 16px; font-weight: 500; word-break: break-word; } .mem-e { font-size: 13.5px; color: var(--color-muted); word-break: break-all; }
+.mem-t { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; } .mem-r { font-size: 13px; color: var(--color-ink-2); }
+.mm-btn { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 500; cursor: pointer; background: rgba(255, 255, 255, .9); border: 1px solid rgba(20, 30, 12, .12); transition: transform .25s var(--spring); }
+.mm-btn:active { transform: scale(.94); }
+@media (max-width: 479px) { .mem { grid-template-columns: auto minmax(0, 1fr); } .mm-btn { grid-column: 1 / -1; justify-content: center; } }
+.mm { display: grid; gap: 20px; }
+.mm-sec { display: grid; gap: 10px; } .mm-sec h3 { padding-left: 4px; font-size: 13.5px; font-weight: 500; color: var(--color-muted); }
+.mm-save { min-height: 48px; border-radius: 999px; font-size: 15px; font-weight: 500; color: #fff; cursor: pointer; background: linear-gradient(180deg, #2c3a15, #161d0b); transition: transform .25s var(--spring); }
+.mm-save:active, .mm-quiet:active { transform: scale(.96); }
+.mm-danger { gap: 8px; }
+.mm-quiet { width: 100%; min-height: 48px; border-radius: 999px; font-size: 15px; font-weight: 500; cursor: pointer; color: #8a1c15; background: #fbeeea; border: 1px solid rgba(138, 28, 21, .18); transition: transform .25s var(--spring); }

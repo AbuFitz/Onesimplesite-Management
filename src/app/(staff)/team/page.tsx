@@ -3,6 +3,7 @@ import { listTeam } from "@/modules/identity/team";
 import { ROLE_INFO } from "@/modules/identity/permissions";
 import { changeRoleAction, setActiveAction, setAliasAction, resetTeamTwoStepAction } from "@/app/actions/work";
 import { InviteStaffForm } from "@/components/invite-staff-form";
+import { MemberManage } from "@/components/member-manage";
 import { queueStatus } from "@/modules/outbox/drain";
 import { retryEmailsAction } from "@/app/actions/work";
 import { Avatar, RecordHeader, Status, ErrorSummary } from "@/components/ui";
@@ -23,21 +24,11 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ e
           {members.map((m) => {
             const self = m.id === ctx.staffId;
             return (
-              <li key={m.id} className="row py-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-                <div className="flex min-w-0 gap-3"><Avatar name={m.displayName} size={40} staffId={m.id} /><div className="min-w-0"><p className="font-semibold break-words">{m.displayName}{self ? " (you)" : ""}</p><p className="text-sm text-muted break-all">{m.username ? `${m.username} · ` : ""}{m.email}</p>
-                  <Status label={m.status} kind={m.status === "active" ? "good" : m.status === "pending" ? "warn" : "bad"} />
-                  <form action={setAliasAction} className="mt-2 flex flex-wrap items-center gap-2 text-sm"><input type="hidden" name="id" value={m.id} /><label htmlFor={`a-${m.id}`} className="text-muted">Customers see emails from</label><input id={`a-${m.id}`} name="alias" defaultValue={m.aliasEmail ?? ""} placeholder="name@onesimplesite.co.uk" className="field !min-h-11 sm:!min-h-9 w-60 !py-1 !text-sm" autoCapitalize="none" /><button className="btn btn-quiet !min-h-11 sm:!min-h-9">Save</button></form></div></div>
-                {!self && (
-                  <div className="flex flex-wrap items-end gap-2">
-                    <form action={changeRoleAction} className="flex items-end gap-2"><input type="hidden" name="id" value={m.id} />
-                      <div><label className="sr-only" htmlFor={`r-${m.id}`}>Level for {m.displayName}</label>
-                        <select id={`r-${m.id}`} name="role" defaultValue={m.role} className="field w-auto">{roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
-                      <button className="btn btn-quiet">Change level</button></form>
-                    <form action={setActiveAction}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="active" value={m.status === "deactivated" ? "1" : "0"} />
-                      <button className="btn btn-quiet">{m.status === "deactivated" ? "Reactivate" : "Deactivate"}</button></form>
-                    {ctx.role === "owner" && m.userId && <details className="rounded-lg border border-line bg-white px-3 py-1"><summary className="min-h-9 cursor-pointer py-1.5 text-sm font-semibold">Reset two-step</summary><form action={resetTeamTwoStepAction} className="mt-1 mb-2 space-y-2 text-sm"><input type="hidden" name="id" value={m.id} /><p className="max-w-xs text-muted">Removes their authenticator app, passkeys and trusted devices and signs them out. They set it up again at next sign-in.</p><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Reset for {m.displayName.split(" ")[0]}</button></form></details>}
-                  </div>
-                )}
+              <li key={m.id} className="mem">
+                <Avatar name={m.displayName} size={44} staffId={m.id} />
+                <div className="min-w-0"><p className="mem-n">{m.displayName}{self ? " (you)" : ""}</p><p className="mem-e">{m.username ? `${m.username} · ` : ""}{m.email}</p>
+                  <p className="mem-t"><Status label={m.status} kind={m.status === "active" ? "good" : m.status === "pending" ? "warn" : "bad"} /><span className="mem-r">{(ROLE_INFO[m.role as keyof typeof ROLE_INFO]?.label ?? m.role).replace(" (recommended)", "")}</span></p></div>
+                <MemberManage m={{ id: m.id, name: m.displayName, role: m.role, status: m.status, alias: m.aliasEmail ?? "", hasUser: !!m.userId }} roles={roles} self={self} owner={ctx.role === "owner"} actions={{ changeRole: changeRoleAction, setActive: setActiveAction, setAlias: setAliasAction, resetTwoStep: resetTeamTwoStepAction }} />
               </li>
             );
           })}
