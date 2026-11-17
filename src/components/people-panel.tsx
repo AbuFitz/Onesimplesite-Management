@@ -17,14 +17,14 @@ function Level({ role = "member", billing = false, id }: { role?: string; billin
   return (
     <fieldset className="space-y-2">
       <legend className="label">What can they do in the portal?</legend>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="opts sm:grid-cols-3 sm:!grid-flow-col">
         {ACCESS_LEVELS.map((l) => (
-          <label key={l.id} className="flex cursor-pointer flex-col rounded-xl border border-line bg-white p-3 text-sm has-[:checked]:border-ink has-[:checked]:bg-[#eef7f2] has-[:focus-visible]:outline has-[:focus-visible]:outline-2">
-            <input type="radio" name="role" value={l.id} defaultChecked={role === l.id} className="sr-only" /><span className="font-semibold">{l.label}</span><span className="text-muted">{l.blurb}</span>
+          <label key={l.id} className="opt">
+            <input type="radio" name="role" value={l.id} defaultChecked={role === l.id} /><span><b>{l.label}</b><small>{l.blurb}</small></span>
           </label>
         ))}
       </div>
-      <label className="flex min-h-9 items-center gap-2 text-sm"><input type="checkbox" name="billing" defaultChecked={billing} className="size-4 accent-[#0c6a49]" /> Can see and pay invoices <span className="text-muted">(owners always can)</span></label>
+      <label className="grp grp-row" htmlFor={`${id}-bill`}><span>Can see and pay invoices<small className="ml-2 text-muted">owners always can</small></span><span className="sw"><input id={`${id}-bill`} type="checkbox" name="billing" defaultChecked={billing} /><i aria-hidden /></span></label>
     </fieldset>
   );
 }
@@ -35,7 +35,7 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
   return (
     <div className="space-y-8">
       {requests.length > 0 && (
-        <section aria-label="Access requests" className="rounded-2xl border border-[#e5d58a] bg-[#fbf3d5]/60 p-4">
+        <section aria-label="Access requests" className="rounded-[28px] border border-white/90 bg-white/70 p-4 shadow-[0_8px_18px_-14px_rgba(18,28,12,.5)]">
           <h2 className="text-lg">Asked to add to the portal</h2>
           <ul className="mt-3 space-y-4">
             {requests.map((r) => (
