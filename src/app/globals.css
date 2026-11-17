@@ -717,3 +717,15 @@ dialog.lb-dlg::backdrop { background: rgba(10, 14, 8, .78); }
 .evf-set { min-width: 0; }
 .evf { max-height: min(52rem, 92dvh); }
 .rchips.scroll { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent); }
+
+/* ---- The on-screen keyboard (see KeyboardAware): floating bars step aside, popups fit what is visible, fields never zoom the page. ---- */
+html { scroll-padding-bottom: 7rem; scroll-padding-top: 1rem; }
+@media (pointer: coarse) { input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: max(16px, 1em); } }
+.fcap, .sb, .cookie { transition: opacity .2s var(--ease), transform .3s var(--ease); }
+html[data-kb] .fcap, html[data-kb] .sb, html[data-kb] .cookie { opacity: 0; transform: translateY(24px); pointer-events: none; }
+html[data-kb] .fcap { transform: translateY(24px); }
+html[data-kb] dialog.rec-dlg { height: auto; max-height: calc(var(--vvh, 100dvh) - 16px); margin: calc(var(--vvt, 0px) + 8px) auto auto; }
+html[data-kb] dialog.rec-dlg .evf { max-height: calc(var(--vvh, 100dvh) - 16px); }
+html[data-kb] .sign-aside, html[data-kb] .sheet { max-height: calc(var(--vvh, 100dvh) - 16px); }
+html[data-kb] .sheet-wrap { align-items: flex-start; padding-top: calc(var(--vvt, 0px) + 8px); }
+html[data-kb] .sign-foot, html[data-kb] .evf-foot { padding-bottom: 12px; }
