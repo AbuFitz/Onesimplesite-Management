@@ -40,7 +40,7 @@ export function Kpi({ label, value, href, tone = "olive", delta, note, spark, sp
   label: string; value: ReactNode; href: string; tone?: "olive" | "amber" | "rose" | "violet" | "blue";
   delta?: { now: number; prev: number; goodWhen?: "up" | "down"; label?: ReactNode }; note?: ReactNode; spark?: number[]; sparkLabel?: string;
 }) {
-  const colour = { olive: "#111214", amber: "#c9901a", rose: "#d9582b", violet: "#8f7bd1", blue: "#3f6bb0" }[tone];
+  const colour = { olive: "#4a6024", amber: "#c9901a", rose: "#d9582b", violet: "#8f7bd1", blue: "#3f6bb0" }[tone];
   return (
     <Link href={href} className="wdg kpi" data-tone={tone} aria-label={`${label}: ${typeof value === "string" || typeof value === "number" ? value : ""}. Open`}>
       <span className="kpi-l"><i style={{ background: colour }} />{label}</span>

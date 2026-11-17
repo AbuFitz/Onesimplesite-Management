@@ -27,10 +27,15 @@ export function MobileDock({ items, actions, searchHref, hideFrom = "lg", home }
     <>
       {!onHome && (
         <nav className={`fcap ${hideFrom === "sm" ? "sm-hide" : ""}`} aria-label="Primary">
-          <Link href={home} aria-label="Home"><Home size={20} aria-hidden /></Link>
-          <Link href={searchHref} aria-label="Search or jump to"><Search size={20} aria-hidden /></Link>
-          {actions.length > 0 && <button type="button" className="go" aria-label="Add something new" onClick={() => setPlus(true)}><Plus size={21} aria-hidden /></button>}
-          <button type="button" className="on" aria-haspopup="dialog" aria-expanded={pick} aria-label={`Go to another page. You are on ${current.label}`} onClick={() => setPick(true)}><LayoutGrid size={20} aria-hidden />{badge > 0 && <b>{badge}</b>}</button>
+          <Link href={home} className="fc-o" aria-label="Home"><Home size={20} aria-hidden /></Link>
+          <Link href={searchHref} className="fc-o" aria-label="Search or jump to"><Search size={20} aria-hidden /></Link>
+          {actions.length > 0 ? (
+            <div className="fc-pill">
+              <Link href={actions[0].href}><span>{actions[0].label}</span></Link>
+              <button type="button" aria-label="More things to add" onClick={() => setPlus(true)}><Plus size={20} aria-hidden /></button>
+            </div>
+          ) : <span />}
+          <button type="button" className="fc-o" aria-haspopup="dialog" aria-expanded={pick} aria-label={`Go to another page. You are on ${current.label}`} onClick={() => setPick(true)}><LayoutGrid size={20} aria-hidden />{badge > 0 && <b>{badge}</b>}</button>
         </nav>
       )}
       {pick && <Switcher items={items} current={current.href} onClose={() => setPick(false)} />}

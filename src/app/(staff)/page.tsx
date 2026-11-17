@@ -53,7 +53,7 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
       { id: "k-plans", title: "Monthly plans", size: "s", node: <Kpi label="Monthly plans" tone="violet" value={gbpShort(Math.round(d.money.monthlyMinor / 100))} href="/payments?show=plans" note={`${d.money.plans} active ${d.money.plans === 1 ? "plan" : "plans"}`} /> },
       { id: "w-status", title: "Ticket status", size: "m", node: (() => { const all = Math.max(1, d.tickets.open + d.tickets.waiting + d.tickets.done); return (
         <DialPanel title="Ticket status" icon={Ticket} href="/tickets?tab=all">
-          <Dial value={d.tickets.open / all} label="Needs us" count={d.tickets.open} accent="#ebd98a" />
+          <Dial value={d.tickets.open / all} label="Needs us" count={d.tickets.open} accent="#d6e8a7" />
           <Dial value={d.tickets.waiting / all} label="Waiting" count={d.tickets.waiting} accent="#a0b2c8" />
         </DialPanel>); })() },
       { id: "w-tickets", title: "Tickets right now", size: "m", node: (
