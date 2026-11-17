@@ -14,6 +14,7 @@ if [ "${DEV_AUTO_MIGRATE:-}" = "1" ]; then
   done
   echo "== Dev build: updating the dev database"
   npx prisma migrate deploy
+  npx prisma generate
   node scripts/dev-prepare.mjs
 fi
 
