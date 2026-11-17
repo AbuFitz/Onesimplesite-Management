@@ -75,7 +75,7 @@ export function VaultItem({ row }: { row: VaultRow }) {
 
   return (
     <li className="row py-4">
-      <div className="flex items-start gap-3">
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-3 sm:flex-nowrap">
         <Avatar name={row.title} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2">
@@ -94,7 +94,7 @@ export function VaultItem({ row }: { row: VaultRow }) {
           {err && <p className="mt-2 text-sm text-danger" role="alert">{err}</p>}
           <p className="mt-1 text-xs text-muted">Updated {timeAgo(new Date(row.updatedAt))} by {row.updatedBy}</p>
         </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+        <div className="ml-auto flex w-full shrink-0 flex-wrap justify-end gap-1.5 sm:w-auto">
           <button type="button" className="btn btn-quiet px-3" onClick={toggle} aria-label={secret ? `Hide password for ${row.title}` : `Show password for ${row.title}`}>{secret ? <EyeOff size={16} /> : <Eye size={16} />}</button>
           <button type="button" className="btn btn-quiet px-3" onClick={() => copy("password")} aria-label={`Copy password for ${row.title}`}>{copied === "password" ? <Check size={16} /> : <Copy size={16} />}</button>
           <button type="button" className="btn btn-quiet px-3" onClick={() => setEdit(!edit)} aria-label={`Edit ${row.title}`}><Pencil size={16} /></button>
