@@ -818,3 +818,27 @@ body:has(.wz) .sb { display: none; }
 .mm-save:active, .mm-quiet:active { transform: scale(.96); }
 .mm-danger { gap: 8px; }
 .mm-quiet { width: 100%; min-height: 48px; border-radius: 999px; font-size: 15px; font-weight: 500; cursor: pointer; color: #8a1c15; background: #fbeeea; border: 1px solid rgba(138, 28, 21, .18); transition: transform .25s var(--spring); }
+
+/* Search (Ctrl+K): a pill field and a glass list with a clear current row. */
+.cp-input { height: 42px; width: 100%; padding: 0 56px 0 40px; border-radius: 999px; font-size: 14.5px; outline: none; background: rgba(255, 255, 255, .7); border: 1px solid rgba(20, 30, 12, .1); transition: background-color .2s, border-color .2s, box-shadow .2s; }
+.cp-input::placeholder { color: var(--color-muted); }
+.cp-input:hover { border-color: rgba(20, 30, 12, .2); }
+.cp-input:focus { background: #fff; border-color: var(--color-olive-700); box-shadow: 0 0 0 3px rgba(74, 96, 36, .16); }
+.cp-list { transform-origin: top center; }
+.cp-h { padding: 10px 12px 4px; font-size: 12.5px; color: var(--color-muted); }
+.cp-row { display: flex; width: 100%; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 16px; text-align: left; cursor: pointer; transition: background-color .12s; }
+.cp-row.on { background: rgba(20, 30, 12, .07); }
+.cp-ico { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--color-lime); color: var(--color-olive-950); }
+
+/* Customise: the move and hide tools float on the card's corner, so they never cover its own links. */
+.wcell.editing .wcell-tools { position: absolute; z-index: 6; top: -16px; right: 14px; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #fff; box-shadow: 0 8px 18px -8px rgba(18, 28, 12, .55), 0 0 0 1px rgba(20, 30, 12, .08); }
+.wcell.editing a { pointer-events: none; }
+
+/* Widgets arrive one after another and lift a little when pointed at; pressed ones sink. */
+@media (prefers-reduced-motion: no-preference) {
+  .wgrid > .wcell { animation: rise .6s var(--spring) both; }
+  .wgrid > .wcell:nth-child(2) { animation-delay: 50ms; } .wgrid > .wcell:nth-child(3) { animation-delay: 100ms; } .wgrid > .wcell:nth-child(4) { animation-delay: 150ms; }
+  .wgrid > .wcell:nth-child(5) { animation-delay: 200ms; } .wgrid > .wcell:nth-child(6) { animation-delay: 250ms; } .wgrid > .wcell:nth-child(n+7) { animation-delay: 300ms; }
+}
+@media (hover: hover) { .wcell:not(.editing) > * { transition: transform .35s var(--spring), box-shadow .35s; } .wcell:not(.editing):hover > * { transform: translateY(-3px); } }
+.wcell:not(.editing):active > * { transform: scale(.985); }
