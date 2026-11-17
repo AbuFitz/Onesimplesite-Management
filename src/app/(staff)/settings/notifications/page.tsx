@@ -30,9 +30,12 @@ export default async function Notifications({ searchParams }: { searchParams: Pr
           <section key={who} className="card-section" aria-labelledby={`n-${who}`}>
             <h2 id={`n-${who}`}>{title}</h2><p className="mb-3 text-sm text-ink/70">{about}</p>
             <ul className="divide-y divide-[var(--card-rule)]">{NOTIFY_EVENTS.filter((e) => e.who === who).map((e) => (
-              <li key={e.topic} className="grid gap-2 py-3 sm:grid-cols-[1fr_15rem] sm:items-center">
-                <div><label className="font-semibold" htmlFor={e.topic}>{e.label}</label><p className="text-[13px] text-ink/65">{e.help}</p></div>
-                <select id={e.topic} name={e.topic} className="field" defaultValue={prefs[e.topic] && e.modes.includes(prefs[e.topic]!) ? prefs[e.topic] : e.default}>{e.modes.map((m) => <option key={m} value={m}>{DELIVERY_LABEL[m]}{m === e.default ? " (recommended)" : ""}</option>)}</select>
+              <li key={e.topic} className="grid gap-3 py-4">
+                <div><p className="font-semibold" id={`l-${e.topic}`}>{e.label}</p><p className="text-[13px] text-ink/65">{e.help}</p></div>
+                <div className="rchips !mt-0" role="radiogroup" aria-labelledby={`l-${e.topic}`}>{e.modes.map((m) => {
+                  const cur = prefs[e.topic] && e.modes.includes(prefs[e.topic]!) ? prefs[e.topic] : e.default;
+                  return <label key={m} className="rchip"><input type="radio" name={e.topic} value={m} defaultChecked={m === cur} /><span>{DELIVERY_LABEL[m]}{m === e.default && <em className="rchip-rec">Recommended</em>}</span></label>;
+                })}</div>
               </li>))}</ul>
           </section>
         ))}

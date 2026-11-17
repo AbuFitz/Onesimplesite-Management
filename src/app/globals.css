@@ -729,3 +729,11 @@ html[data-kb] dialog.rec-dlg .evf { max-height: calc(var(--vvh, 100dvh) - 16px);
 html[data-kb] .sign-aside, html[data-kb] .sheet { max-height: calc(var(--vvh, 100dvh) - 16px); }
 html[data-kb] .sheet-wrap { align-items: flex-start; padding-top: calc(var(--vvt, 0px) + 8px); }
 html[data-kb] .sign-foot, html[data-kb] .evf-foot { padding-bottom: 12px; }
+
+/* Empty states: calm, with a soft icon, never a blank page. */
+.empty { display: grid; justify-items: center; gap: 4px; padding: 44px 24px; margin: 8px 0; text-align: center; border-radius: 30px; background: rgba(255, 255, 255, .55); border: 1px dashed rgba(20, 30, 12, .16); }
+.empty-ico { display: grid; place-items: center; width: 60px; height: 60px; margin-bottom: 8px; border-radius: 50%; color: var(--color-olive-700); background: var(--color-lime); box-shadow: 0 0 0 8px rgba(214, 232, 167, .35); }
+.empty-t { font-size: 17px; font-weight: 500; letter-spacing: -.015em; }
+.empty-d { max-width: 34ch; font-size: 14.5px; line-height: 1.45; color: var(--color-muted); }
+.rchip-rec { margin-left: 8px; font-style: normal; font-size: 11.5px; opacity: .7; }
+.rchip input:checked + span .rchip-rec { opacity: .85; }

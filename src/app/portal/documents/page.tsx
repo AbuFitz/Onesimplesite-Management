@@ -9,7 +9,7 @@ export default async function PortalDocuments() {
   return (
     <>
       <h1 className="mb-6">Documents</h1>
-      {rows.length === 0 ? <Empty title="No signed documents yet" /> : (
+      {rows.length === 0 ? <Empty title="No signed documents yet">Agreements you sign appear here, each with a PDF copy you can download.</Empty> : (
         <ul>{rows.map((r) => <li key={r.id} className="row flex flex-wrap items-center justify-between gap-3 py-4"><span><strong>{r.title}</strong><span className="block text-sm text-muted">{r.reference} · signed {r.completedAt && fmtDateTime(r.completedAt)}</span></span><span className="flex items-center gap-3"><Status label="signed" kind="good" /><a className="btn btn-quiet" href={`/documents/${r.id}/pdf`}>Download PDF</a></span></li>)}</ul>
       )}
     </>

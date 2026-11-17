@@ -86,8 +86,13 @@ export function ErrorSummary({ message }: { message?: string }) {
   return <p role="alert" tabIndex={-1} className="mb-5 rounded-lg bg-[#fdecea] px-4 py-3 text-sm text-[#7d1f16]"><strong className="font-semibold">Couldn't save.</strong> {message}</p>;
 }
 
-export function Empty({ title, children }: { title: string; children?: ReactNode }) {
-  return <div className="py-14 text-center"><p className="font-semibold">{title}</p>{children && <div className="mt-1 text-sm text-muted">{children}</div>}</div>;
+export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="empty">
+      <span className="empty-ico" aria-hidden><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg></span>
+      <p className="empty-t">{title}</p>{children && <div className="empty-d">{children}</div>}{action && <div className="mt-4">{action}</div>}
+    </div>
+  );
 }
 
 export function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
