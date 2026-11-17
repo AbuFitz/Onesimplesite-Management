@@ -25,7 +25,7 @@ export function MobileDock({ items, actions, searchHref, hideFrom = "lg" }: { it
       <nav className={`mdock ${hideFrom === "sm" ? "sm-hide" : ""}`} aria-label="Primary">
         <div className="mdock-row">
           <button type="button" className="mdock-orb" aria-haspopup="dialog" aria-expanded={pick} aria-label={`Go to another page. You are on ${current.label}`} onClick={() => setPick(true)}><Cur size={21} aria-hidden /></button>
-          <Link href={searchHref} className="mdock-search"><Search size={16} aria-hidden /> <span>{current.label}</span><em>Search or jump to…</em></Link>
+          <Link href={searchHref} className="mdock-search" aria-label={`${current.label}. Search or jump to`}><span>{current.label}</span><em>Search or jump to…</em><i><Search size={17} aria-hidden /></i></Link>
           {actions.length > 0 && <button type="button" className="mdock-plus" aria-label="Add something new" onClick={() => setPlus(true)}><Plus size={20} aria-hidden /></button>}
         </div>
         {actions.length > 0 && (

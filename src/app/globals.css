@@ -223,9 +223,9 @@ dialog.dlg::backdrop { background: rgba(22, 29, 11, .4); -webkit-backdrop-filter
 .wdg-f { padding: .6rem 1.1rem; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--color-muted); }
 .wdg-state { display: grid; gap: .25rem; place-content: center; justify-items: center; text-align: center; min-height: 7rem; padding: 1rem; color: var(--color-muted); font-size: 13.5px; }
 .wdg-state b { color: var(--color-ink); font-weight: 550; font-size: 14px; }
-.wdg-range { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(30, 40, 15, .07); }
+.wdg-range { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(30, 40, 15, .08); box-shadow: inset 0 1px 2px rgba(30, 40, 15, .08); }
 .wdg-range a { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 550; color: var(--color-muted); text-decoration: none; min-height: 26px; display: grid; place-items: center; }
-.wdg-range a[aria-current="true"] { background: var(--color-ink); color: #fff; }
+.wdg-range a[aria-current="true"] { background: #fff; color: var(--color-ink); box-shadow: 0 1px 0 #fff inset, 0 4px 10px -4px rgba(22, 29, 11, .35); }
 
 a.kpi { height: auto; gap: .15rem; padding: 1rem 1.1rem .9rem; text-decoration: none; transition: transform .15s var(--ease), box-shadow .15s; }
 a.kpi:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 18px 36px -18px rgba(35, 47, 16, .38); }
@@ -294,19 +294,20 @@ a.kpi:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255, 255, 25
 .chg-offer { display: block; margin: .5rem 0 0; padding: .5rem .8rem; border-radius: 14px; background: var(--color-mint); font-size: 13px; line-height: 1.4; font-weight: 500; }
 
 /* ---- Phone dock, switcher and sheets (iOS-like: blur, springy easing, big touch targets) ---- */
-:root { --spring: cubic-bezier(.32, 1.25, .5, 1); --dock-h: 7.75rem; }
-.mdock { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; gap: 10px; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); border-radius: 30px 30px 0 0; background: linear-gradient(180deg, #1b2210, #0f1309); box-shadow: 0 -24px 50px -24px rgba(22, 29, 11, .6), 0 1px 0 rgba(255, 255, 255, .07) inset; }
-.mdock-row { display: flex; align-items: center; gap: 10px; }
-.mdock-orb { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; background: var(--color-lime); color: var(--color-olive-950); box-shadow: 0 0 0 4px rgba(214, 232, 167, .12); transition: transform .25s var(--spring); }
+:root { --spring: cubic-bezier(.32, 1.25, .5, 1); --dock-h: 8.25rem; }
+.mdock { position: fixed; z-index: 40; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 8px; padding: 8px; border-radius: 38px; background: linear-gradient(160deg, rgba(34, 46, 26, .78), rgba(14, 19, 10, .84)); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 1px 0 rgba(255, 255, 255, .14) inset, 0 -1px 0 rgba(0, 0, 0, .3) inset, 0 2px 4px rgba(0, 0, 0, .28), 0 26px 46px -16px rgba(10, 14, 6, .75); }
+.mdock-row { display: flex; align-items: center; gap: 8px; }
+.mdock-orb { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .08); color: #e8eedc; transition: transform .25s var(--spring), background-color .2s; }
 .mdock-orb:active { transform: scale(.9); }
-.mdock-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px; border-radius: 999px; background: rgba(255, 255, 255, .08); color: #e8eedc; text-decoration: none; font-size: 14px; font-weight: 550; }
+.mdock-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 5px 0 18px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .08); color: #fff; text-decoration: none; font-size: 15px; font-weight: 550; }
 .mdock-search span { white-space: nowrap; }
-.mdock-search em { margin-left: auto; padding-left: 8px; font-style: normal; font-weight: 400; color: #8a9578; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mdock-plus { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; background: rgba(255, 255, 255, .1); color: #fff; transition: transform .25s var(--spring); }
+.mdock-search em { margin-left: auto; min-width: 0; font-style: normal; font-weight: 400; font-size: 13px; color: #9aa68a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mdock-search i { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: var(--color-olive-950); box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .5); }
+.mdock-plus { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(255, 255, 255, .16); background: var(--color-lime); color: var(--color-olive-950); transition: transform .25s var(--spring); }
 .mdock-plus:active { transform: scale(.9) rotate(90deg); }
-.mdock-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; margin: 0 -12px; padding: 0 12px; }
+.mdock-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; margin: 0 -8px; padding: 0 8px 2px; }
 .mdock-chips::-webkit-scrollbar { display: none; }
-.mdock-chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: #cdd6bc; font-size: 13.5px; text-decoration: none; white-space: nowrap; }
+.mdock-chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .06); color: #d7dfc7; font-size: 13.5px; text-decoration: none; white-space: nowrap; }
 .mdock-chip:active { background: rgba(255, 255, 255, .12); }
 @media (min-width: 1024px) { .mdock { display: none; } }
 
@@ -352,3 +353,18 @@ a.kpi:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255, 255, 25
 .mdock { transition: opacity .2s var(--ease), transform .3s var(--ease); }
 body:has(.switcher) .mdock, body:has(.sheet-wrap) .mdock { opacity: 0; transform: translateY(12px); pointer-events: none; }
 body:has(.switcher) [role="region"][aria-label^="Sugg"], body:has(.sheet-wrap) [role="region"][aria-label^="Sugg"] { opacity: 0; pointer-events: none; }
+
+/* ---- Dial status panel: a black floating card with radial gauges (from the DINEOS reference) ---- */
+.dpanel { height: 100%; padding: 16px; border-radius: 34px; color: #fff; background: linear-gradient(165deg, #131a0d, #070a04); box-shadow: 0 1px 0 rgba(255, 255, 255, .1) inset, 0 26px 44px -22px rgba(10, 14, 6, .8); }
+.dpanel header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.dpanel h2 { flex: 1; font-size: 15px; font-weight: 450; letter-spacing: -.01em; color: #e8eedc; }
+.dp-chip { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(255, 255, 255, .2); color: #e8eedc; }
+.dp-go { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #0c1007; transition: transform .25s var(--spring); }
+.dp-go:hover { transform: translate(2px, -2px); }
+.dp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dial { position: relative; display: grid; justify-items: center; gap: 4px; padding: 12px 8px 10px; border-radius: 26px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .06); }
+.dial b { font-family: var(--font-display); font-size: 26px; font-weight: 300; letter-spacing: -.04em; line-height: 1; }
+.dial b small { font-size: 13px; font-weight: 400; color: #9aa68a; margin-left: 1px; }
+.dial svg { display: block; max-width: 100%; height: auto; }
+.dial span { font-size: 12.5px; color: #cfd8bf; text-align: center; }
+.dial span em { font-style: normal; color: #8d9a7c; }

@@ -11,6 +11,7 @@ import { Donut, Ring, CHART } from "@/components/charts";
 import { Widget, SeeAll, RangeTabs, Kpi } from "@/components/widgets/widget";
 import { Series, Funnel, Delta } from "@/components/widgets/spark";
 import { WidgetGrid, type GridWidget } from "@/components/widgets/grid";
+import { Dial, DialPanel } from "@/components/widgets/dial";
 import { LiveRefresh } from "@/components/live-refresh";
 import { Status, fmtDateTime, fmtDate, timeAgo } from "@/components/ui";
 
@@ -50,6 +51,11 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
       { id: "k-sign", title: "Waiting to sign", size: "s", node: <Kpi label="Waiting to sign" tone="amber" value={d.awaiting} href="/agreements?show=awaiting" note={`${d.pipeline.contract_pending ?? 0} in the pipeline`} spark={t.signed.series.map((p) => p.value)} sparkLabel={`Agreements signed, ${per}`} /> },
       { id: "k-collect", title: "To collect", size: "s", node: <Kpi label="To collect" tone="rose" value={gbp(d.money.dueMinor)} href={d.money.pastDue && !d.money.dueCount ? "/payments?show=failed" : "/payments?show=due"} note={d.money.pastDue ? `${d.money.pastDue} failed · ${d.money.dueCount} due` : `${d.money.dueCount} unpaid`} /> },
       { id: "k-plans", title: "Monthly plans", size: "s", node: <Kpi label="Monthly plans" tone="violet" value={gbpShort(Math.round(d.money.monthlyMinor / 100))} href="/payments?show=plans" note={`${d.money.plans} active ${d.money.plans === 1 ? "plan" : "plans"}`} /> },
+      { id: "w-status", title: "Ticket status", size: "m", node: (() => { const all = Math.max(1, d.tickets.open + d.tickets.waiting + d.tickets.done); return (
+        <DialPanel title="Ticket status" icon={Ticket} href="/tickets?tab=all">
+          <Dial value={d.tickets.open / all} label="Needs us" count={d.tickets.open} accent="#d6e8a7" />
+          <Dial value={d.tickets.waiting / all} label="Waiting" count={d.tickets.waiting} accent="#a0b2c8" />
+        </DialPanel>); })() },
       { id: "w-tickets", title: "Tickets right now", size: "m", node: (
         <Widget title="Tickets right now" icon={Ticket} action={<SeeAll href="/tickets?tab=all">See them</SeeAll>} empty={d.tickets.open + d.tickets.waiting + d.tickets.done === 0 ? { title: "No tickets yet", hint: "They appear here when a customer asks for help." } : null}>
           <Donut slices={[{ label: "Needs us", value: d.tickets.open, color: CHART.green }, { label: "Waiting on customer", value: d.tickets.waiting, color: CHART.amber }, { label: "Done", value: d.tickets.done, color: CHART.teal }]} centre={<div><p className="font-[family-name:var(--font-display)] text-3xl font-medium leading-none">{d.tickets.open + d.tickets.waiting}</p><p className="text-xs text-muted">open</p></div>} />
