@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { can } from "@/modules/identity/permissions";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { projectWhere, STAGE_GUIDE, typeOf } from "@/modules/projects/service";
@@ -11,6 +13,7 @@ const FILTERS: [string, string][] = [["", "All"], ["planned", "Planning"], ["awa
 
 export default async function Projects({ searchParams }: { searchParams: Promise<{ stage?: string }> }) {
   const ctx = await requireStaff();
+  if (!can(ctx.role, "project.read_all") && !can(ctx.role, "project.read_assigned")) redirect("/denied");
   const { stage } = await searchParams;
   const rows = await db.project.findMany({ where: { ...projectWhere(ctx), ...(stage ? { stage: stage as never } : { stage: { not: "cancelled" as never } }) }, include: { customer: { select: { displayName: true } }, _count: { select: { tasks: true } } }, orderBy: { updatedAt: "desc" }, take: 100 });
   const doneBy = new Map((await db.task.groupBy({ by: ["projectId"], where: { projectId: { in: rows.map((r) => r.id) }, doneAt: { not: null } }, _count: true })).map((t) => [t.projectId, t._count]));

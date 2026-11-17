@@ -1,6 +1,6 @@
 import { ImageLink } from "@/components/lightbox";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Check, ListChecks, Files as FilesIcon, Ticket, Package, Megaphone, Sparkles, ArrowRight, Folder, Download, Eye, EyeOff, Trash2, Paperclip, CircleDot, Circle } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
@@ -22,6 +22,7 @@ const EXTRA = "image/png,image/jpeg,image/gif,image/webp,application/pdf,applica
 
 export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
   const ctx = await requireStaff();
+  if (!can(ctx.role, "project.read_all") && !can(ctx.role, "project.read_assigned")) redirect("/denied");
   const { id } = await params;
   const { error } = await searchParams;
   const p = await getProject(ctx, id);
