@@ -46,7 +46,7 @@ export function Series({ data, color = "#4a6024", height = 150, format = (n: num
           </div>
         ))}
       </div>
-      <figcaption>{data.map((d) => <span key={d.label}>{d.label}</span>)}</figcaption>
+      <figcaption>{data.map((d, i) => { const step = data.length > 8 ? 3 : 1; return <span key={d.label + i}>{i % step === 0 ? d.label : ""}</span>; })}</figcaption>
     </figure>
   );
 }

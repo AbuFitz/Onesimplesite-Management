@@ -847,3 +847,4 @@ body:has(.wz) .sb { display: none; }
 .composer { position: sticky; bottom: calc(var(--dock-h) + .25rem); z-index: 6; padding-top: 8px; }
 html[data-kb] .composer { bottom: 6px; }
 @media (min-width: 1024px) { .composer { bottom: .75rem; } }
+.series .bars + figcaption span { min-width: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; }

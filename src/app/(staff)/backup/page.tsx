@@ -13,7 +13,7 @@ export default async function Backup() {
   ]);
   return (
     <>
-      <RecordHeader title="Backup" meta="Download a copy of your business data" status={<Status label={due ? "backup due" : "up to date"} kind={due ? "warn" : "good"} />} />
+      <RecordHeader title="Backup" meta="Download a copy of your company data" status={<Status label={due ? "backup due" : "up to date"} kind={due ? "warn" : "good"} />} />
       <section className="card-section max-w-2xl space-y-6">
         <p>{last ? <>Last backup: <strong>{fmtDateTime(last.createdAt)}</strong> by {last.actorLabel}.</> : <strong>No backup has been taken yet.</strong>} Aim for once a week.</p>
         <p className="text-sm text-muted">Currently holds {customers} customer(s), {contracts} contract(s) and {signed} signed PDF(s).</p>
