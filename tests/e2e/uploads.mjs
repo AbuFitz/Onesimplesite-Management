@@ -1,13 +1,14 @@
 // Customer sends material into a project without a ticket; pictures and logos show on the other side.
 // Usage: node tests/e2e/uploads.mjs <projectId> <customerId>   (the project must have open "what we need" requests)
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
+import { launch, M, P, PW, ids } from "./lib/target.mjs";
 import { writeFileSync } from "node:fs";
-const M = "http://manage.localhost:3000", P = "http://portal.localhost:3000", PROJECT = process.argv[2], CUSTOMER = process.argv[3];
+const found = process.argv[2] ? {} : await ids();
+const PROJECT = process.argv[2] ?? found.project, CUSTOMER = process.argv[3] ?? found.customer;
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"); writeFileSync("/tmp/pixel.png", png);
-const browser = await chromium.launch();
-async function login(origin, email, vp = { width: 1280, height: 900 }) { const ctx = await browser.newContext({ viewport: vp }); const p = await ctx.newPage(); await p.goto(`${origin}/login`); await p.fill("#email", email); await p.fill("#password", "demo-password-123"); await p.click("button:has-text('Sign in')"); await p.waitForURL((u) => !u.pathname.startsWith("/login")); return p; }
+const browser = await launch();
+async function login(origin, email, vp = { width: 1280, height: 900 }) { const ctx = await browser.newContext({ viewport: vp }); const p = await ctx.newPage(); await p.goto(`${origin}/login`); await p.fill("#email", email); await p.fill("#password", PW); await p.click("button:has-text('Sign in')"); await p.waitForURL((u) => !u.pathname.startsWith("/login")); return p; }
 const cl = await login(P, "client.b@example.test", { width: 390, height: 844 });
 await cl.goto(`${P}/projects/${PROJECT}`);
 ok(await cl.locator("text=What we need from you").count() > 0, "customer sees what we need from them");

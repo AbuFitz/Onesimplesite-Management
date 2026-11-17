@@ -1,12 +1,12 @@
 // Payments page, clickable home widgets, and the locked final payment never shown as "Due" to the team.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
-const M = "http://manage.localhost:3000";
+import { launch, M, P, PW } from "./lib/target.mjs";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
-const b = await chromium.launch();
+const b = await launch();
 for (const [name, vp] of [["desktop", { width: 1366, height: 860 }], ["phone", { width: 390, height: 844 }]]) {
   const ctx = await b.newContext({ viewport: vp }); const pg = await ctx.newPage();
-  await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
   // home widgets open what is behind them
   await pg.goto(`${M}/`); await pg.waitForLoadState("networkidle");
   for (const [label, re] of [["To collect", /\/payments\?show=(due|failed)/], ["Monthly plans", /\/payments\?show=plans/], ["Waiting to sign", /\/agreements\?show=awaiting/], ["Needs us", /\/tickets$/]]) {

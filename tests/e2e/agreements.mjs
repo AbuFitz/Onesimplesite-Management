@@ -1,20 +1,15 @@
 // Agreements area: separate from tickets, one open agreement per company, works on a phone.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
+import { launch, M, P, PW, ensurePlan } from "./lib/target.mjs";
 import { execSync } from "node:child_process";
 import { writeFileSync, rmSync } from "node:fs";
-const M = "http://manage.localhost:3000";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
-// the demo workspace needs a care plan to choose from, as the live one has
-writeFileSync("seed-plan.tmp.ts", `import { db } from "@/lib/db";
-const m = await db.staffMembership.findFirstOrThrow({ where: { email: "demo.owner@example.test" } });
-if (!(await db.servicePlan.findFirst({ where: { workspaceId: m.workspaceId, active: true } }))) await db.servicePlan.create({ data: { workspaceId: m.workspaceId, key: "standard", name: "Standard Care Plan", kind: "standard", monthlyMinor: 2900 } });
-process.exit(0);`);
-execSync("npx tsx --env-file=.env seed-plan.tmp.ts", { stdio: "ignore" }); rmSync("seed-plan.tmp.ts");
-const b = await chromium.launch();
+await ensurePlan();   // the demo workspace needs a care plan to choose from, as the live one has
+const b = await launch();
 const ctx = await b.newContext({ viewport: { width: 375, height: 800 } });
 const pg = await ctx.newPage();
-await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
 await pg.goto(`${M}/agreements`); await pg.waitForLoadState("networkidle");
 ok(await pg.locator("h1:has-text('Agreements')").count() === 1, "agreements page loads");
 ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "no horizontal overflow on a phone");

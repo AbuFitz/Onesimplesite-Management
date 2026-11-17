@@ -1,22 +1,20 @@
 // Full journey in a real browser: Settings -> Terms -> customer details -> proposal with requirements ->
 // ONE agreement email -> customer signs on a phone -> confirmation emails -> portal. Run against `next start`.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
+import { launch, M, P, PW, drain, sink, clearSink, resetProfile } from "./lib/target.mjs";
 import { execSync } from "node:child_process";
 import { readdirSync, readFileSync, rmSync } from "node:fs";
 
-const M = "http://manage.localhost:3000", P = "http://portal.localhost:3000";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
 const get = (page, path) => page.evaluate(async (u) => { const r = await fetch(u); const b = new Uint8Array(await r.arrayBuffer()); return { status: r.status, head: String.fromCharCode(...b.slice(0, 5)) }; }, path);
-const drain = () => execSync(`npx tsx --env-file=.env -e "import('./src/modules/outbox/drain.ts').then(m=>m.drainOutbox(200)).then(()=>process.exit(0))"`, { stdio: "ignore" });
-const sink = () => readdirSync(".mail-sink").filter((f) => f.endsWith(".json")).map((f) => JSON.parse(readFileSync(`.mail-sink/${f}`, "utf8")));
-rmSync(".mail-sink", { recursive: true, force: true });
+await clearSink();
 
-const browser = await chromium.launch();
+const browser = await launch();
 async function login(ctx, origin, email) {
   const page = await ctx.newPage();
   await page.goto(`${origin}/login`);
-  await page.fill("#email", email); await page.fill("#password", "demo-password-123");
+  await page.fill("#email", email); await page.fill("#password", PW);
   await page.click("button:has-text('Sign in')");
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 15000 });
   return page;
@@ -25,7 +23,7 @@ const stamp = Date.now(), name = `E2E Bakery ${stamp}`, title = `Website with bo
 const staff = await login(await browser.newContext({ viewport: { width: 1280, height: 900 } }), M, "demo.owner@example.test");
 
 // 0. My account: first-time profile banner, job title, signature with live preview
-execSync(`npx tsx --env-file=.env -e "import('./src/lib/db.ts').then(({db})=>db.staffMembership.updateMany({where:{email:'demo.owner@example.test'},data:{jobTitle:null,signature:null}})).then(()=>process.exit(0))"`, { stdio: "ignore" });
+await resetProfile();
 await staff.goto(`${M}/`);
 ok((await staff.locator("a[href='/account']").first().innerText()).includes("Finish setting up your profile"), "new members see the finish-your-profile banner");
 await staff.click("a:has-text('Finish setting up your profile')"); await staff.waitForURL(/\/account/);
@@ -131,10 +129,10 @@ const proposalUrl = staff.url();
 ok(await staff.locator("button:has-text('Send for signature')").isEnabled(), "send is enabled once company, customer and terms are ready");
 await staff.fill("#sn", "Casey Morgan");
 await staff.click("button:has-text('Send for signature')"); await staff.waitForURL(/sent=1/);
-drain();
+await drain();
 
 // 4. Exactly one customer email
-const mails = sink().filter((m) => m.to === email);
+const mails = (await sink()).filter((m) => m.to === email);
 ok(mails.length === 1 && mails[0].subject.startsWith("Please review and sign"), "customer receives exactly ONE email (the agreement), no separate proposal email");
 const link = mails[0].text.match(/https?:\/\/\S+\/s\/\S+/)[0];
 
@@ -163,8 +161,8 @@ await phone.click("button:has-text('Sign and submit')"); await phone.waitForURL(
 ok(true, "customer signed with one click on a phone-width screen");
 
 // 6. Everything follows automatically
-drain();
-const all = sink();
+await drain();
+const all = await sink();
 const conf = all.find((m) => m.subject.startsWith("Signed:") && m.to === email);
 const notice = all.find((m) => m.subject.startsWith("New signature") && m.text.includes(email));
 ok(conf?.attachments?.length === 1, "customer gets confirmation with the signed PDF");
@@ -180,8 +178,8 @@ await staff.goto(`${M}/projects`);
 ok(await staff.locator(`text=${title}`).count() === 1, "exactly one project created");
 
 // 7. Portal invitation -> signed document visible only to that customer
-await staff.goto(`${customerUrl}?tab=people`); await staff.click("summary:has-text('Manage')"); await staff.click("button:has-text('Invite to the client portal')"); await staff.waitForSelector("text=Invitation sent."); drain();
-const inv = sink().find((m) => m.to === email && m.subject.includes("invited you"));
+await staff.goto(`${customerUrl}?tab=people`); await staff.click("summary:has-text('Manage')"); await staff.click("button:has-text('Invite to the client portal')"); await staff.waitForSelector("text=Invitation sent."); await drain();
+const inv = (await sink()).find((m) => m.to === email && m.subject.includes("invited you"));
 const cl = await (await browser.newContext()).newPage();
 await cl.goto(inv.text.match(/https?:\/\/\S+\/invite\/\S+/)[0]);
 ok(await cl.locator("#name").count() === 0, "invited customer is not asked for their name again"); ok((await cl.locator("main").innerText()).includes("Casey Morgan"), "invitation shows the name we already have"); await cl.fill("#password", "a-long-test-password-1"); await cl.click("button:has-text('Create account')"); await cl.waitForURL(/login/);

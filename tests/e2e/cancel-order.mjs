@@ -1,27 +1,13 @@
 // Calling off a signed order: gone from the open lists, projects and the customer's billing, shown as Cancelled, never as Signed.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
+import { launch, M, P, PW, seedOrder } from "./lib/target.mjs";
 import { execSync } from "node:child_process";
 import { writeFileSync, rmSync } from "node:fs";
-const M = "http://manage.localhost:3000", P = "http://portal.localhost:3000";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
-writeFileSync("seed-cancel.tmp.ts", `
-import { db } from "@/lib/db";
-import { runCompletionWorkflow } from "@/modules/contracts/service";
-const u = await db.user.findFirstOrThrow({ where: { email: "client.b@example.test" } });
-const m = await db.clientMembership.findFirstOrThrow({ where: { userId: u.id } });
-const cu = await db.customer.findUniqueOrThrow({ where: { id: m.customerId } });
-const n = Date.now() % 1000000;
-const p = await db.proposal.create({ data: { workspaceId: cu.workspaceId, customerId: cu.id, reference: "OSS-QT-CX-" + n, title: "Cancel test " + n, currentVersion: 1, status: "accepted" } });
-const v = await db.proposalVersion.create({ data: { workspaceId: cu.workspaceId, proposalId: p.id, number: 1, scope: "x", terms: "", currency: "GBP", oneOffMinor: 20000, recurringMinor: 0, requirements: { depositPercent: "50" } } });
-const k = await db.contract.create({ data: { workspaceId: cu.workspaceId, customerId: cu.id, reference: "OSS-OF-CX-" + n, title: "Cancel test " + n, status: "completed", scopeSnapshot: "x", oneOffMinor: 20000, recurringMinor: 0, proposalVersionId: v.id, completedAt: new Date() } });
-await db.$transaction((tx) => runCompletionWorkflow(tx, k.id));
-console.log("CONTRACT=" + k.id + " TITLE=" + k.title);
-process.exit(0);`);
-const out = execSync("npx tsx --env-file=.env seed-cancel.tmp.ts 2>&1", { encoding: "utf8" }); rmSync("seed-cancel.tmp.ts");
-const id = out.match(/CONTRACT=([0-9a-f-]{36})/)[1], title = out.match(/TITLE=(.+)/)[1].trim();
-const b = await chromium.launch();
-async function login(origin, email) { const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage(); await p.goto(`${origin}/login`); await p.fill("#email", email); await p.fill("#password", "demo-password-123"); await p.click("button:has-text('Sign in')"); await p.waitForURL((u) => !u.pathname.startsWith("/login")); return p; }
+const { contract: id, title } = await seedOrder("cancel");
+const b = await launch();
+async function login(origin, email) { const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage(); await p.goto(`${origin}/login`); await p.fill("#email", email); await p.fill("#password", PW); await p.click("button:has-text('Sign in')"); await p.waitForURL((u) => !u.pathname.startsWith("/login")); return p; }
 const st = await login(M, "demo.owner@example.test"), cl = await login(P, "client.b@example.test");
 const listText = async (path) => { await st.goto(`${M}${path}`); await st.waitForLoadState("networkidle"); return st.locator("main").innerText(); };
 // before: it is a signed order, with a project, and the customer can see its deposit

@@ -1,14 +1,14 @@
 // Settings: grouped menu on desktop, scrolling pills on a phone, passkey QR, no overflow.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
-const M = "http://manage.localhost:3000";
+import { launch, M, P, PW } from "./lib/target.mjs";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
 const shots = process.argv[2];
-const b = await chromium.launch();
+const b = await launch();
 async function run(name, viewport) {
   const ctx = await b.newContext({ viewport, deviceScaleFactor: 1 });
   const pg = await ctx.newPage();
-  await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
   for (const [path, title] of [["/settings", "Company details"], ["/settings/plans", "Plans and details"], ["/settings/legal", "Legal documents"], ["/settings/emails", "Emails"], ["/settings/notifications", "Notifications"], ["/settings/security", "Sign-in security"]]) {
     await pg.goto(`${M}${path}`); await pg.waitForLoadState("networkidle");
     ok((await pg.locator("h1").first().innerText()).trim() === title, `${name}: ${path} is titled ${title}`);

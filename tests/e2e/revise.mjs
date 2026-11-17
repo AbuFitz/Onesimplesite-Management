@@ -1,10 +1,10 @@
 // Changing a sent agreement: the new draft stays findable, and old withdrawn copies don't clutter the list.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
-const M = "http://manage.localhost:3000";
+import { launch, M, P, PW } from "./lib/target.mjs";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
-const b = await chromium.launch(); const pg = await b.newPage();
-await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+const b = await launch(); const pg = await b.newPage();
+await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
 await pg.goto(`${M}/agreements?show=awaiting`);
 const href = await pg.locator("ul a[href^='/contracts/']").first().getAttribute("href");
 await pg.goto(`${M}${href}`); await pg.click("button:has-text('Change it and send a new version')"); await pg.waitForURL(/\/proposals\//);

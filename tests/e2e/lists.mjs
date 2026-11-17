@@ -1,10 +1,10 @@
 // Filters are dropdowns that apply themselves; a ticket's status can be changed from its header; company status and archive work.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
-const M = "http://manage.localhost:3000";
+import { launch, M, P, PW } from "./lib/target.mjs";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
-const browser = await chromium.launch(); const pg = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
-await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+const browser = await launch(); const pg = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
 await pg.goto(`${M}/tickets`); await pg.selectOption("#tab", "done"); await pg.waitForURL(/tab=done/);
 ok(true, "choosing a status in the tickets dropdown filters straight away");
 await pg.selectOption("#type", "support"); await pg.waitForURL(/type=support/); ok(true, "the type dropdown filters too");

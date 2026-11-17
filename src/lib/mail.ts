@@ -21,7 +21,9 @@ export async function sendMail(m: Mail, idempotencyKey?: string) {
     const id = randomUUID();
     const { attachments, ...rest } = m;
     for (const a of attachments ?? []) await writeFile(path.join(dir, `${id}-${a.filename}`), a.content);
-    await writeFile(path.join(dir, `${id}.json`), JSON.stringify({ ...rest, attachments: attachments?.map((a) => ({ filename: a.filename, bytes: a.content.length })), idempotencyKey }, null, 2));
+    const record = { ...rest, attachments: attachments?.map((a) => ({ filename: a.filename, bytes: a.content.length })), idempotencyKey };
+    await writeFile(path.join(dir, `${id}.json`), JSON.stringify(record, null, 2));
+    if (process.env.VERCEL && e.APP_ENV === "staging") await (await import("./dev-mail")).captureDevMail(record);   // the dev site: also keep it where tests can read it
     return { id, transport: "sink" as const };
   }
   const allow = (e.MAIL_ALLOWLIST ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);

@@ -1,14 +1,14 @@
 // Crawls every reachable page in both portals as a signed-in user and reports errors, dead ends and mobile overflow.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
-const M = "http://manage.localhost:3000", P = "http://portal.localhost:3000";
-const browser = await chromium.launch();
+import { launch, M, P, PW } from "./lib/target.mjs";
+
+const browser = await launch();
 async function crawl(origin, email, vp, label) {
   const ctx = await browser.newContext({ viewport: vp, hasTouch: vp.width < 600, isMobile: vp.width < 600 }); const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(`pageerror ${page.url()} ${e.message.slice(0, 120)}`));
   page.on("response", (r) => { if (r.status() >= 500) errors.push(`${r.status()} ${r.url()}`); });
-  await page.goto(`${origin}/login`); await page.fill("#email", email); await page.fill("#password", "demo-password-123"); await page.click("button:has-text('Sign in')");
+  await page.goto(`${origin}/login`); await page.fill("#email", email); await page.fill("#password", PW); await page.click("button:has-text('Sign in')");
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 15000 });
   const seen = new Set(), queue = ["/"], out = [];
   while (queue.length && seen.size < 140) {

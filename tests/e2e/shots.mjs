@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
-const M = "http://manage.localhost:3000", out = process.argv[2];
-const b = await chromium.launch();
+import { launch, M, P, PW } from "./lib/target.mjs";
+const out = process.argv[2];
+const b = await launch();
 for (const [name, vp] of [["d", { width: 1366, height: 860 }], ["p", { width: 390, height: 844 }]]) {
   const ctx = await b.newContext({ viewport: vp }); const pg = await ctx.newPage();
-  await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
   const snap = async (path, n) => { await pg.goto(`${M}${path}`); await pg.waitForLoadState("networkidle"); await pg.waitForTimeout(500); await pg.screenshot({ path: `${out}/${name}-${n}.png`, fullPage: true }); };
   await snap("/customers", "companies");
   await pg.goto(`${M}/customers`); const co = await pg.locator("a[href^='/customers/']:not([href$='new'])").first().getAttribute("href");

@@ -1,12 +1,12 @@
 // The customer's view of the new payment states: deposit, locked final payment, free care plan that ends.
 import { createRequire } from "node:module";
-const { chromium } = createRequire(import.meta.url)("playwright");
-const P = "http://portal.localhost:3000";
+import { launch, M, P, PW } from "./lib/target.mjs";
+
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
-const b = await chromium.launch();
+const b = await launch();
 for (const [name, vp] of [["desktop", { width: 1280, height: 900 }], ["phone", { width: 390, height: 844 }]]) {
   const ctx = await b.newContext({ viewport: vp }); const pg = await ctx.newPage();
-  await pg.goto(`${P}/login`); await pg.fill("#email", "client.b@example.test"); await pg.fill("#password", "demo-password-123"); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await pg.goto(`${P}/login`); await pg.fill("#email", "client.b@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
   const errors = []; pg.on("pageerror", (e) => errors.push(e.message));
   await pg.goto(`${P}/billing`); await pg.waitForLoadState("networkidle");
   const t = await pg.locator("main").innerText();
