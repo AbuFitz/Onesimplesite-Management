@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
 import { drainOutbox } from "@/modules/outbox/drain";
 import { runCompletionWorkflow } from "@/modules/contracts/service";
+import { nextRef } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -59,6 +60,18 @@ export async function POST(req: Request) {
     case "ensure-plan": {
       const m = await db.staffMembership.findFirstOrThrow({ where: { email: "demo.owner@example.test" } });
       if (!(await db.servicePlan.findFirst({ where: { workspaceId: m.workspaceId, active: true } }))) await db.servicePlan.create({ data: { workspaceId: m.workspaceId, key: "standard", name: "Standard Care Plan", kind: "standard", monthlyMinor: 2900 } });
+      return json({ ok: true });
+    }
+    case "ensure-ticket": {   // a support ticket to open, for the ticket-list suites, if the demo company has none
+      const u = await db.user.findFirstOrThrow({ where: { email: "client.b@example.test" } });
+      const m = await db.clientMembership.findFirstOrThrow({ where: { userId: u.id } });
+      const cu = await db.customer.findUniqueOrThrow({ where: { id: m.customerId } });
+      if (!(await db.ticket.findFirst({ where: { workspaceId: cu.workspaceId, category: "support" } }))) {
+        await db.$transaction(async (tx) => {
+          const reference = await nextRef(tx, cu.workspaceId, "ticket");
+          await tx.ticket.create({ data: { workspaceId: cu.workspaceId, customerId: cu.id, reference, kind: "question", category: "support", title: "Demo question about my site", body: "A demo ticket for testing.", source: "portal" } });
+        });
+      }
       return json({ ok: true });
     }
     case "order": return body.kind === "cancel" || body.kind === "setup" ? json(await order(body.kind)) : json({ error: "kind must be cancel or setup" }, 400);

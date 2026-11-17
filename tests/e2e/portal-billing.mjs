@@ -1,8 +1,9 @@
 // The customer's view of the new payment states: deposit, locked final payment, free care plan that ends.
 import { createRequire } from "node:module";
-import { launch, M, P, PW } from "./lib/target.mjs";
+import { launch, M, P, PW, seedOrder } from "./lib/target.mjs";
 
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
+await seedOrder("setup");   // a fresh signed order: deposit due, final payment locked, free month that ends
 const b = await launch();
 for (const [name, vp] of [["desktop", { width: 1280, height: 900 }], ["phone", { width: 390, height: 844 }]]) {
   const ctx = await b.newContext({ viewport: vp }); const pg = await ctx.newPage();

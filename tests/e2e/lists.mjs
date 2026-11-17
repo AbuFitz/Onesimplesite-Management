@@ -1,8 +1,9 @@
 // Filters are dropdowns that apply themselves; a ticket's status can be changed from its header; company status and archive work.
 import { createRequire } from "node:module";
-import { launch, M, P, PW } from "./lib/target.mjs";
+import { launch, M, P, PW, ensureTicket } from "./lib/target.mjs";
 
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
+await ensureTicket();   // the list needs a ticket to open
 const browser = await launch(); const pg = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
 await pg.goto(`${M}/tickets`); await pg.selectOption("#tab", "done"); await pg.waitForURL(/tab=done/);
