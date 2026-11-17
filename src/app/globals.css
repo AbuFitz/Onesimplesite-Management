@@ -737,3 +737,27 @@ html[data-kb] .sign-foot, html[data-kb] .evf-foot { padding-bottom: 12px; }
 .empty-d { max-width: 34ch; font-size: 14.5px; line-height: 1.45; color: var(--color-muted); }
 .rchip-rec { margin-left: 8px; font-style: normal; font-size: 11.5px; opacity: .7; }
 .rchip input:checked + span .rchip-rec { opacity: .85; }
+
+/* Ticket capture. */
+.tc-leg { display: block; margin-bottom: 8px; padding-left: 4px; font-size: 13.5px; font-weight: 500; color: var(--color-muted); }
+.tc-new { margin-top: 10px; }
+.tc-write { display: grid; gap: 6px; }
+.opts { display: grid; gap: 8px; }
+.opt { position: relative; display: block; cursor: pointer; }
+.opt input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.opt > span { display: grid; gap: 2px; padding: 12px 16px; border-radius: 22px; background: rgba(255, 255, 255, .78); border: 1.5px solid rgba(255, 255, 255, .9); box-shadow: 0 8px 16px -14px rgba(18, 28, 12, .5); transition: transform .25s var(--spring), border-color .2s, background-color .2s; }
+.opt b { font-weight: 500; font-size: 15px; } .opt small { font-size: 13px; color: var(--color-muted); }
+.opt:active > span { transform: scale(.98); }
+.opt input:checked + span { border-color: var(--color-olive-700); background: #fff; box-shadow: 0 0 0 3px rgba(74, 96, 36, .16), 0 8px 16px -14px rgba(18, 28, 12, .5); }
+.opt input:focus-visible + span { outline: 2px solid var(--color-olive-700); outline-offset: 2px; }
+.stick-foot { position: sticky; bottom: calc(var(--dock-h) + .25rem); z-index: 5; padding: 10px 0 2px; }
+.stick-foot .btn { width: 100%; min-height: 52px; font-size: 16px; }
+@media (min-width: 1024px) { .stick-foot { position: static; } .stick-foot .btn { width: auto; padding: 0 2rem; } }
+html[data-kb] .stick-foot { bottom: 8px; }
+
+.tc-type { display: grid; justify-items: start; gap: 4px; padding: 16px; border-radius: 26px; text-align: left; cursor: pointer; background: rgba(255, 255, 255, .78); border: 1.5px solid rgba(255, 255, 255, .9); box-shadow: 0 8px 18px -14px rgba(18, 28, 12, .5); transition: transform .25s var(--spring), border-color .2s, box-shadow .2s; }
+.tc-type:active { transform: scale(.98); }
+.tc-type b { font-size: 16px; font-weight: 500; } .tc-type small { font-size: 13.5px; color: var(--color-muted); }
+.tc-ico { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 6px; border-radius: 50%; background: rgba(20, 30, 12, .07); color: var(--color-olive-700); transition: background-color .2s, color .2s; }
+.tc-type.on { border-color: var(--color-olive-700); background: #fff; box-shadow: 0 0 0 3px rgba(74, 96, 36, .16), 0 8px 18px -14px rgba(18, 28, 12, .5); }
+.tc-type.on .tc-ico { background: var(--color-olive-700); color: #fff; }
