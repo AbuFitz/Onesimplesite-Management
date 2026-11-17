@@ -1,7 +1,7 @@
-import Image from "next/image";
 import { viewProposalByToken, ACCEPTANCE_TEXT } from "@/modules/sales/service";
 import { acceptProposalAction } from "@/app/actions/public";
 import { ErrorSummary, money, fmtDate } from "@/components/ui";
+import { SignShell } from "@/components/public-shell";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Proposal", robots: { index: false } };
@@ -12,19 +12,20 @@ export default async function PublicProposal({ params, searchParams }: { params:
   const r = await viewProposalByToken(token);
   if (!r.ok) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={160} height={32} />
-        <h1 className="mt-8 text-[22px]">This link is no longer available</h1>
-        <p className="mt-2 text-muted">It may have expired, been replaced by a newer version, or already been used. Please contact OneSimpleSite and we will send a fresh link.</p>
-      </main>
+      <SignShell>
+        <div className="done-card mx-auto max-w-xl !text-left">
+          <h1 className="text-2xl font-light tracking-tight">This link is no longer available</h1>
+          <p className="mt-2 text-ink-2">It may have expired, been replaced by a newer version, or already been used. Please contact OneSimpleSite and we will send a fresh link.</p>
+        </div>
+      </SignShell>
     );
   }
   const v = r.version;
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 pb-32">
-      <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={160} height={32} />
-      <p className="mt-8 text-sm text-muted">Proposal for {v.proposal.customer.displayName} · version {v.number}</p>
-      <h1 className="mb-6">{v.proposal.title}</h1>
+    <SignShell>
+    <div className="done-card mx-auto max-w-2xl !text-left">
+      <p className="text-sm text-muted">Proposal for {v.proposal.customer.displayName} · version {v.number}</p>
+      <h1 className="mb-6 text-[28px] font-light tracking-tight">{v.proposal.title}</h1>
       <ErrorSummary message={error} />
       <div className="whitespace-pre-wrap">{v.scope}</div>
       <h2 className="mt-8 mb-2">Pricing</h2>
@@ -40,6 +41,7 @@ export default async function PublicProposal({ params, searchParams }: { params:
         <label className="flex items-start gap-3 text-sm"><input className="mt-1 size-5" type="checkbox" name="consent" required /><span>{ACCEPTANCE_TEXT}</span></label>
         <button className="btn w-full sm:w-auto">Accept proposal</button>
       </form>
-    </main>
+    </div>
+    </SignShell>
   );
 }

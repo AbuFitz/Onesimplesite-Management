@@ -20,7 +20,7 @@ export function PublicShell({ label, children, narrow = false }: { label?: strin
 /** The signing and landing frame: pastel, friendly, one clear task. */
 export function SignShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-[#f4f3ee] bg-[radial-gradient(60rem_30rem_at_90%_-5%,#dff5ea,transparent),radial-gradient(40rem_26rem_at_-5%_20%,#fbf3d5,transparent)]">
+    <div className="min-h-dvh bg-[linear-gradient(180deg,#f1f4ea_0%,#dfe8d3_45%,#b7cda8_100%)] bg-fixed">
       <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5">
           <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={150} height={31} priority />

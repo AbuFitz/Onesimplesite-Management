@@ -556,3 +556,15 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
 .sign-foot { position: sticky; bottom: calc(-1.25rem - env(safe-area-inset-bottom)); z-index: 2; margin: 1rem -1.25rem 0; padding: .25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); background: #fafcf5; border-top: 1px solid rgba(20, 30, 12, .08); box-shadow: 0 -14px 18px -10px rgba(250, 252, 245, .95); }
 .sign-foot .sign-need { margin-top: 0; }
 @media (min-width: 1024px) { .sign-foot { position: static; margin: 1rem 0 0; padding: 0; background: none; border: 0; box-shadow: none; } }
+
+/* Signed: a calm glass card, a check that draws itself, three plain next steps. */
+.done-card { padding: 2rem 1.5rem 1.75rem; border-radius: 36px; text-align: center; background: linear-gradient(160deg, rgba(255, 255, 255, .95), rgba(247, 250, 240, .84)); -webkit-backdrop-filter: blur(28px) saturate(1.5); backdrop-filter: blur(28px) saturate(1.5); border: 1px solid rgba(255, 255, 255, .85); box-shadow: 0 1.5px 0 #fff inset, 0 28px 50px -22px rgba(18, 28, 12, .5); animation: sheet-pop .7s var(--spring) both; }
+.done-tick { margin: 0 auto; display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; color: #fff; background: linear-gradient(160deg, #4a6024, #232f10); box-shadow: 0 0 0 8px rgba(214, 232, 167, .55), 0 18px 30px -12px rgba(35, 47, 16, .7); animation: tick-pop .6s var(--spring) .15s both; }
+.done-tick path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: tick-draw .5s var(--ease) .55s forwards; }
+@keyframes tick-draw { to { stroke-dashoffset: 0; } }
+@keyframes tick-pop { from { transform: scale(.4); opacity: 0; } }
+.done-steps { margin-top: 1.5rem; display: grid; gap: 10px; text-align: left; }
+.done-steps li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 22px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(255, 255, 255, .85); animation: rise .5s var(--spring) both; animation-delay: calc(var(--i) * 90ms + 600ms); }
+.done-steps li > span { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--color-lime); color: var(--color-olive-950); }
+.done-steps b { font-weight: 600; font-size: 15px; }
+.done-steps p { font-size: 14px; color: var(--color-muted); line-height: 1.4; }
