@@ -4,6 +4,7 @@ import { requireStaff } from "@/modules/identity/session";
 import { db } from "@/lib/db";
 import { TicketCreateForm } from "@/components/ticket-create-form";
 import { RecordHeader } from "@/components/ui";
+import { CompanyPicker } from "@/components/company-picker";
 
 export const metadata = { title: "New ticket" };
 
@@ -23,9 +24,7 @@ export default async function NewTicket({ searchParams }: { searchParams: Promis
       <RecordHeader back={{ href: "/tickets", label: "Tickets" }} title="New ticket" meta={biz ? biz.displayName : "Start by choosing the company"} />
       {!biz ? (
         <div className="max-w-xl space-y-6">
-          <form className="space-y-3"><label className="label" htmlFor="b">Which company is this for?</label>
-            <select id="b" name="business" className="field" required defaultValue="">{<option value="" disabled>Choose a company</option>}{companies.map((b) => <option key={b.id} value={b.id}>{b.displayName} ({b.reference})</option>)}</select>
-            <button className="btn">Continue</button></form>
+          <CompanyPicker companies={companies.map((b) => ({ id: b.id, name: b.displayName, ref: b.reference }))} type={sp.type} addHref="/customers/new" />
           <p className="rounded-xl bg-bone px-4 py-3 text-sm">New customer? <Link className="font-semibold underline" href="/customers/new">Add the company first</Link>. It only takes a minute, and you can start the ticket straight after.</p>
         </div>
       ) : (
