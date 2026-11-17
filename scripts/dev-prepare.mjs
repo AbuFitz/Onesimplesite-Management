@@ -18,3 +18,5 @@ if (rows[0].n === 0) {
   run("npx tsx prisma/seed.ts", env);
   run("npx tsx scripts/showcase-data.ts", env);
 } else console.log("== test data already there");
+console.log("== dev logins");
+run("npx tsx scripts/dev-accounts.ts", { DATABASE_URL: url, APP_ENV: "staging" });
