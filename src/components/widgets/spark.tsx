@@ -57,7 +57,7 @@ export function Funnel({ stages }: { stages: { label: string; value: number; col
   return (
     <ul className="funnel">
       {stages.map((s) => (
-        <li key={s.label}><a href={s.href}><span className="fl"><span>{s.label}</span><b className="num">{s.value}</b></span><span className="ft"><i style={{ width: `${s.value ? Math.max(4, (s.value / max) * 100) : 0}%`, background: s.color }} /></span></a></li>
+        <li key={s.label}><a href={s.href} aria-label={`${s.label}: see them`}><span className="fl"><span>{s.label}</span><b className="num">{s.value}</b></span><span className="ft"><i style={{ width: `${s.value ? Math.max(4, (s.value / max) * 100) : 0}%`, background: s.color }} /></span></a></li>
       ))}
     </ul>
   );

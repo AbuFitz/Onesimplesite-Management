@@ -33,6 +33,8 @@ export const drain = () => hook("drain");
 export const resetProfile = () => hook("reset-profile");
 export const ensurePlan = () => hook("ensure-plan");
 export const ensureTicket = () => hook("ensure-ticket");
+export const seedAwaiting = () => hook("awaiting-agreement");
+export const freshRequests = () => hook("fresh-requests");
 export const seedOrder = (kind) => hook("order", { kind });
 export const securityMode = (codes, testers = "") => hook("security-mode", { codes, testers });
 

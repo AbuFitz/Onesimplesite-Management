@@ -1,9 +1,10 @@
 // Customer sends material into a project without a ticket; pictures and logos show on the other side.
 // Usage: node tests/e2e/uploads.mjs <projectId> <customerId>   (the project must have open "what we need" requests)
 import { createRequire } from "node:module";
-import { launch, M, P, PW, ids } from "./lib/target.mjs";
+import { launch, M, P, PW, ids, freshRequests } from "./lib/target.mjs";
 import { writeFileSync } from "node:fs";
 const found = process.argv[2] ? {} : await ids();
+await freshRequests();   // earlier runs answer the requests, so add open ones
 const PROJECT = process.argv[2] ?? found.project, CUSTOMER = process.argv[3] ?? found.customer;
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"); writeFileSync("/tmp/pixel.png", png);

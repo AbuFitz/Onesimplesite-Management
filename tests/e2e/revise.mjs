@@ -1,8 +1,9 @@
 // Changing a sent agreement: the new draft stays findable, and old withdrawn copies don't clutter the list.
 import { createRequire } from "node:module";
-import { launch, M, P, PW } from "./lib/target.mjs";
+import { launch, M, P, PW, seedAwaiting } from "./lib/target.mjs";
 
 const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
+await seedAwaiting();   // a sent, unsigned agreement to change
 const b = await launch(); const pg = await b.newPage();
 await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
 await pg.goto(`${M}/agreements?show=awaiting`);

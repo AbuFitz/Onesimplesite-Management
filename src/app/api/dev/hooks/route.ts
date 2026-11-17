@@ -74,6 +74,23 @@ export async function POST(req: Request) {
       }
       return json({ ok: true });
     }
+    case "awaiting-agreement": {   // an agreement that has been sent and not yet signed, for the "change it and send a new version" suite
+      const u = await db.user.findFirstOrThrow({ where: { email: "client.b@example.test" } });
+      const m = await db.clientMembership.findFirstOrThrow({ where: { userId: u.id } });
+      const cu = await db.customer.findUniqueOrThrow({ where: { id: m.customerId } });
+      const n = Date.now() % 1000000;
+      const p = await db.proposal.create({ data: { workspaceId: cu.workspaceId, customerId: cu.id, reference: "OSS-QT-RV-" + n, title: "Change test " + n, currentVersion: 1, status: "sent" } });
+      const v = await db.proposalVersion.create({ data: { workspaceId: cu.workspaceId, proposalId: p.id, number: 1, scope: "x", terms: "", currency: "GBP", oneOffMinor: 30000, recurringMinor: 0, requirements: { depositPercent: "50" } } });
+      const k = await db.contract.create({ data: { workspaceId: cu.workspaceId, customerId: cu.id, reference: "OSS-OF-RV-" + n, title: "Change test " + n, status: "awaiting_signature", scopeSnapshot: "x", oneOffMinor: 30000, recurringMinor: 0, proposalVersionId: v.id } });
+      return json({ contract: k.id });
+    }
+    case "fresh-requests": {   // open "what we need" requests on the demo project, since earlier runs answer them
+      const u = await db.user.findFirstOrThrow({ where: { email: "client.b@example.test" } });
+      const m = await db.clientMembership.findFirstOrThrow({ where: { userId: u.id } });
+      const project = await db.project.findFirstOrThrow({ where: { customerId: m.customerId }, orderBy: { createdAt: "asc" } });
+      await db.assetRequest.createMany({ data: [{ workspaceId: project.workspaceId, projectId: project.id, label: "Opening hours and About text" }, { workspaceId: project.workspaceId, projectId: project.id, label: "Photos of the shop" }] });
+      return json({ ok: true });
+    }
     case "order": return body.kind === "cancel" || body.kind === "setup" ? json(await order(body.kind)) : json({ error: "kind must be cancel or setup" }, 400);
     case "reset-profile":
       await db.staffMembership.updateMany({ where: { email: "demo.owner@example.test" }, data: { jobTitle: null, signature: null } });
