@@ -5,6 +5,7 @@ import { can } from "@/modules/identity/permissions";
 import { listCustomers, customerStatusCounts, LIFECYCLE, LIFECYCLE_KEYS, type LifecycleKey } from "@/modules/crm/service";
 import { RecordHeader, Status, Empty, Avatar, timeAgo } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
+import { QuickChips, FilterPanel } from "@/components/filter-bar";
 
 export const metadata = { title: "Companies" };
 type SP = { q?: string; page?: string; mine?: string; status?: string; risk?: string; sort?: string; archived?: string; deleted?: string };
@@ -39,11 +40,13 @@ export default async function Customers({ searchParams }: { searchParams: Promis
       {sp.archived && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Company archived. You can restore it from here any time.</p>}
       {sp.deleted && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Company deleted.</p>}
 
+      <QuickChips label="Company status" items={chips.map((c) => ({ label: c.label, count: c.count, href: c.href, on: c.active }))} />
       <AutoGetForm className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))_auto]">
         <div className="relative min-w-0 sm:col-span-2 lg:col-span-1"><Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-[2.2rem] text-muted" /><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="q">Search</label>
           <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Name, reference, person or email" className="field !pl-9" /></div>
-        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="status">Status</label>
+        <div className="hidden lg:block"><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="status">Status</label>
           <select id="status" name="status" defaultValue={status} className="field">{chips.map((c) => <option key={c.label} value={c.label === "All" ? "all" : c.label === "On hold" ? "paused" : c.label.toLowerCase()}>{c.label} ({c.count})</option>)}</select></div>
+        <FilterPanel active={[!!sp.sort && sp.sort !== SORTS[0][0], sp.mine === "1", sp.risk === "1"].filter(Boolean).length}>
         <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="sort">Sort by</label>
           <select id="sort" name="sort" defaultValue={sort} className="field">{SORTS.map(([id, l]) => <option key={id} value={id}>{l}</option>)}</select></div>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-1">
@@ -51,6 +54,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="checkbox" name="risk" value="1" defaultChecked={sp.risk === "1"} className="size-4 accent-[#b3261e]" /> At risk{counts.atRisk ? <span className="rounded-md bg-bone px-1.5 text-xs tabular-nums text-muted">{counts.atRisk}</span> : null}</label>
           {(active > 0 || status !== "all") && <Link href="/customers" className="min-h-11 py-2.5 text-sm underline">Clear</Link>}
         </div>
+        </FilterPanel>
       </AutoGetForm>
 
       {rows.length === 0 ? (

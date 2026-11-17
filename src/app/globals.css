@@ -520,3 +520,18 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
 @media (max-width: 359px) { .fcap .fc-o:nth-of-type(2) { display: none; } }
 .fcap::before { content: ""; position: fixed; z-index: -1; left: 0; right: 0; bottom: 0; height: calc(96px + env(safe-area-inset-bottom)); pointer-events: none; background: linear-gradient(to top, rgba(134, 166, 124, .92) 20%, rgba(134, 166, 124, 0)); }
 @media (min-width: 1024px) { .fcap::before { display: none; } }
+
+/* Filters: quick chips plus a Filters button on phones; everything visible on desktop. */
+.qchips { scroll-padding: 0 1rem; display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; margin: 0 -1rem .75rem; padding: 2px 1rem 4px; scrollbar-width: none; }
+.qchips::-webkit-scrollbar { display: none; }
+.qchip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 16px; border-radius: 999px; color: var(--color-ink-2); text-decoration: none; font-size: 14px; font-weight: 500; white-space: nowrap; background: rgba(255, 255, 255, .7); border: 1px solid rgba(255, 255, 255, .85); box-shadow: 0 1px 0 #fff inset, 0 8px 16px -12px rgba(20, 30, 12, .45); transition: transform .25s var(--spring), background-color .2s, color .2s; }
+.qchip i { font-style: normal; font-size: 12px; opacity: .65; }
+.qchip:active { transform: scale(.94); }
+.qchip.on { color: #fff; background: linear-gradient(180deg, #2c3a15, #161d0b); border-color: #161d0b; }
+.qchip.on i { opacity: .8; }
+.fbtn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 500; cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid rgba(255, 255, 255, .85); color: var(--color-ink); }
+.fbtn.set { border-color: var(--color-olive-700); }
+.fbtn b { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: grid; place-items: center; font-size: 11.5px; background: var(--color-olive-700); color: #fff; }
+.fbody { display: none; }
+.fbody.open { display: contents; }
+@media (min-width: 1024px) { .fbody { display: contents; } }
