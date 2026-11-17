@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Home, Users, FolderKanban, FileText, Ticket, CalendarDays, MessagesSquare, ScrollText, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard, Search, Plus, X, UserRound, type LucideIcon } from "lucide-react";
+import { Home, Users, FolderKanban, FileText, Ticket, CalendarDays, MessagesSquare, ScrollText, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard, Search, Plus, X, LayoutGrid, UserRound, type LucideIcon } from "lucide-react";
 import { Sheet } from "./sheet";
 
 export type DockItem = { href: string; label: string; Icon: LucideIcon; badge?: number };
@@ -14,26 +14,25 @@ const active = (p: string, href: string) => (href === "/" ? p === "/" : p === hr
  * The switcher opens a blurred full-screen picker: swipe a row of round icons, the centred one grows, its name appears below, tap it to go.
  * It works with a keyboard too (arrows, Enter, Escape) and the same destinations are always listed in the menu on larger screens.
  */
-export function MobileDock({ items, actions, searchHref, hideFrom = "lg" }: { items: DockItem[]; actions: DockAction[]; searchHref: string; hideFrom?: "sm" | "lg" }) {
+export function MobileDock({ items, actions, searchHref, hideFrom = "lg", home }: { items: DockItem[]; actions: DockAction[]; searchHref: string; hideFrom?: "sm" | "lg"; home: string }) {
   const path = usePathname();
+  const router = useRouter();
   const [pick, setPick] = useState(false);
   const [plus, setPlus] = useState(false);
   const current = items.find((i) => active(path, i.href)) ?? items[0];
-  const Cur = current.Icon;
+  const badge = items.reduce((n, i) => n + (i.badge ?? 0), 0);
+  // The landing page is its own composition (hero, chips, status panel), so the small floating menu only appears on inner pages.
+  const onHome = path === home;
   return (
     <>
-      <nav className={`mdock ${hideFrom === "sm" ? "sm-hide" : ""}`} aria-label="Primary">
-        <div className="mdock-row">
-          <button type="button" className="mdock-orb" aria-haspopup="dialog" aria-expanded={pick} aria-label={`Go to another page. You are on ${current.label}`} onClick={() => setPick(true)}><Cur size={21} aria-hidden /></button>
-          <Link href={searchHref} className="mdock-search" aria-label={`${current.label}. Search or jump to`}><span>{current.label}</span><em>Search or jump to…</em><i><Search size={17} aria-hidden /></i></Link>
-          {actions.length > 0 && <button type="button" className="mdock-plus" aria-label="Add something new" onClick={() => setPlus(true)}><Plus size={20} aria-hidden /></button>}
-        </div>
-        {actions.length > 0 && (
-          <div className="mdock-chips" role="list">
-            {actions.map((a) => <Link key={a.href} href={a.href} role="listitem" className="mdock-chip">{a.label} <Plus size={14} aria-hidden /></Link>)}
-          </div>
-        )}
-      </nav>
+      {!onHome && (
+        <nav className={`fcap ${hideFrom === "sm" ? "sm-hide" : ""}`} aria-label="Primary">
+          <Link href={home} aria-label="Home"><Home size={20} aria-hidden /></Link>
+          <Link href={searchHref} aria-label="Search or jump to"><Search size={20} aria-hidden /></Link>
+          {actions.length > 0 && <button type="button" className="go" aria-label="Add something new" onClick={() => setPlus(true)}><Plus size={21} aria-hidden /></button>}
+          <button type="button" className="on" aria-haspopup="dialog" aria-expanded={pick} aria-label={`Go to another page. You are on ${current.label}`} onClick={() => setPick(true)}><LayoutGrid size={20} aria-hidden />{badge > 0 && <b>{badge}</b>}</button>
+        </nav>
+      )}
       {pick && <Switcher items={items} current={current.href} onClose={() => setPick(false)} />}
       <Sheet open={plus} onClose={() => setPlus(false)} title="Add something new">
         <ul className="sheet-list">{actions.map((a, i) => <li key={a.href} style={{ "--i": i } as React.CSSProperties}><Link href={a.href} onClick={() => setPlus(false)}><span><Plus size={18} aria-hidden /></span>{a.label}</Link></li>)}</ul>
@@ -96,11 +95,11 @@ function Switcher({ items, current, onClose }: { items: DockItem[]; current: str
 const TEAM_ICONS: Record<string, LucideIcon> = { payments: CreditCard, today: Home, customers: Users, pipeline: Ticket, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy, testing: FlaskConical };
 export function TeamDock({ groups, actions }: { groups: { items: { href: string; label: string; icon: string; badge?: number }[] }[]; actions: DockAction[] }) {
   const items = groups.flatMap((g) => g.items).map((i) => ({ href: i.href, label: i.label, Icon: TEAM_ICONS[i.icon] ?? Home, badge: i.badge }));
-  return <MobileDock items={items} actions={actions} searchHref="/search" />;
+  return <MobileDock items={items} actions={actions} searchHref="/search" home="/" />;
 }
 
 const PORTAL: [string, string, LucideIcon][] = [["/overview", "Home", Home], ["/projects", "Projects", FolderKanban], ["/documents", "Documents", FileText], ["/billing", "Billing", CreditCard], ["/people", "People", Users], ["/help", "Get help", LifeBuoy], ["/account", "Settings", UserRound]];
 export function PortalDock({ show = [], actions }: { show?: readonly string[]; actions: DockAction[] }) {
   const items = PORTAL.filter(([h]) => !["/billing", "/people"].includes(h) || show.includes(h)).map(([href, label, Icon]) => ({ href, label, Icon }));
-  return <MobileDock items={items} actions={actions} searchHref="/help" hideFrom="sm" />;
+  return <MobileDock items={items} actions={actions} searchHref="/help" hideFrom="sm" home="/overview" />;
 }

@@ -16,7 +16,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const show = [...(clientCanAny(c, "billing") ? ["/billing"] : []), ...(clientCanAny(c, "people") ? ["/people"] : [])];
   const company = c.memberships.map((m) => m.customer.displayName).join(", ");
   return (
-    <div className="min-h-dvh pb-40 sm:pb-12">
+    <div className="min-h-dvh pb-28 sm:pb-12">
       <LiveRefresh seconds={30} />
       <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">

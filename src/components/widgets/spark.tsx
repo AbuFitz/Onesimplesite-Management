@@ -8,7 +8,7 @@ const pts = (data: number[], w: number, h: number, pad = 3) => {
 const line = (p: readonly (readonly [number, number])[]) => p.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
 
 /** A small trend line with a soft area under it and a dot on the latest value. */
-export function Spark({ data, color = "#4a6024", height = 44, label }: { data: number[]; color?: string; height?: number; label: string }) {
+export function Spark({ data, color = "#111214", height = 44, label }: { data: number[]; color?: string; height?: number; label: string }) {
   const w = 120, p = pts(data.length ? data : [0], w, height), id = `sp${color.replace(/\W/g, "")}${data.length}`;
   const last = p[p.length - 1];
   return (
@@ -22,7 +22,7 @@ export function Spark({ data, color = "#4a6024", height = 44, label }: { data: n
 }
 
 /** A time series with a baseline, a peak marker and first/last labels, for the larger widgets. Hover or focus a bar to read it. */
-export function Series({ data, color = "#4a6024", height = 150, format = (n: number) => String(n), kind = "bars" }: { data: { label: string; value: number }[]; color?: string; height?: number; format?: (n: number) => string; kind?: "bars" | "area" }) {
+export function Series({ data, color = "#111214", height = 150, format = (n: number) => String(n), kind = "bars" }: { data: { label: string; value: number }[]; color?: string; height?: number; format?: (n: number) => string; kind?: "bars" | "area" }) {
   const max = Math.max(...data.map((d) => d.value), 1), total = data.reduce((n, d) => n + d.value, 0), peak = data.reduce((b, d, i) => (d.value > data[b].value ? i : b), 0);
   if (kind === "area") {
     const w = 300, p = pts(data.map((d) => d.value), w, height - 22, 6);
@@ -42,7 +42,7 @@ export function Series({ data, color = "#4a6024", height = 150, format = (n: num
         {data.map((d, i) => (
           <div key={d.label + i} className="bar" tabIndex={0} title={`${d.label}: ${format(d.value)}`} aria-label={`${d.label}: ${format(d.value)}`}>
             {i === peak && d.value > 0 && <span className="peak">{format(d.value)}</span>}
-            <i style={{ height: `${Math.max(d.value ? 6 : 3, (d.value / max) * 100)}%`, background: d.value ? color : "rgba(30,40,15,.1)", opacity: i === peak ? 1 : .72 }} />
+            <i style={{ height: `${Math.max(d.value ? 6 : 3, (d.value / max) * 100)}%`, background: d.value ? color : "rgba(14, 16, 22,.1)", opacity: i === peak ? 1 : .72 }} />
           </div>
         ))}
       </div>

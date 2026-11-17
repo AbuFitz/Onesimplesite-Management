@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
 /** A radial dial gauge: tick marks, a hatched dial face, a filled wedge from 12 o'clock for the share, and a big light percentage above. Text carries the meaning; colour only accents it. */
-export function Dial({ value, label, count, accent = "#d6e8a7", size = 112 }: { value: number; label: string; count: number | string; accent?: string; size?: number }) {
+export function Dial({ value, label, count, accent = "#ebd98a", size = 112 }: { value: number; label: string; count: number | string; accent?: string; size?: number }) {
   const v = Math.max(0, Math.min(1, value)), pct = Math.round(v * 100), c = 50, r = 33;
   const end = -Math.PI / 2 + v * 2 * Math.PI, x = c + r * Math.cos(end), y = c + r * Math.sin(end);
   const wedge = v >= 0.999 ? `M ${c} ${c - r} A ${r} ${r} 0 1 1 ${c - 0.01} ${c - r} Z` : v <= 0 ? "" : `M ${c} ${c} L ${c} ${c - r} A ${r} ${r} 0 ${v > 0.5 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`;

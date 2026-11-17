@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 /** Small, dependency-free SVG charts. Colour is never the only signal: every slice and bar has a label and a number beside it. */
 // The OSS Commerce palette: olive for the main series, lime and earthy tones for the rest. Status colours stay amber for waiting and red for late.
-export const CHART = { green: "#4a6024", teal: "#7d9a3f", ink: "#14170f", amber: "#c9901a", blue: "#3f6bb0", lilac: "#8f7bd1", rose: "#d9582b", grey: "#d9dccb" } as const;
+export const CHART = { green: "#111214", teal: "#6b7a94", ink: "#0b0b0c", amber: "#c9901a", blue: "#3f6bb0", lilac: "#8f7bd1", rose: "#d9582b", grey: "#d9dccb" } as const;
 
 export type Slice = { label: string; value: number; color: string };
 
