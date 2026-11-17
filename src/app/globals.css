@@ -587,9 +587,9 @@ dialog.rec-dlg[open]::backdrop { animation: sw-in .3s var(--ease); }
 .rchip:active span { transform: scale(.94); }
 .rchip input:checked + span { color: #fff; background: linear-gradient(180deg, #2c3a15, #161d0b); border-color: #161d0b; box-shadow: 0 8px 16px -10px rgba(22, 29, 11, .7); }
 .rchip input:focus-visible + span { outline: 2px solid var(--color-olive-700); outline-offset: 2px; }
-dialog.fl-dlg { width: min(30rem, 95vw); height: auto; max-height: 92dvh; }
+dialog.fl-dlg { width: min(30rem, 95vw); height: fit-content; max-height: 92dvh; }
 dialog.fl-dlg header { border-color: rgba(20, 30, 12, .08); }
-@media (max-width: 639px) { dialog.fl-dlg { width: calc(100vw - 20px); height: auto; max-height: calc(100dvh - 20px - env(safe-area-inset-top)); margin-bottom: 10px; } }
+@media (max-width: 639px) { dialog.fl-dlg { width: calc(100vw - 20px); height: fit-content; max-height: calc(100dvh - 20px - env(safe-area-inset-top)); margin-bottom: 10px; } }
 
 /* Contrast on phones: text that sits straight on the green page (not on a card) must still pass AA at the darkest part of the gradient. */
 @media (max-width: 1023px) { :root { --color-muted: #3d4436; --color-faint: #545b4a; --muted: #3d4436; } }
@@ -639,3 +639,29 @@ dialog.fl-dlg header { border-color: rgba(20, 30, 12, .08); }
 .cookie button { flex: none; min-height: 44px; padding: 0 20px; border-radius: 999px; font-size: 14px; font-weight: 500; color: #fff; cursor: pointer; background: linear-gradient(180deg, #2c3a15, #161d0b); transition: transform .25s var(--spring); }
 .cookie button:active { transform: scale(.94); }
 @media (min-width: 640px) { .cookie { left: 16px; right: auto; bottom: 16px; width: 28rem; } .cookie-up { bottom: 16px; } }
+
+/* Confirm popup: small, centred, one question, a calm cancel and a clear confirm. */
+dialog.cfm-dlg { width: min(24rem, calc(100vw - 28px)); height: fit-content; max-height: none; border-radius: 30px; }
+.cfm { display: grid; justify-items: center; gap: 6px; padding: 28px 22px 20px; text-align: center; }
+.cfm-ico { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 8px; border-radius: 50%; color: #9b1c1c; background: #fbe4df; box-shadow: 0 0 0 7px rgba(251, 228, 223, .5); animation: tick-pop .5s var(--spring) .1s both; }
+.cfm h2 { font-size: 20px; font-weight: 500; letter-spacing: -.02em; }
+.cfm p { font-size: 14.5px; line-height: 1.45; color: var(--color-muted); max-width: 30ch; }
+.cfm-act { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 18px; }
+.cfm-act button { min-height: 48px; border-radius: 999px; font-size: 15px; font-weight: 500; cursor: pointer; transition: transform .25s var(--spring); }
+.cfm-act button:active { transform: scale(.95); }
+.cfm-no { color: var(--color-ink); background: rgba(255, 255, 255, .9); border: 1px solid rgba(20, 30, 12, .12); }
+.cfm-yes { color: #fff; background: linear-gradient(180deg, #b3261e, #8a1c15); box-shadow: 0 10px 18px -10px rgba(138, 28, 21, .8); }
+
+/* Page picker: every place in one glance, labelled, the current one marked. */
+.go-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.go-grid li { animation: rise .5s var(--spring) both; animation-delay: calc(var(--i) * 28ms + 120ms); }
+.go-grid a { display: grid; justify-items: center; gap: 8px; padding: 14px 6px 12px; border-radius: 24px; font-size: 13.5px; font-weight: 500; text-align: center; color: var(--color-ink); text-decoration: none; background: rgba(255, 255, 255, .8); border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 1px 0 #fff inset, 0 10px 18px -14px rgba(18, 28, 12, .5); transition: transform .25s var(--spring); }
+.go-grid a:active { transform: scale(.94); }
+.go-grid a > span { position: relative; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: rgba(20, 30, 12, .06); }
+.go-grid a[aria-current="page"] { color: #fff; background: linear-gradient(180deg, #2c3a15, #161d0b); border-color: #161d0b; }
+.go-grid a[aria-current="page"] > span { background: rgba(255, 255, 255, .16); }
+.go-grid b { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; font-size: 10.5px; font-weight: 600; background: var(--color-lime); color: var(--color-olive-950); }
+
+dialog.lb-dlg { height: fit-content; max-height: 94dvh; width: min(94vw, 64rem); }
+dialog.lb-dlg::backdrop { background: rgba(10, 14, 8, .78); }
+@media (max-width: 639px) { dialog.lb-dlg { width: calc(100vw - 20px); height: fit-content; } }

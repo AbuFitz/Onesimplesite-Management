@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Home, Users, FolderKanban, FileText, Ticket, CalendarDays, MessagesSquare, ScrollText, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard, Plus, X, LayoutGrid, UserRound, type LucideIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { Home, Users, FolderKanban, FileText, Ticket, CalendarDays, MessagesSquare, ScrollText, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard, Plus, LayoutGrid, UserRound, type LucideIcon } from "lucide-react";
 import { Sheet } from "./sheet";
 
 export type DockItem = { href: string; label: string; Icon: LucideIcon; badge?: number };
@@ -31,62 +31,21 @@ export function MobileDock({ items, actions, hideFrom = "lg", primary }: { items
         {actions.length > 0 && <button type="button" className="fc-o fc-add" aria-label="Add something new" onClick={() => setPlus(true)}><Plus size={21} aria-hidden /></button>}
         <button type="button" className="fc-o" aria-haspopup="dialog" aria-expanded={pick} aria-label={`More pages. You are on ${current.label}`} onClick={() => setPick(true)}><LayoutGrid size={20} aria-hidden />{badge > 0 && <b>{badge}</b>}</button>
       </nav>
-      {pick && <Switcher items={items} current={current.href} onClose={() => setPick(false)} />}
+      <Sheet open={pick} onClose={() => setPick(false)} title="Go to">
+        <ul className="go-grid">
+          {items.map((it, i) => (
+            <li key={it.href} style={{ "--i": i } as React.CSSProperties}>
+              <Link href={it.href} onClick={() => setPick(false)} aria-current={it.href === current.href ? "page" : undefined}>
+                <span><it.Icon size={22} aria-hidden />{!!it.badge && <b>{it.badge}</b>}</span>{it.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
       <Sheet open={plus} onClose={() => setPlus(false)} title="Add something new">
         <ul className="sheet-list">{actions.map((a, i) => <li key={a.href} style={{ "--i": i } as React.CSSProperties}><Link href={a.href} onClick={() => setPlus(false)}><span><Plus size={18} aria-hidden /></span>{a.label}</Link></li>)}</ul>
       </Sheet>
     </>
-  );
-}
-
-function Switcher({ items, current, onClose }: { items: DockItem[]; current: string; onClose: () => void }) {
-  const router = useRouter();
-  const list = useRef<HTMLUListElement>(null);
-  const [idx, setIdx] = useState(Math.max(0, items.findIndex((i) => i.href === current)));
-  const centre = useCallback((i: number, smooth = true) => {
-    const el = list.current?.children[i] as HTMLElement | undefined;
-    el?.scrollIntoView({ behavior: smooth ? "smooth" : "instant", inline: "center", block: "nearest" } as ScrollIntoViewOptions);
-  }, []);
-  // Scale and fade each round icon by how far it is from the middle, so the centred one stands out (the fisheye effect).
-  const measure = useCallback(() => {
-    const ul = list.current; if (!ul) return;
-    const mid = ul.getBoundingClientRect().left + ul.clientWidth / 2;
-    let best = 0, bestD = Infinity;
-    Array.from(ul.children).forEach((c, i) => {
-      const r = (c as HTMLElement).getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - mid);
-      (c as HTMLElement).style.setProperty("--d", String(Math.min(1, d / 150)));
-      if (d < bestD) { bestD = d; best = i; }
-    });
-    setIdx(best);
-  }, []);
-  useEffect(() => { centre(idx, false); measure(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowRight") { e.preventDefault(); centre(Math.min(items.length - 1, idx + 1)); }
-      else if (e.key === "ArrowLeft") { e.preventDefault(); centre(Math.max(0, idx - 1)); }
-      else if (e.key === "Enter") { e.preventDefault(); router.push(items[idx].href); onClose(); }
-    };
-    document.addEventListener("keydown", key); document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", key); document.body.style.overflow = ""; };
-  }, [idx, items, onClose, router, centre]);
-  const go = (i: number) => { if (i === idx) { router.push(items[i].href); onClose(); } else centre(i); };
-  return (
-    <div className="switcher" role="dialog" aria-modal="true" aria-label="Go to" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <p className="sw-hint">Swipe, then tap to open</p>
-      <ul ref={list} className="sw-row" onScroll={() => requestAnimationFrame(measure)}>
-        {items.map((it, i) => (
-          <li key={it.href}>
-            <button type="button" className="sw-orb" aria-label={it.label} aria-current={i === idx ? "true" : undefined} onClick={() => go(i)}>
-              <it.Icon size={30} aria-hidden />
-              {!!it.badge && <b>{it.badge}</b>}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <p className="sw-name" aria-live="polite">{items[idx]?.label}</p>
-      <button type="button" className="sw-close" aria-label="Close" onClick={onClose}><X size={24} aria-hidden /></button>
-    </div>
   );
 }
 

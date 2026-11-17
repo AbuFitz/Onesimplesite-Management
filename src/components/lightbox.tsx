@@ -11,10 +11,10 @@ export function ImageLink({ src, name, className, children, download }: { src: s
     <>
       <button type="button" onClick={() => setOpen(true)} className={className} aria-haspopup="dialog" title={`Open ${name}`}>{children}</button>
       <dialog ref={ref} aria-label={name} onClose={() => setOpen(false)} onClick={(e) => { if (e.target === ref.current) setOpen(false); }}
-        className="m-auto max-h-[94dvh] w-[min(94vw,64rem)] max-w-none overflow-hidden rounded-2xl bg-white p-0 backdrop:bg-[rgba(9,9,11,.7)]">
+        className="rec-dlg lb-dlg">
         {open && (
           <div className="flex max-h-[94dvh] flex-col">
-            <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+            <header className="flex items-center justify-between gap-3 px-4 py-2.5">
               <p className="min-w-0 truncate text-sm font-semibold">{name}</p>
               <span className="flex shrink-0 items-center gap-1">
                 {download && <a href={download} download className="grid size-10 place-items-center rounded-lg hover:bg-soft" aria-label="Download"><Download size={17} aria-hidden /></a>}

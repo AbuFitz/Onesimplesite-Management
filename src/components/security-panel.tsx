@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { KeyRound, Smartphone, Trash2 } from "lucide-react";
 import QRCode from "qrcode";
 import { authClient } from "@/lib/auth-client";
+import { useConfirm } from "./confirm";
 
 type Pk = { id: string; name?: string | null; createdAt?: string | null; deviceType?: string; backedUp?: boolean };
 const when = (d?: string | null) => (d ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(new Date(d)) : "");
@@ -10,6 +11,7 @@ const when = (d?: string | null) => (d ? new Intl.DateTimeFormat("en-GB", { date
 /** Passkeys and the authenticator app, for the signed-in person. Both are optional extras on top of their password. */
 export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"; hasAuthenticator: boolean }) {
   const [c] = useState(() => authClient(ns));
+  const { ask, node: confirmNode } = useConfirm();
   const [supported, setSupported] = useState(true);
   const [keys, setKeys] = useState<Pk[] | null>(null);
   const [name, setName] = useState("");
@@ -39,7 +41,7 @@ export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"
     setBusy(false);
   }
   async function removeKey(id: string) {
-    if (!confirm("Remove this passkey? You can still sign in with your password.")) return;
+    if (!(await ask("Remove this passkey? You can still sign in with your password.", { title: "Remove passkey", confirmLabel: "Remove" }))) return;
     await c.$fetch("/passkey/delete-passkey", { method: "POST", body: { id } }); await load();
   }
   async function startTotp() {
@@ -66,6 +68,7 @@ export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"
 
   return (
     <div className="space-y-6">
+      {confirmNode}
       {msg && <p role={msg.kind === "bad" ? "alert" : "status"} className={`rounded-lg px-3 py-2 text-sm font-semibold ${msg.kind === "bad" ? "bg-[#fde6dc] text-[#7a2e12]" : "bg-[#e9f6ef] text-[#0a5a3d]"}`}>{msg.text}</p>}
 
       <section aria-labelledby="pk">

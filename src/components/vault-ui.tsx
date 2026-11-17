@@ -3,6 +3,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, Copy, Check, Pencil, Trash2, Dices, ExternalLink } from "lucide-react";
 import { saveVaultAction, deleteVaultAction, revealVaultAction } from "@/app/actions/vault";
 import { ErrorSummary, Avatar, timeAgo } from "./ui";
+import { ConfirmForm } from "./confirm";
 
 export type VaultRow = { id: string; title: string; category: string; username: string | null; url: string | null; notes: string | null; updatedBy: string; updatedAt: string };
 
@@ -102,10 +103,10 @@ export function VaultItem({ row }: { row: VaultRow }) {
       {edit && (
         <div className="mt-4 rounded-xl border border-line p-4">
           <VaultForm row={row} onDone={() => setEdit(false)} />
-          <form action={deleteVaultAction} className="mt-3" onSubmit={(e) => { if (!confirm(`Delete ${row.title}? This can't be undone.`)) e.preventDefault(); }}>
+          <ConfirmForm action={deleteVaultAction} className="mt-3" message={`Delete ${row.title}? This can't be undone.`}>
             <input type="hidden" name="id" value={row.id} />
             <button className="inline-flex items-center gap-1.5 text-sm text-danger underline"><Trash2 size={14} aria-hidden />Delete this login</button>
-          </form>
+          </ConfirmForm>
         </div>
       )}
     </li>
