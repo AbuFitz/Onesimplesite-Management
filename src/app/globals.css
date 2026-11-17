@@ -761,3 +761,45 @@ html[data-kb] .stick-foot { bottom: 8px; }
 .tc-ico { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 6px; border-radius: 50%; background: rgba(20, 30, 12, .07); color: var(--color-olive-700); transition: background-color .2s, color .2s; }
 .tc-type.on { border-color: var(--color-olive-700); background: #fff; box-shadow: 0 0 0 3px rgba(74, 96, 36, .16), 0 8px 18px -14px rgba(18, 28, 12, .5); }
 .tc-type.on .tc-ico { background: var(--color-olive-700); color: #fff; }
+
+/* ---- Wizard: named steps, one thing per screen, Back and Continue always in reach. ---- */
+.wz { display: grid; gap: 18px; max-width: 42rem; }
+.wz-bar { display: grid; gap: 10px; }
+.wz-now { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.wz-now b { font-size: 22px; font-weight: 400; letter-spacing: -.03em; }
+.wz-now span { font-size: 13px; color: var(--color-muted); }
+.wz-bar ol { display: flex; gap: 6px; }
+.wz-bar li { flex: 1; min-width: 0; }
+.wz-bar li button { width: 100%; display: grid; gap: 6px; text-align: left; cursor: pointer; }
+.wz-bar li button:disabled { cursor: default; }
+.wz-bar li button::before { content: ""; display: block; height: 5px; border-radius: 3px; background: rgba(20, 30, 12, .12); transition: background-color .4s var(--ease); }
+.wz-bar li.done button::before { background: var(--color-olive-700); }
+.wz-bar li.on button::before { background: linear-gradient(90deg, var(--color-olive-700), var(--color-olive-500)); }
+.wz-bar li i { display: none; }
+.wz-bar li span { font-size: 12px; color: var(--color-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wz-bar li.on span { color: var(--color-ink); font-weight: 500; }
+@media (max-width: 639px) { .wz-bar li span { display: none; } }
+.wz-step { display: grid; gap: 16px; animation: rise .45s var(--spring) both; }
+.wz-step[hidden] { display: none; }
+.wz-hint { font-size: 15px; line-height: 1.45; color: var(--color-ink-2); }
+.wz-foot { position: sticky; bottom: calc(var(--dock-h) + .25rem); z-index: 5; display: flex; gap: 10px; padding: 10px 0 2px; }
+.wz-foot button, .wz-foot .btn { min-height: 52px; border-radius: 999px; font-size: 16px; font-weight: 500; }
+.wz-back { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; cursor: pointer; color: var(--color-ink); background: rgba(255, 255, 255, .9); border: 1px solid rgba(20, 30, 12, .12); transition: transform .25s var(--spring); }
+.wz-next { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: #fff; background: linear-gradient(180deg, #2c3a15, #161d0b); box-shadow: 0 12px 20px -12px rgba(22, 29, 11, .8); transition: transform .25s var(--spring); }
+.wz-back:active, .wz-next:active { transform: scale(.96); }
+.wz-submit { flex: 1; display: grid; gap: 8px; }
+.wz-submit .btn { width: 100%; }
+html[data-kb] .wz-foot { bottom: 8px; }
+@media (min-width: 1024px) { .wz-foot { position: static; padding-top: 6px; } .wz-next { flex: none; padding: 0 2rem; } .wz-submit { flex: none; display: flex; } .wz-submit .btn { width: auto; padding: 0 1.6rem; } }
+.wz-review { display: grid; gap: 8px; }
+.wz-review > div { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 12px 14px 12px 16px; border-radius: 20px; background: rgba(255, 255, 255, .78); border: 1px solid rgba(255, 255, 255, .9); }
+.wz-review dt { grid-column: 1; font-size: 12.5px; color: var(--color-muted); }
+.wz-review dd { grid-column: 1; font-size: 15.5px; word-break: break-word; }
+.wz-review button { grid-column: 2; grid-row: 1 / span 2; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; color: var(--color-ink-2); background: rgba(20, 30, 12, .06); transition: transform .25s var(--spring); }
+.wz-review button:active { transform: scale(.9); }
+.wz-next:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+body:has(.wz) .sb { display: none; }
+.wz-foot.last { position: static; flex-direction: column-reverse; padding-top: 14px; }
+.wz-foot.last .wz-back { justify-content: center; }
+.wz-foot.last .wz-submit { width: 100%; }
+@media (min-width: 1024px) { .wz-foot.last { flex-direction: row-reverse; justify-content: flex-end; } .wz-foot.last .wz-submit { width: auto; } }

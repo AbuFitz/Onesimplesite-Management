@@ -99,8 +99,8 @@ await staff.goto(`${termsUrl}/preview`);
 { const doc = (await staff.locator("article").first().innerText()).toLowerCase(); ok(doc.includes("introduction and definitions") && doc.includes("acceptance of terms") && doc.includes("version 1.4"), "full document preview shows the whole v1.4 agreement"); }
 ok((await get(staff, `${termsUrl}/sample.pdf`)).head === "%PDF-", "sample PDF downloads");
 await staff.goto(`${M}/customers/new`); await staff.waitForLoadState("networkidle");
-await staff.fill("#rb-n", name); await staff.selectOption("#rb-t", "Food and drink"); await staff.fill("input[name=town]", "Bristol");
-await staff.fill("#rc-n", "Casey Morgan"); await staff.fill("#rc-e", email);
+await staff.click(".wz-next"); await staff.fill("#rb-n", name); await staff.selectOption("#rb-t", "Food and drink"); await staff.fill("input[name=town]", "Bristol");
+await staff.click(".wz-next"); await staff.fill("#rc-n", "Casey Morgan"); await staff.fill("#rc-e", email); await staff.click(".wz-next");
 await staff.click("button:has-text('Add company and start an agreement')"); await staff.waitForURL(/\/agreements\/new\?business=/);
 await staff.fill("#ag-d", "A website with bookings for their bakery.");
 await staff.click("button:has-text('Start the agreement')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);

@@ -6,25 +6,37 @@ import { KINDS } from "@/modules/crm/kinds";
 import { CATEGORIES, SOURCES } from "@/modules/sales/job-options";
 import { ErrorSummary } from "./ui";
 import { SubmitButton } from "./submit-button";
+import { Wizard, type ReviewRow } from "./wizard";
 
-/** Two short sections: the company, then its first person. Everything else can be added later. */
+
 export function RegisterForm() {
   const [s, act] = useActionState(registerBusinessAction, undefined as { error?: string } | undefined);
   const [kind, setKind] = useState<string>("business");
   const person = kind === "individual";
+  const review = (fd: FormData): ReviewRow[] => {
+    const g = (k: string) => String(fd.get(k) ?? "");
+    return [
+      { label: "Kind of customer", value: KINDS.find((k) => k.id === g("kind"))?.label ?? "", step: "kind" },
+      { label: person ? "Name" : "Company name", value: g("displayName"), step: "company" }, { label: "Registered name", value: g("legalName"), step: "company" }, { label: "Company number", value: g("companyNumber"), step: "company" },
+      { label: "What they do", value: g("businessType"), step: "company" }, { label: "Website", value: g("website"), step: "company" }, { label: "Phone", value: g("phone"), step: "company" },
+      { label: "Town", value: g("town"), step: "company" }, { label: "How they found us", value: g("source"), step: "company" },
+      { label: "Main contact", value: [g("contactName"), g("contactPosition")].filter(Boolean).join(", "), step: "contact" }, { label: "Contact email", value: g("contactEmail"), step: "contact" }, { label: "Contact phone", value: g("contactPhone"), step: "contact" },
+    ];
+  };
   return (
-    <form action={act} className="max-w-3xl space-y-10">
-      <ErrorSummary message={s?.error} />
-      <section aria-labelledby="r1" className="card-section space-y-5">
-        <h2 id="r1" className="text-xl">1. The company</h2>
+    <Wizard action={act} review={review} error={<ErrorSummary message={s?.error} />}
+      actions={<><SubmitButton pendingText="Saving…">Add company</SubmitButton><button name="next" value="ticket" className="btn btn-quiet">Add company and start an agreement</button></>}
+      steps={[
+        { id: "kind", title: "Kind", hint: "What kind of customer is this?", node: (<>
         <fieldset>
-          <legend className="label mb-2">What kind of customer is this?</legend>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="opts">
             {KINDS.map((k) => (
-              <label key={k.id} className="flex cursor-pointer flex-col rounded-xl border border-line bg-white p-3 has-[:checked]:border-ink has-[:checked]:bg-[#eef7f2]"><input type="radio" name="kind" value={k.id} checked={kind === k.id} onChange={() => setKind(k.id)} className="sr-only" /><span className="font-semibold">{k.label}</span><span className="text-sm text-muted">{k.hint}</span></label>
+              <label key={k.id} className="opt"><input type="radio" name="kind" value={k.id} checked={kind === k.id} onChange={() => setKind(k.id)} /><span><b>{k.label}</b><small>{k.hint}</small></span></label>
             ))}
           </div>
         </fieldset>
+        </>) },
+        { id: "company", title: "Company", hint: person ? "Who are they?" : "Tell us about the company. Only the name is needed; the rest can wait.", node: (<>
         <div className="grid gap-4 sm:grid-cols-2">
           <div><label className="label" htmlFor="rb-n">{person ? "Their name" : "Company name (what they trade as)"}</label><input id="rb-n" name="displayName" className="field" required autoComplete="off" /></div>
           {kind === "business" && <div><label className="label" htmlFor="rb-l">Registered company name <span className="font-normal text-muted">(if different)</span></label><input id="rb-l" name="legalName" className="field" autoComplete="off" /></div>}
@@ -36,20 +48,15 @@ export function RegisterForm() {
           <AddressFields />
           <div><label className="label" htmlFor="rb-s">How did they find us?</label><select id="rb-s" name="source" className="field" defaultValue=""><option value="">Not sure</option>{SOURCES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
-      </section>
-      <section aria-labelledby="r2" className="card-section space-y-5">
-        <div><h2 id="r2" className="text-xl">2. Who are we talking to?</h2><p className="text-sm text-muted">The main contact. You can add more people, with their own portal access, once the company exists.</p></div>
+        </>) },
+        { id: "contact", title: "Contact", hint: "Who are we talking to? You can add more people, with their own portal access, once the company exists.", node: (<>
         <div className="grid gap-4 sm:grid-cols-2">
           <div><label className="label" htmlFor="rc-n">Name</label><input id="rc-n" name="contactName" className="field" required autoComplete="off" /></div>
           <div><label className="label" htmlFor="rc-e">Email</label><input id="rc-e" name="contactEmail" type="email" className="field" required autoComplete="off" /></div>
           <div><label className="label" htmlFor="rc-r">Their role</label><select id="rc-r" name="contactPosition" className="field" defaultValue="Owner">{["Owner", "Director", "Manager", "Accountant", "Assistant", "Other"].map((r) => <option key={r}>{r}</option>)}</select></div>
           <div><label className="label" htmlFor="rc-p">Phone <span className="font-normal text-muted">(optional)</span></label><input id="rc-p" name="contactPhone" type="tel" className="field" /></div>
         </div>
-      </section>
-      <div className="flex flex-wrap gap-2">
-        <SubmitButton pendingText="Saving…">Add company</SubmitButton>
-        <button name="next" value="ticket" className="btn btn-quiet">Add company and start an agreement</button>
-      </div>
-    </form>
+        </>) },
+      ]} />
   );
 }

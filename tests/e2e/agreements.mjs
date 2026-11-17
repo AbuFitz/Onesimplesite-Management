@@ -21,7 +21,7 @@ await pg.goto(`${M}/contracts`); ok(pg.url().endsWith("/agreements"), "old contr
 // one open agreement per company: starting a second one opens the first
 await pg.goto(`${M}/customers/new`); await pg.waitForLoadState("networkidle");
 const name = `Guard ${Date.now()}`;
-await pg.fill("#rb-n", name); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.fill("#rc-n", "Pat Lee"); await pg.fill("#rc-e", `pat${Date.now()}@guard.test`);
+await pg.click(".wz-next"); await pg.fill("#rb-n", name); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.click(".wz-next"); await pg.fill("#rc-n", "Pat Lee"); await pg.fill("#rc-e", `pat${Date.now()}@guard.test`); await pg.click(".wz-next");
 await pg.click("button:has-text('Add company and start an agreement')"); await pg.waitForURL(/\/agreements\/new\?business=/);
 const biz = new URL(pg.url()).searchParams.get("business");
 await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
@@ -42,7 +42,7 @@ await pg.goto(`${M}/agreements/new?business=${biz}&another=1`);
 {
   const first2 = pg.url();
   await pg.goto(`${M}/customers/new`); const name2 = `Care ${Date.now()}`;
-  await pg.fill("#rb-n", name2); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.fill("#rc-n", "Dee Lee"); await pg.fill("#rc-e", `dee${Date.now()}@guard.test`);
+  await pg.click(".wz-next"); await pg.fill("#rb-n", name2); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.click(".wz-next"); await pg.fill("#rc-n", "Dee Lee"); await pg.fill("#rc-e", `dee${Date.now()}@guard.test`); await pg.click(".wz-next");
   await pg.click("button:has-text('Add company and start an agreement')"); await pg.waitForURL(/\/agreements\/new\?business=/);
   await pg.selectOption("#ag-w", "care"); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
   await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=2/);
