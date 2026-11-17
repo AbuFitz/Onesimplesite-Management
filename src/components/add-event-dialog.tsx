@@ -16,7 +16,7 @@ export function AddEventDialog({ open, closeHref, day, view, scope, companies, e
   const close = () => router.replace(closeHref);
   return (
     <dialog ref={ref} aria-label="Add an event" onCancel={(e) => { e.preventDefault(); close(); }} onClick={(e) => { if (e.target === ref.current) close(); }}
-      className="m-0 mt-auto max-h-[92dvh] w-full max-w-none rounded-t-3xl bg-white p-0 backdrop:bg-[rgba(9,9,11,.45)] sm:m-auto sm:w-[30rem] sm:rounded-2xl sm:shadow-[0_24px_70px_rgba(9,9,11,.3)]">
+      className="rec-dlg fl-dlg">
       {open && (
         <form key={edit?.id ?? "new"} action={edit ? updateEventAction : quickEventAction} className="flex max-h-[92dvh] flex-col">
           {edit && <><input type="hidden" name="id" value={edit.id} /><input type="hidden" name="version" value={edit.version} /></>}
@@ -28,11 +28,15 @@ export function AddEventDialog({ open, closeHref, day, view, scope, companies, e
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label" htmlFor="ev-d">Day</label><input id="ev-d" name="date" type="date" className="field !min-h-12" defaultValue={edit?.date ?? day} required /></div>
               <div><label className="label" htmlFor="ev-s">Starts</label><input id="ev-s" name="time" type="time" className="field !min-h-12" defaultValue={edit?.time ?? "09:00"} step={900} /></div>
-              <div><label className="label" htmlFor="ev-l">Length</label><select id="ev-l" name="minutes" className="field !min-h-12" defaultValue={String(edit?.minutes ?? 60)}>{[...(edit && ![15, 30, 45, 60, 90, 120, 240].includes(edit.minutes) ? [[edit.minutes, `${edit.minutes} min`]] : []), [15, "15 min"], [30, "30 min"], [45, "45 min"], [60, "1 hour"], [90, "1.5 hours"], [120, "2 hours"], [240, "Half a day"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+              <fieldset className="col-span-2"><legend className="label">How long</legend>
+                <div className="rchips">{[...(edit && ![15, 30, 45, 60, 90, 120, 240].includes(edit.minutes) ? [[edit.minutes, `${edit.minutes} min`]] : []), [15, "15 min"], [30, "30 min"], [45, "45 min"], [60, "1 hour"], [90, "1.5 hours"], [120, "2 hours"], [240, "Half a day"]].map(([v, l]) => (
+                  <label key={v} className="rchip"><input type="radio" name="minutes" value={v} defaultChecked={String(v) === String(edit?.minutes ?? 60)} /><span>{l}</span></label>
+                ))}</div></fieldset>
               <label className="flex min-h-12 items-center gap-2 self-end text-sm font-semibold"><input type="checkbox" name="allDay" className="size-5" defaultChecked={edit?.allDay} /> All day</label>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="label" htmlFor="ev-y">Kind</label><select id="ev-y" name="type" className="field !min-h-12" defaultValue={edit?.type ?? "internal_meeting"}>{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+              <fieldset className="col-span-2"><legend className="label">Kind</legend>
+                <div className="rchips">{TYPES.map(([v, l]) => <label key={v} className="rchip"><input type="radio" name="type" value={v} defaultChecked={v === (edit?.type ?? "internal_meeting")} /><span>{l}</span></label>)}</div></fieldset>
               <div><label className="label" htmlFor="ev-b">Company <span className="font-normal text-muted">(optional)</span></label><select id="ev-b" name="customerId" className="field !min-h-12" defaultValue={edit?.customerId ?? ""}><option value="">None</option>{companies.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
             </div>
             <div><label className="label" htmlFor="ev-w">Where, or a meeting link <span className="font-normal text-muted">(optional)</span></label><input id="ev-w" name="location" className="field !min-h-12" autoComplete="off" defaultValue={edit?.location} /></div>
