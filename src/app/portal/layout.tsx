@@ -6,7 +6,8 @@ import Link from "next/link";
 import { clientCanAny } from "@/modules/portal/access";
 import { requireClient } from "@/modules/identity/session";
 import { signOutPortal } from "@/app/actions/auth";
-import { PortalNav, PortalTabs } from "@/components/portal-nav";
+import { PortalNav } from "@/components/portal-nav";
+import { PortalDock } from "@/components/mobile-dock";
 import { Avatar } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const show = [...(clientCanAny(c, "billing") ? ["/billing"] : []), ...(clientCanAny(c, "people") ? ["/people"] : [])];
   const company = c.memberships.map((m) => m.customer.displayName).join(", ");
   return (
-    <div className="min-h-dvh pb-28 sm:pb-12">
+    <div className="min-h-dvh pb-40 sm:pb-12">
       <LiveRefresh seconds={30} />
       <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
@@ -31,7 +32,7 @@ export default async function PortalLayout({ children }: { children: React.React
       <main id="main" className="mx-auto max-w-5xl px-4 pt-4 sm:px-6">{children}</main>
       <CookieNotice aboveTabs />
       <footer className="mx-auto max-w-5xl px-4 pb-28 pt-10 sm:px-6 sm:pb-10"><LegalLinks /></footer>
-      <PortalTabs show={show} />
+      <PortalDock show={show} actions={[{ href: "/help/new", label: "Raise a ticket" }, { href: "/documents", label: "Your documents" }, ...(show.includes("/billing") ? [{ href: "/billing", label: "Billing" }] : [])]} />
     </div>
   );
 }

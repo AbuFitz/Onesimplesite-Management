@@ -280,3 +280,75 @@ a.kpi:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255, 255, 25
 .wl-t span { font-size: 12.5px; color: var(--color-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .wdg-sub { display: flex; justify-content: flex-end; margin: 0 0 .5rem; }
+
+/* ---- A charge row: title and price on top, then status and the action or explanation. Single-line pills, never a squeezed blob. ---- */
+.chg-list { display: grid; }
+.chg { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: .45rem 1rem; padding: 1.05rem 0; border-top: 1px solid var(--line-2); }
+.chg:first-child { border-top: 0; padding-top: .25rem; }
+.chg-main { min-width: 0; }
+.chg-amt { margin: 0; text-align: right; font-size: 18px; font-weight: 600; letter-spacing: -.02em; white-space: nowrap; }
+.chg-amt span { font-size: 13px; font-weight: 450; color: var(--color-muted); letter-spacing: 0; }
+.chg-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: .55rem .8rem; }
+.chg-status { display: inline-flex; align-items: center; flex: none; height: 28px; padding: 0 .85rem; border-radius: 999px; font-size: 12.5px; font-weight: 550; white-space: nowrap; }
+.chg-note { flex: 1 1 13rem; margin: 0; font-size: 13px; line-height: 1.4; color: var(--color-muted); }
+.chg-offer { display: block; margin: .5rem 0 0; padding: .5rem .8rem; border-radius: 14px; background: var(--color-mint); font-size: 13px; line-height: 1.4; font-weight: 500; }
+
+/* ---- Phone dock, switcher and sheets (iOS-like: blur, springy easing, big touch targets) ---- */
+:root { --spring: cubic-bezier(.32, 1.25, .5, 1); --dock-h: 7.75rem; }
+.mdock { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; gap: 10px; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); border-radius: 30px 30px 0 0; background: linear-gradient(180deg, #1b2210, #0f1309); box-shadow: 0 -24px 50px -24px rgba(22, 29, 11, .6), 0 1px 0 rgba(255, 255, 255, .07) inset; }
+.mdock-row { display: flex; align-items: center; gap: 10px; }
+.mdock-orb { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; background: var(--color-lime); color: var(--color-olive-950); box-shadow: 0 0 0 4px rgba(214, 232, 167, .12); transition: transform .25s var(--spring); }
+.mdock-orb:active { transform: scale(.9); }
+.mdock-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px; border-radius: 999px; background: rgba(255, 255, 255, .08); color: #e8eedc; text-decoration: none; font-size: 14px; font-weight: 550; }
+.mdock-search span { white-space: nowrap; }
+.mdock-search em { margin-left: auto; padding-left: 8px; font-style: normal; font-weight: 400; color: #8a9578; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mdock-plus { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; background: rgba(255, 255, 255, .1); color: #fff; transition: transform .25s var(--spring); }
+.mdock-plus:active { transform: scale(.9) rotate(90deg); }
+.mdock-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; margin: 0 -12px; padding: 0 12px; }
+.mdock-chips::-webkit-scrollbar { display: none; }
+.mdock-chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: #cdd6bc; font-size: 13.5px; text-decoration: none; white-space: nowrap; }
+.mdock-chip:active { background: rgba(255, 255, 255, .12); }
+@media (min-width: 1024px) { .mdock { display: none; } }
+
+.switcher { position: fixed; z-index: 80; inset: 0; display: grid; grid-template-rows: 1fr auto auto auto 1.2fr; justify-items: center; align-items: center; gap: 14px; padding: calc(24px + env(safe-area-inset-top)) 0 calc(28px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(30, 41, 17, .8), rgba(12, 16, 7, .92)); -webkit-backdrop-filter: blur(44px) saturate(1.15); backdrop-filter: blur(44px) saturate(1.15); animation: sw-in .28s var(--ease); }
+.sw-hint { grid-row: 2; font-size: 13px; color: rgba(255, 255, 255, .55); }
+.sw-row { grid-row: 3; width: 100%; display: flex; align-items: center; gap: 22px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 96px calc(50% - 40px); margin: -60px 0; scrollbar-width: none; overscroll-behavior-x: contain; }
+.sw-row::-webkit-scrollbar { display: none; }
+.sw-row li { flex: none; scroll-snap-align: center; --d: 1; }
+.sw-orb { position: relative; width: 80px; height: 80px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; color: var(--color-olive-950); background: rgba(255, 255, 255, .92); box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .6); transform: scale(calc(1.32 - var(--d) * .5)); opacity: calc(1 - var(--d) * .5); transition: transform .12s linear, opacity .12s linear; }
+.sw-orb[aria-current="true"] { background: var(--color-lime); }
+.sw-orb b { position: absolute; top: 2px; right: 2px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: #c2410c; color: #fff; font-size: 12px; display: grid; place-items: center; }
+.sw-name { grid-row: 4; font-family: var(--font-display); font-size: 24px; font-weight: 500; letter-spacing: -.03em; color: #fff; min-height: 1.4em; }
+.sw-close { grid-row: 5; align-self: start; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; background: rgba(255, 255, 255, .16); color: #fff; transition: transform .25s var(--spring); }
+.sw-close:active { transform: scale(.9); }
+@keyframes sw-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .switcher { animation: none; } .sw-orb { transition: none; } }
+
+/* The pop-out card: it floats inset from every edge, rises from the plus button with a spring, and reads as a thick pane of glass (specular highlight, bright edge, layered shadow). */
+.sheet-wrap { position: fixed; z-index: 80; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); perspective: 1200px; background: rgba(18, 24, 10, .38); -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15); animation: sw-in .25s var(--ease); }
+.sheet { position: relative; isolation: isolate; width: min(520px, 100%); max-height: 82dvh; overflow: auto; padding: 0 16px 18px; border-radius: 36px; background: linear-gradient(160deg, rgba(255, 255, 255, .94), rgba(252, 253, 247, .8) 55%, rgba(240, 246, 224, .82)); border: 1px solid rgba(255, 255, 255, .85); -webkit-backdrop-filter: blur(40px) saturate(1.7); backdrop-filter: blur(40px) saturate(1.7); box-shadow: 0 1.5px 0 #fff inset, 0 -1px 0 rgba(255, 255, 255, .4) inset, 0 2px 3px rgba(22, 29, 11, .1), 0 22px 40px -12px rgba(22, 29, 11, .42), 0 60px 90px -34px rgba(22, 29, 11, .55); transform-origin: 85% 100%; outline: none; animation: sheet-pop .55s var(--spring); transition: transform .25s var(--ease); }
+.sheet::before { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(110% 55% at 18% -6%, rgba(255, 255, 255, .95), transparent 58%), radial-gradient(60% 40% at 100% 100%, rgba(214, 232, 167, .45), transparent 70%); }
+.sheet-grab { display: grid; place-items: center; height: 30px; margin: 0 -16px; cursor: grab; touch-action: none; }
+.sheet-grab i { width: 40px; height: 5px; border-radius: 3px; background: rgba(30, 40, 15, .22); box-shadow: 0 1px 0 rgba(255, 255, 255, .7); }
+.sheet-title { font-size: 20px; font-weight: 550; letter-spacing: -.03em; margin: 0 0 .7rem .25rem; }
+.sheet-list { display: grid; gap: 10px; }
+.sheet-list li { animation: rise .5s var(--spring) both; animation-delay: calc(var(--i, 0) * 45ms + 140ms); }
+.sheet-list a { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 16px 0 12px; border-radius: 24px; color: var(--color-ink); font-weight: 550; text-decoration: none; background: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .55)); border: 1px solid rgba(255, 255, 255, .85); box-shadow: 0 1px 0 #fff inset, 0 1px 2px rgba(22, 29, 11, .06), 0 12px 22px -14px rgba(22, 29, 11, .5); transition: transform .25s var(--spring), box-shadow .2s; }
+.sheet-list a:active { transform: scale(.97); box-shadow: 0 1px 0 #fff inset, 0 4px 10px -8px rgba(22, 29, 11, .5); }
+.sheet-list a span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; color: var(--color-olive-950); background: radial-gradient(circle at 30% 25%, #f1f8da, var(--color-lime) 60%, #bdd480); box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 6px 12px -6px rgba(74, 96, 36, .7); }
+@keyframes sheet-pop { from { opacity: 0; transform: translateY(54px) scale(.88) rotateX(12deg); } 60% { opacity: 1; } }
+@keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+@media (min-width: 640px) { .sheet-wrap { align-items: center; } .sheet { padding-top: 8px; } .sheet-grab { display: none; } }
+@media (prefers-reduced-motion: reduce) { .sheet-wrap, .sheet, .sheet-list li { animation: none; } }
+@media (prefers-reduced-transparency: reduce) { .sheet { background: #f6f7ef; -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* The switcher's round icons get the same raised-glass treatment. */
+.sw-orb { background: radial-gradient(circle at 30% 22%, #fff, rgba(240, 244, 228, .92) 70%); box-shadow: 0 1px 0 #fff inset, 0 -2px 6px rgba(22, 29, 11, .08) inset, 0 14px 22px -12px rgba(0, 0, 0, .5), 0 2px 4px rgba(0, 0, 0, .2); }
+.sw-orb[aria-current="true"] { background: radial-gradient(circle at 30% 22%, #f6fbe6, var(--color-lime) 62%, #bcd380); box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 0 0 6px rgba(214, 232, 167, .16), 0 16px 26px -12px rgba(0, 0, 0, .55); }
+/* Phone pages leave room for the dock. */
+@media (max-width: 1023px) { .page { padding-bottom: calc(var(--dock-h) + 2.5rem); } }
+@media (min-width: 640px) { .mdock.sm-hide { display: none; } }
+
+.mdock { transition: opacity .2s var(--ease), transform .3s var(--ease); }
+body:has(.switcher) .mdock, body:has(.sheet-wrap) .mdock { opacity: 0; transform: translateY(12px); pointer-events: none; }
+body:has(.switcher) [role="region"][aria-label^="Sugg"], body:has(.sheet-wrap) [role="region"][aria-label^="Sugg"] { opacity: 0; pointer-events: none; }

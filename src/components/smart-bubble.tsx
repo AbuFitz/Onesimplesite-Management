@@ -32,7 +32,7 @@ export function SmartBubble() {
   if (!visible.length) return null;
 
   return (
-    <div className="pointer-events-none fixed bottom-[4.75rem] right-3 z-40 flex w-[min(23rem,calc(100vw-1.5rem))] flex-col items-end gap-2 lg:bottom-14 lg:right-4" role="region" aria-label="Suggestions">
+    <div className="pointer-events-none fixed bottom-[calc(var(--dock-h)+.75rem)] right-3 z-40 flex w-[min(23rem,calc(100vw-1.5rem))] flex-col items-end gap-2 lg:bottom-14 lg:right-4" role="region" aria-label="Suggestions">
       {mode !== "closed" && (
         <div className="pointer-events-auto w-full overflow-hidden rounded-2xl border border-line bg-white shadow-[0_16px_50px_rgba(14,19,17,.22)]" aria-live="polite">
           <div className="flex items-center justify-between border-b border-[var(--card-rule)] bg-[var(--card-head)] px-4 py-2.5">

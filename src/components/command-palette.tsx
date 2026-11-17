@@ -1,4 +1,5 @@
 "use client";
+import { usePlatform, searchKeyLabel } from "@/lib/platform";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, CornerDownLeft, Building2, User, FileText, ScrollText, FolderKanban, Ticket, MessagesSquare, Plus, Home, CalendarDays, Settings2, LifeBuoy } from "lucide-react";
@@ -7,7 +8,7 @@ type Item = { href: string; title: string; sub?: string; kind: string };
 type Group = { title: string; kind: string; items: { href: string; title: string; sub: string }[] };
 const ICON: Record<string, typeof Search> = { business: Building2, person: User, quote: FileText, agreement: ScrollText, project: FolderKanban, ticket: Ticket, board: MessagesSquare, action: Plus, go: Home };
 
-/** ⌘K (or Ctrl+K, or clicking the search box): jump anywhere, or start something, without leaving the keyboard. */
+/** ⌘K on Apple devices, Ctrl K on Windows and Linux (or clicking the search box): jump anywhere, or start something, without leaving the keyboard. */
 export function CommandPalette({ actions }: { actions: { href: string; label: string }[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -17,12 +18,13 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
   const input = useRef<HTMLInputElement>(null);
 
   const box = useRef<HTMLDivElement>(null);
+  const { ready, apple, touch } = usePlatform();
   useEffect(() => {
-    const key = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); input.current?.focus(); input.current?.select(); } };
+    const key = (e: KeyboardEvent) => { if ((apple ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); input.current?.focus(); input.current?.select(); } };
     const away = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
     window.addEventListener("keydown", key); document.addEventListener("mousedown", away);
     return () => { window.removeEventListener("keydown", key); document.removeEventListener("mousedown", away); };
-  }, []);
+  }, [apple]);
   useEffect(() => {
     if (q.trim().length < 2) { setGroups([]); return; }
     const ctl = new AbortController();
@@ -52,7 +54,7 @@ export function CommandPalette({ actions }: { actions: { href: string; label: st
       <label htmlFor="cmd-q" className="sr-only">Search</label>
       <input id="cmd-q" ref={input} value={q} onChange={(e) => { setQ(e.target.value); setSel(0); setOpen(true); }} onFocus={() => setOpen(true)} onKeyDown={onKey} autoComplete="off" role="combobox" aria-expanded={open} aria-controls="cmd-list"
         placeholder="Search companies, tickets, projects" className="h-9 w-full rounded-lg border border-line bg-soft pl-9 pr-12 text-sm outline-none placeholder:text-muted hover:border-edge focus:border-ink/40 focus:bg-white" />
-      {!open && <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-muted">⌘K</kbd>}
+      {!open && ready && !touch && <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-muted">{searchKeyLabel(apple)}</kbd>}
       {open && (
         <div id="cmd-list" className="absolute inset-x-0 top-full z-[60] mt-2 max-h-[min(26rem,70dvh)] overflow-y-auto rounded-xl border border-line bg-white p-1.5 shadow-[0_12px_36px_rgba(14,19,17,.14)]">
           {q.trim().length < 2 ? <ul>{quick.map(row)}</ul>

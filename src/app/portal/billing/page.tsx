@@ -8,7 +8,7 @@ import { payAction, manageBillingAction } from "@/app/actions/billing";
 import { fmtDate } from "@/components/ui";
 
 export const metadata = { title: "Billing" };
-const TONE = { due: "bg-butter text-[#5c4700]", ok: "bg-mint text-[#0a5a3d]", warn: "bg-blush text-[#7a2e12]", off: "bg-bone text-muted" } as const;
+const TONE = { due: "bg-butter text-[#5c4700]", ok: "bg-mint text-[#0a5a3d]", warn: "bg-blush text-[#7a2e12]", off: "bg-black/[.06] text-ink-2" } as const;
 
 export default async function Billing({ searchParams }: { searchParams: Promise<{ paid?: string; error?: string }> }) {
   const c = await requireClient();
@@ -29,24 +29,29 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
         <p className="mt-3 max-w-xl text-lg font-medium">{total > 0 ? `${money(total)} to pay. You can pay by card on a secure payment page.` : later.length ? `Nothing to pay right now. Your final payment of ${money(later.reduce((n, b) => n + b.amountMinor, 0))} is due before your website launches, and we'll email you when it's ready.` : items.length ? "You're all paid up." : "Nothing to pay yet. Your payments appear here once you've signed your order."}</p>
       </section>
       {items.length > 0 && (
-        <section className="tile bg-white" aria-label="Payments">
-          <ul className="divide-y divide-line">
+        <section className="card p-5 sm:p-6" aria-label="Payments">
+          <ul className="chg-list">
             {items.map((b) => { const wait = isScheduled(b); const s = wait ? { label: scheduledLabel(b), tone: "off" as const } : plainStatus(b.kind, b.status, b.cancelsAt, b.trialEndsAt, b.paidVia === "free"); const canPay = !wait && (b.status === "pending" || b.status === "past_due"); return (
-              <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div><p className="font-bold">{b.description ?? KIND_LABEL[b.kind] ?? "Payment"}</p><p className="text-sm text-muted">{chargeOf(b).title} · {chargeOf(b).reference}{b.paidAt ? ` · ${isMonthly(b.kind) ? "started" : "paid"} ${fmtDate(b.paidAt)}` : ""}</p>{b.paidVia === "free" && <p className="mt-1 inline-block rounded-lg bg-mint px-2.5 py-1 text-sm font-semibold">{b.promoLabel ?? "Offer"}: {b.trialMonths} month{b.trialMonths === 1 ? "" : "s"} free, no card needed. {!b.trialEndsAt ? "It starts on the day your website goes live, runs for that time, then ends. There is nothing to pay." : b.trialEndsAt > new Date() ? `It ends on ${fmtDate(b.trialEndsAt)} and there is nothing to pay.` : "It has ended and there is nothing to pay."} Want to carry on? Just ask us.</p>}
-                {isMonthly(b.kind) && b.trialMonths > 0 && b.paidVia !== "free" && b.status !== "cancelled" && <p className="mt-1 inline-block rounded-lg bg-mint px-2.5 py-1 text-sm font-semibold">{b.promoLabel ?? "Offer"}: {b.trialMonths} month{b.trialMonths === 1 ? "" : "s"} free{b.trialEndsAt ? ` · first payment ${fmtDate(b.trialEndsAt)}` : " from the day you start"}</p>}{!isMonthly(b.kind) && b.promoLabel && <p className="mt-1 inline-block rounded-lg bg-mint px-2.5 py-1 text-sm font-semibold">{b.promoLabel} applied</p>}</div>
-                <div className="flex items-center gap-3">
-                  <p className="text-lg font-bold">{b.paidVia === "free" ? "Free" : money(b.amountMinor, b.currency)}{isMonthly(b.kind) && b.paidVia !== "free" && <span className="text-sm font-medium text-muted"> / month</span>}</p>
-                  <span className={`rounded-full px-3 py-1 text-sm font-bold ${TONE[s.tone]}`}>{s.label}</span>
-                  {wait && <p className="basis-full text-sm text-muted sm:basis-auto">{b.kind === "balance" ? "We'll ask for this when your site is ready to go live." : "We'll email you when your site is live."}</p>}
-                  {canPay && b.status === "pending" && <form action={payAction}><input type="hidden" name="id" value={b.id} /><button className="btn btn-dark"><CreditCard size={16} aria-hidden /> {isMonthly(b.kind) ? "Start plan" : "Pay now"}</button></form>}
+              <li key={b.id} className="chg">
+                <div className="chg-main">
+                  <p className="font-semibold">{b.description ?? KIND_LABEL[b.kind] ?? "Payment"}</p>
+                  <p className="text-[13px] text-muted">{chargeOf(b).title} · {chargeOf(b).reference}{b.paidAt ? ` · ${isMonthly(b.kind) ? "started" : "paid"} ${fmtDate(b.paidAt)}` : ""}</p>
+                  {b.paidVia === "free" && <p className="chg-offer">{b.promoLabel ?? "Offer"}: {b.trialMonths} month{b.trialMonths === 1 ? "" : "s"} free, no card needed. {!b.trialEndsAt ? "It starts on the day your website goes live, runs for that time, then ends. There is nothing to pay." : b.trialEndsAt > new Date() ? `It ends on ${fmtDate(b.trialEndsAt)} and there is nothing to pay.` : "It has ended and there is nothing to pay."} Want to carry on? Just ask us.</p>}
+                  {isMonthly(b.kind) && b.trialMonths > 0 && b.paidVia !== "free" && b.status !== "cancelled" && <p className="chg-offer">{b.promoLabel ?? "Offer"}: {b.trialMonths} month{b.trialMonths === 1 ? "" : "s"} free{b.trialEndsAt ? ` · first payment ${fmtDate(b.trialEndsAt)}` : " from the day you start"}</p>}
+                  {!isMonthly(b.kind) && b.promoLabel && <p className="chg-offer">{b.promoLabel} applied</p>}
+                </div>
+                <p className="chg-amt num">{b.paidVia === "free" ? "Free" : money(b.amountMinor, b.currency)}{isMonthly(b.kind) && b.paidVia !== "free" && <span> / month</span>}</p>
+                <div className="chg-foot">
+                  <span className={`chg-status ${TONE[s.tone]}`}>{s.label}</span>
+                  {wait && <p className="chg-note">{b.kind === "balance" ? "We'll ask for this when your site is ready to go live." : "We'll email you when your site is live."}</p>}
+                  {canPay && b.status === "pending" && <form action={payAction} className="ml-auto"><input type="hidden" name="id" value={b.id} /><button className="btn"><CreditCard size={16} aria-hidden /> {isMonthly(b.kind) ? "Start plan" : "Pay now"}</button></form>}
                 </div>
               </li>
             ); })}
           </ul>
         </section>
       )}
-      <section className="tile bg-white" aria-labelledby="rc"><h2 id="rc" className="flex items-center gap-2 text-2xl"><ReceiptIcon size={22} aria-hidden /> Your receipts</h2>
+      <section className="card p-5 sm:p-6" aria-labelledby="rc"><h2 id="rc" className="flex items-center gap-2 text-2xl"><ReceiptIcon size={22} aria-hidden /> Your receipts</h2>
         {receipts.length === 0 ? <p className="mt-2 text-muted">When you pay, your receipt appears here straight away. We email you a copy too.</p> : (
           <ul className="mt-3 divide-y divide-line">{receipts.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">

@@ -15,7 +15,7 @@ export function CookieNotice({ aboveTabs = false }: { aboveTabs?: boolean }) {
   if (!show) return null;
   const ok = () => { try { localStorage.setItem(KEY, "1"); } catch { /* private window: it just shows again next time */ } setShow(false); };
   return (
-    <div role="dialog" aria-label="Cookies" aria-live="polite" className={`fixed inset-x-3 z-50 sm:inset-x-auto sm:bottom-4 sm:left-4 sm:w-[26rem] ${aboveTabs ? "bottom-[5.5rem]" : "bottom-3"}`}>
+    <div role="dialog" aria-label="Cookies" aria-live="polite" className={`fixed inset-x-3 z-50 sm:inset-x-auto sm:bottom-4 sm:left-4 sm:w-[26rem] ${aboveTabs ? "bottom-[calc(var(--dock-h)+.5rem)]" : "bottom-3"}`}>
       <div className={`rounded-2xl border border-line bg-white shadow-[0_12px_40px_rgba(14,19,17,.18)] p-4`}>
         <div className="flex gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-butter"><Cookie size={20} aria-hidden /></span>

@@ -110,7 +110,7 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
       <LiveRefresh seconds={30} />
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div><h1>{greeting}, {ctx.name.split(" ")[0]}</h1><p className="mt-1 text-muted">{new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeZone: "Europe/London" }).format(new Date())}</p></div>
-        <div className="flex flex-wrap gap-2">{quick.map(([h, l, Icon]) => <Link key={h} href={h} className="btn btn-quiet"><Icon size={16} aria-hidden /> {l}</Link>)}</div>
+        <div className="hidden flex-wrap gap-2 lg:flex">{quick.map(([h, l, Icon]) => <Link key={h} href={h} className="btn btn-quiet"><Icon size={16} aria-hidden /> {l}</Link>)}</div>
       </header>
       {backupDue && <p className="mb-5 rounded-2xl border border-[#f1d58a] bg-[#fff6dc] px-4 py-3 text-sm text-[#5c3b00]"><strong>Weekly backup due.</strong> <Link className="underline" href="/backup">Download a backup</Link></p>}
       <WidgetGrid storageKey={`oss-dash:${ctx.staffId}`} widgets={widgets} />

@@ -5,10 +5,10 @@ import { db } from "@/lib/db";
 import { LiveRefresh } from "@/components/live-refresh";
 import Image from "next/image";
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { can, ROLE_INFO } from "@/modules/identity/permissions";
-import { Rail, BottomNav, type NavGroup } from "@/components/nav";
+import { Rail, type NavGroup } from "@/components/nav";
+import { TeamDock } from "@/components/mobile-dock";
 import { cookies } from "next/headers";
 import { SmartBubble } from "@/components/smart-bubble";
 import { CommandPalette } from "@/components/command-palette";
@@ -55,8 +55,7 @@ export default async function StaffLayout({ children, modal }: { children: React
             <Link href="/" aria-label="OneSimpleSite Manage, home" className="logo lg:hidden"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={132} height={27} priority /></Link>
             <CommandPalette actions={create} />
             <div className="ml-auto flex items-center gap-2">
-              <span className="sm:hidden"><Link href="/search" aria-label="Search" className="iconbtn"><Search size={18} aria-hidden /></Link></span>
-              <NewMenu links={create} />
+              <div className="hidden lg:block"><NewMenu links={create} /></div>
               <UserMenu staffId={ctx.staffId} name={ctx.name} role={ROLE_INFO[ctx.role].label.replace(" (recommended)", "")}>
                 <form action={signOutStaff}><button role="menuitem" className="flex min-h-10 w-full items-center rounded-lg px-3 text-left text-sm text-ink hover:bg-soft">Sign out</button></form>
               </UserMenu>
@@ -72,7 +71,7 @@ export default async function StaffLayout({ children, modal }: { children: React
       </div>
       {modal}
       <SmartBubble />
-      <BottomNav />
+      <TeamDock groups={groups} actions={create} />
     </div>
   );
 }
