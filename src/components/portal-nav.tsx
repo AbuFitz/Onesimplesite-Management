@@ -13,9 +13,9 @@ export function PortalNav({ show = [] }: { show?: readonly string[] }) {
   const on = useActive();
   return (
     <nav aria-label="Portal" className="hidden sm:block">
-      <ul className="flex gap-1.5 rounded-2xl bg-white p-1.5 shadow-[0_1px_2px_rgba(14,19,17,.05)] w-fit">
+      <ul className="flex w-fit gap-1 rounded-full border border-white/80 bg-white/70 p-1 shadow-[0_10px_30px_-16px_rgba(35,47,16,.28)] backdrop-blur-xl">
         {pick(show).map(([h, l, Icon]) => (
-          <li key={h}><Link href={h} aria-current={on(h) ? "page" : undefined} className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-4 text-[15px] font-semibold transition-colors ${on(h) ? "bg-ink text-white" : "text-ink hover:bg-bone"}`}><Icon size={17} aria-hidden />{l}</Link></li>
+          <li key={h}><Link href={h} aria-current={on(h) ? "page" : undefined} className={`inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-[14.5px] font-medium transition-colors ${on(h) ? "bg-ink text-white" : "text-ink-2 hover:bg-black/5"}`}><Icon size={17} aria-hidden />{l}</Link></li>
         ))}
       </ul>
     </nav>
@@ -30,17 +30,17 @@ export function PortalTabs({ show = [] }: { show?: readonly string[] }) {
   const main = items.filter(([h]) => ["/overview", "/projects", "/documents", "/help"].includes(h));
   const more = items.filter(([h]) => !["/overview", "/projects", "/documents", "/help"].includes(h));
   const moreOn = more.some(([h]) => on(h));
-  const cell = (active: boolean) => `flex min-h-12 w-full flex-col items-center justify-center rounded-xl text-[11px] font-semibold ${active ? "bg-spring text-ink" : "text-white/80"}`;
+  const cell = (active: boolean) => `flex min-h-12 w-full flex-col items-center justify-center rounded-2xl text-[11px] font-semibold ${active ? "bg-lime text-olive-950" : "text-white/80"}`;
   return (
     <>
-      {open && <button type="button" aria-label="Close menu" onClick={() => setOpen(false)} className="fixed inset-0 z-20 bg-ink/30 sm:hidden" />}
+      {open && <button type="button" aria-label="Close menu" onClick={() => setOpen(false)} className="fixed inset-0 z-20 bg-olive-950/35 backdrop-blur-[3px] sm:hidden" />}
       <nav aria-label="Portal" className="fixed inset-x-3 bottom-3 z-30 sm:hidden" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
         {open && (
-          <ul className="mb-2 overflow-hidden rounded-2xl border border-line bg-white p-1.5 shadow-[0_8px_30px_rgba(14,19,17,.2)]">
-            {more.map(([h, l, Icon]) => <li key={h}><Link href={h} onClick={() => setOpen(false)} aria-current={on(h) ? "page" : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 font-semibold ${on(h) ? "bg-bone" : ""}`}><Icon size={19} aria-hidden />{l}</Link></li>)}
+          <ul className="mb-2 overflow-hidden rounded-3xl border border-white/80 bg-white/90 p-1.5 shadow-[0_30px_60px_-24px_rgba(22,29,11,.5)] backdrop-blur-xl">
+            {more.map(([h, l, Icon]) => <li key={h}><Link href={h} onClick={() => setOpen(false)} aria-current={on(h) ? "page" : undefined} className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 font-medium ${on(h) ? "bg-lime/60" : ""}`}><Icon size={19} aria-hidden />{l}</Link></li>)}
           </ul>
         )}
-        <ul style={{ gridTemplateColumns: `repeat(${main.length + 1}, minmax(0, 1fr))` }} className="grid gap-1 rounded-2xl bg-ink p-1.5 shadow-[0_8px_30px_rgba(14,19,17,.25)]">
+        <ul style={{ gridTemplateColumns: `repeat(${main.length + 1}, minmax(0, 1fr))` }} className="grid gap-1 rounded-[26px] bg-olive-950 p-1.5 shadow-[0_20px_40px_-18px_rgba(22,29,11,.7)]">
           {main.map(([h, l, Icon]) => <li key={h}><Link href={h} aria-current={on(h) ? "page" : undefined} aria-label={l} className={cell(on(h))}><Icon size={20} aria-hidden /><span>{l.replace("Get help", "Help")}</span></Link></li>)}
           <li><button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label="More" className={cell(moreOn || open)}><Ellipsis size={20} aria-hidden /><span>More</span></button></li>
         </ul>
