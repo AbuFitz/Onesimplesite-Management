@@ -14,11 +14,12 @@ const cl = await login(P, "client.b@example.test", { width: 390, height: 844 });
 await cl.goto(`${P}/projects/${PROJECT}`);
 ok(await cl.locator("text=What we need from you").count() > 0, "customer sees what we need from them");
 ok(await cl.locator("text=raise a ticket").count() === 0, "no 'raise a ticket' detour any more");
-await cl.fill("textarea[name=text] >> nth=0", "Mon-Fri 9 to 5. We are a family bakery since 1998.");
-await cl.setInputFiles("input[type=file] >> nth=0", "/tmp/pixel.png");
-await cl.click("button:has-text('Send to us') >> nth=0"); await cl.waitForURL(/sent=1/);
+await cl.fill("details[open] textarea[name=text]", "Mon-Fri 9 to 5. We are a family bakery since 1998.");
+await cl.setInputFiles("details[open] input[type=file]", "/tmp/pixel.png");
+const sentBefore = await cl.locator("text=Sent ✓").count();   // earlier runs leave answered requests, so count the change
+await cl.click("details[open] button:has-text('Send to us')"); await cl.waitForURL(/sent=1/);
 await cl.waitForSelector("text=We've got it"); ok(true, "customer sees a confirmation");
-ok(await cl.locator("text=Sent ✓").count() === 1, "that request is marked sent");
+ok(await cl.locator("text=Sent ✓").count() === sentBefore + 1, "that request is marked sent");
 await cl.setInputFiles("section[aria-labelledby=x] input[type=file]", "/tmp/pixel.png"); await cl.fill("#x-t", "Extra photo of the shop front");
 await cl.click("section[aria-labelledby=x] button:has-text('Send to us')"); await cl.waitForURL(/sent=1/);
 await cl.setInputFiles("section[aria-labelledby=x] input[type=file]", "/tmp/pixel.png");
