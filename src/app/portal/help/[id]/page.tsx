@@ -47,20 +47,23 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
         {t.body && <p className="mt-5 whitespace-pre-wrap rounded-2xl bg-bone p-4">{t.body}</p>}
         <Files base="/files" items={files.filter((f) => !f.commentId)} />
       </section>
-      <section className="space-y-3" aria-label="Conversation">
+      <section className="convo" aria-label="Conversation">
         {t.comments.map((m) => m.authorKind === "event" ? (
-          <p key={m.id} className="mx-auto flex w-fit max-w-full items-center gap-2 rounded-full bg-mint px-4 py-1.5 text-sm font-semibold"><span className="size-2 shrink-0 rounded-full bg-ink" aria-hidden />{m.body}<span className="font-normal text-muted">{fmtDateTime(m.createdAt)}</span></p>
+          <p key={m.id} className="msg-event"><span aria-hidden />{m.body}<time>{fmtDateTime(m.createdAt)}</time></p>
         ) : (
-          <div key={m.id} className={`tile !p-5 ${m.authorKind === "client" ? "bg-sky/60" : "bg-white"}`}>
-            <div className="mb-2 flex items-center gap-3"><Avatar name={m.authorName} size={32} staffId={m.authorKind === "staff" ? m.authorStaffId : m.authorUserId} base={m.authorKind === "staff" ? "/avatar" : "/avatar/u"} /><div><p className="font-bold leading-tight">{m.authorKind === "client" ? "You" : m.authorName}</p><p className="text-xs text-muted">{fmtDateTime(m.createdAt)}</p></div></div>
-            <p className="whitespace-pre-wrap">{m.body}</p>
-            <Files base="/files" items={files.filter((f) => f.commentId === m.id)} />
+          <div key={m.id} className={`msg ${m.authorKind === "client" ? "me" : "them"}`}>
+            {m.authorKind !== "client" && <Avatar name={m.authorName} size={32} staffId={m.authorStaffId} base="/avatar" />}
+            <div className="bubble">
+              <p className="who"><b>{m.authorKind === "client" ? "You" : m.authorName}</b><time>{fmtDateTime(m.createdAt)}</time></p>
+              <p className="txt">{m.body}</p>
+              <Files base="/files" items={files.filter((f) => f.commentId === m.id)} />
+            </div>
           </div>
         ))}
       </section>
       {!closed && (
-        <section className="tile bg-white !p-6"><ReplyForm id={t.id} />
-          {t.status !== "resolved" && <form action={resolveAction} className="mt-4 border-t border-line pt-4"><input type="hidden" name="id" value={t.id} /><button className="btn btn-quiet">This is sorted, thanks</button></form>}
+        <section className="convo-foot" data-convo><ReplyForm id={t.id} />
+          {t.status !== "resolved" && <form action={resolveAction} className="convo-done"><input type="hidden" name="id" value={t.id} /><button className="btn btn-quiet">This is sorted, thanks</button></form>}
         </section>
       )}
     </div>

@@ -295,8 +295,8 @@ a.kpi:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255, 255, 25
 
 /* ---- Phone dock, switcher and sheets (iOS-like: blur, springy easing, big touch targets) ---- */
 :root { --spring: cubic-bezier(.32, 1.25, .5, 1); --dock-h: 8.25rem; }
-.mdock { position: fixed; z-index: 40; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 8px; padding: 8px; border-radius: 38px; background: linear-gradient(160deg, rgba(34, 46, 26, .78), rgba(14, 19, 10, .84)); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 1px 0 rgba(255, 255, 255, .14) inset, 0 -1px 0 rgba(0, 0, 0, .3) inset, 0 2px 4px rgba(0, 0, 0, .28), 0 26px 46px -16px rgba(10, 14, 6, .75); }
-.mdock-row { display: flex; align-items: center; gap: 8px; }
+.mdock { position: fixed; z-index: 40; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 8px; border-radius: 38px; background: linear-gradient(160deg, rgba(34, 46, 26, .78), rgba(14, 19, 10, .84)); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 1px 0 rgba(255, 255, 255, .14) inset, 0 -1px 0 rgba(0, 0, 0, .3) inset, 0 2px 4px rgba(0, 0, 0, .28), 0 26px 46px -16px rgba(10, 14, 6, .75); }
+.mdock-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mdock-orb { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .08); color: #e8eedc; transition: transform .25s var(--spring), background-color .2s; }
 .mdock-orb:active { transform: scale(.9); }
 .mdock-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 5px 0 18px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .08); color: #fff; text-decoration: none; font-size: 15px; font-weight: 550; }
@@ -436,3 +436,30 @@ body:has(.switcher) [role="region"][aria-label^="Sugg"], body:has(.sheet-wrap) [
 .pv-feed li { display: flex; gap: .85rem; }
 .pv-feed i { flex: none; width: 10px; height: 10px; margin-top: 7px; border-radius: 50%; background: var(--color-olive-500); box-shadow: 0 0 0 4px rgba(125, 154, 63, .18); }
 .pv-feed p:first-child { font-size: 12.5px; color: var(--color-muted); }
+
+/* ---- Conversations as chat (from the DeepSeek and podcast references): dark bubbles for you, glass bubbles for the team, a glass composer ---- */
+.convo { display: grid; gap: 12px; }
+.msg { display: flex; align-items: flex-end; gap: 10px; }
+.msg.me { justify-content: flex-end; }
+.bubble { max-width: min(38rem, 88%); padding: 12px 16px 13px; border-radius: 26px; }
+.msg.them .bubble { background: var(--glass-strong); border: 1px solid rgba(255, 255, 255, .9); border-bottom-left-radius: 8px; box-shadow: var(--sh-w); }
+.msg.me .bubble { color: #f3f7e6; background: linear-gradient(160deg, #3a4d1c, #1f2a10); border-bottom-right-radius: 8px; box-shadow: 0 14px 26px -16px rgba(22, 29, 11, .7), 0 1px 0 rgba(255, 255, 255, .12) inset; }
+.who { display: flex; align-items: baseline; gap: .55rem; font-size: 12.5px; margin-bottom: 2px; }
+.who b { font-weight: 600; } .who time { font-size: 11.5px; opacity: .62; }
+.txt { white-space: pre-wrap; word-break: break-word; font-size: 15.5px; line-height: 1.45; }
+.msg-event { justify-self: center; display: inline-flex; align-items: center; gap: .5rem; padding: 5px 14px; border-radius: 99px; background: rgba(214, 232, 167, .7); font-size: 12.5px; font-weight: 550; max-width: 100%; }
+.msg-event span { width: 6px; height: 6px; border-radius: 50%; background: var(--color-olive-800); flex: none; } .msg-event time { font-weight: 400; color: var(--color-muted); }
+.convo-foot { display: grid; gap: 10px; margin-top: 4px; }
+.convo-done { display: flex; justify-content: center; }
+.composer { display: grid; gap: 10px; }
+.cmp-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.cmp-chips::-webkit-scrollbar { display: none; }
+.cmp-chip { flex: none; height: 36px; padding: 0 14px; border-radius: 99px; border: 1px solid rgba(30, 40, 15, .14); background: rgba(255, 255, 255, .55); font: inherit; font-size: 13.5px; cursor: pointer; transition: background-color .15s, transform .2s var(--spring); }
+.cmp-chip:hover { background: #fff; } .cmp-chip:active { transform: scale(.96); }
+.cmp-box { display: flex; align-items: flex-end; gap: 8px; padding: 6px 6px 6px 18px; border-radius: 30px; background: rgba(255, 255, 255, .9); border: 1px solid rgba(255, 255, 255, .95); box-shadow: 0 1px 0 #fff inset, 0 18px 34px -20px rgba(35, 47, 16, .55); }
+.cmp-input { flex: 1; min-width: 0; max-height: 160px; resize: none; border: 0; outline: 0; background: transparent; padding: 11px 0; font: inherit; font-size: 16px; line-height: 1.4; color: var(--color-ink); }
+.cmp-send { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 0; cursor: pointer; color: #fff; background: linear-gradient(180deg, #2c3a15, #1a230c); box-shadow: 0 10px 18px -10px rgba(22, 29, 11, .8); transition: transform .2s var(--spring); }
+.cmp-send:active { transform: scale(.9); } .cmp-send:disabled { opacity: .5; }
+
+.msg-note { padding: 12px 16px; border-radius: 22px; border: 1px dashed rgba(166, 131, 20, .5); background: rgba(250, 236, 203, .75); }
+.msg-note .who em { margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 550; color: #7a5200; }
