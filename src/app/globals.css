@@ -842,3 +842,8 @@ body:has(.wz) .sb { display: none; }
 }
 @media (hover: hover) { .wcell:not(.editing) > * { transition: transform .35s var(--spring), box-shadow .35s; } .wcell:not(.editing):hover > * { transform: translateY(-3px); } }
 .wcell:not(.editing):active > * { transform: scale(.985); }
+
+/* The reply box stays in reach at the bottom while you read the thread, and sits at the very bottom when the keyboard is up. */
+.composer { position: sticky; bottom: calc(var(--dock-h) + .25rem); z-index: 6; padding-top: 8px; }
+html[data-kb] .composer { bottom: 6px; }
+@media (min-width: 1024px) { .composer { bottom: .75rem; } }
