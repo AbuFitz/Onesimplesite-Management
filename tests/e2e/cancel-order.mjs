@@ -13,7 +13,7 @@ const listText = async (path) => { await st.goto(`${M}${path}`); await st.waitFo
 // before: it is a signed order, with a project, and the customer can see its deposit
 ok((await listText("/agreements")).includes(title), "before: the signed order is in the open list");
 await st.goto(`${M}/projects`); await st.waitForLoadState("networkidle"); ok((await st.locator("main").innerText()).includes(title), "before: its project is in Projects");
-await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle"); ok((await cl.locator("main").innerText()).includes(title), "before: the customer sees its charges");
+await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle"); await cl.evaluate(() => document.querySelectorAll("details.more").forEach((d) => (d.open = true))); ok((await cl.locator("main").innerText()).includes(title), "before: the customer sees its charges");
 // cancel it
 await st.goto(`${M}/contracts/${id}`); await st.waitForLoadState("networkidle");
 await st.locator("summary:has-text('Cancel this order')").click();
@@ -31,6 +31,6 @@ const closed = await listText("/agreements?show=closed"); ok(closed.includes(tit
 ok(!(await listText("/projects")).includes(title), "after: its project is gone from Projects");
 ok((await listText("/projects?stage=cancelled")).includes(title), "after: and is under the Cancelled chip");
 const pay = await listText("/payments?show=due"); ok(!pay.includes(title), "after: nothing from it is to collect");
-await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle"); ok(!(await cl.locator("main").innerText()).includes(title), "after: the customer no longer sees its charges");
+await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle"); await cl.evaluate(() => document.querySelectorAll("details.more").forEach((d) => (d.open = true))); ok(!(await cl.locator("main").innerText()).includes(title), "after: the customer no longer sees its charges");
 await cl.goto(`${P}/projects`); await cl.waitForLoadState("networkidle"); ok(!(await cl.locator("main").innerText()).includes(title), "after: nor its project");
 await b.close(); console.log("ALL OK");
