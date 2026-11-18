@@ -56,17 +56,21 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   </>);
   const plans = editable ? (await db.servicePlan.findMany({ where: { workspaceId: ctx.workspaceId, active: true }, orderBy: [{ position: "asc" }, { name: "asc" }] })).map((x) => ({ id: x.id, name: x.name, price: `£${(x.monthlyMinor / 100).toFixed(2)}`, monthlyMinor: x.monthlyMinor })) : [];
   const stepper = (interactive: boolean) => (
-    <ol aria-label="Steps" className="mb-6 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-      {STEPS.map((x) => {
-        const state = x.n === step ? "current" : x.n < step ? "done" : "todo";
-        const cls = `flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-semibold ${state === "current" ? "border-ink bg-ink text-white" : state === "done" ? "border-[#bfe3d2] bg-[#eef9f3] text-[#0a5a3d]" : "border-line bg-white text-ink"}`;
-        const inner = <><span className={`grid size-6 place-items-center rounded-full text-xs ${state === "current" ? "bg-white text-ink" : state === "done" ? "bg-[#0a5a3d] text-white" : "bg-bone"}`}>{state === "done" ? "✓" : x.n}</span>{x.name}</>;
-        return <li key={x.n}>{interactive ? <button type="submit" name="go" value={x.n} formNoValidate aria-current={state === "current" ? "step" : undefined} className={cls}>{inner}</button> : <Link href={`/proposals/${p.id}?step=${x.n}`} aria-current={state === "current" ? "step" : undefined} className={cls}>{inner}</Link>}</li>;
-      })}
-    </ol>
+    <nav className="wz-bar mb-6" aria-label="Steps">
+      <p className="wz-now"><b>{STEPS[step - 1].name}</b><span>Step {step} of {STEPS.length}</span></p>
+      <ol>
+        {STEPS.map((x) => {
+          const state = x.n === step ? "on" : x.n < step ? "done" : "";
+          const inner = <><i aria-hidden>{x.n}</i><span>{x.name}</span></>;
+          return <li key={x.n} className={state}>{interactive
+            ? <button type="submit" name="go" value={x.n} formNoValidate aria-current={x.n === step ? "step" : undefined} aria-label={`Step ${x.n}: ${x.name}`}>{inner}</button>
+            : <Link href={`/proposals/${p.id}?step=${x.n}`} aria-current={x.n === step ? "step" : undefined} aria-label={`Step ${x.n}: ${x.name}`} className="wz-link">{inner}</Link>}</li>;
+        })}
+      </ol>
+    </nav>
   );
   const summaryCard = (n: number, title: string, children: React.ReactNode) => (
-    <section className="rounded-2xl border border-line bg-white p-4"><div className="mb-2 flex items-center justify-between gap-3"><h3 className="text-base font-bold">{title}</h3><Link href={`/proposals/${p.id}?step=${n}`} className="text-sm font-semibold underline">Change</Link></div>{children}</section>
+    <section className="sum-card"><div className="mb-2 flex items-center justify-between gap-3"><h3 className="text-base font-medium">{title}</h3><Link href={`/proposals/${p.id}?step=${n}`} className="text-sm font-semibold underline">Change</Link></div>{children}</section>
   );
   const filledReqs = Object.entries(req).filter(([k, v]) => v && ["pages", "features", "integrations", "domainHosting", "contentBy", "timeline", "payment", "notes"].includes(k)).length;
   const wizard = !editable ? null : step < 5 ? (
@@ -74,16 +78,16 @@ export default async function ProposalPage({ params, searchParams }: { params: P
       <button type="submit" name="go" value={step + 1} hidden aria-hidden tabIndex={-1} />
       {stepper(true)}
       <ProposalFields step={step} plans={plans} initial={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil, recurringPeriod: cur.recurringPeriod, lines: cur.lines.map((l) => ({ description: l.description, quantity: l.quantity, unitMinor: l.unitMinor, recurring: l.recurring })), requirements: cur.requirements as Record<string, string | undefined> | null }} />
-      <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-line pt-5">
-        {step > 1 && <button type="submit" name="go" value={step - 1} formNoValidate className="btn btn-quiet">Back</button>}
-        <button type="submit" name="go" value={step + 1} className="btn">{step === 4 ? "Save and review" : "Save and continue"}</button>
-        <span className="text-sm text-muted">Step {step} of 5. Everything is saved when you continue.</span>
+      <div className="wz-foot mt-6">
+        {step > 1 && <button type="submit" name="go" value={step - 1} formNoValidate className="wz-back">Back</button>}
+        <button type="submit" name="go" value={step + 1} className="wz-next">{step === 4 ? "Save and review" : "Save and continue"}</button>
       </div>
+      <p className="mt-2 text-center text-sm text-muted">Everything is saved when you continue.</p>
     </form>
   ) : (
     <div className="mx-auto max-w-3xl space-y-4">
       {stepper(false)}
-      <h2 className="text-xl">Step 5: Check and send</h2><p className="mb-1 text-[15px] text-muted">{STEPS[4].help}</p>
+      <h2 className="sr-only">Step 5: Check and send</h2><p className="mb-1 text-[15px] text-muted">{STEPS[4].help}</p>
       {summaryCard(1, "The job", <><p className="font-semibold">{p.title}</p><p className="text-sm text-muted">{cur.scope}</p></>)}
       {summaryCard(2, "Price", <>{priceLines}<ul className="mt-1 text-sm text-muted">{cur.lines.map((l) => <li key={l.id}>{l.description}: {money(l.unitMinor * l.quantity)}{l.recurring ? " a month" : ""}</li>)}</ul></>)}
       {summaryCard(3, "Payment and offer", <ul className="space-y-1 text-[15px]">
@@ -91,13 +95,13 @@ export default async function ProposalPage({ params, searchParams }: { params: P
         <li>{pr ? <>Offer “{pr.label}”: {[pr.discountMinor > 0 ? `${money(pr.discountMinor)} off the website fee` : "", pr.freeMonths > 0 ? (pr.endsAfter ? `${pr.freeMonths} free month${pr.freeMonths === 1 ? "" : "s"} of care that simply end` : `${pr.freeMonths} free month${pr.freeMonths === 1 ? "" : "s"} on the care plan`) : ""].filter(Boolean).join(" and ")}.</> : "No offer."}</li>
       </ul>)}
       {summaryCard(4, "Details", <p className="text-[15px]">{filledReqs > 0 ? `${filledReqs} detail${filledReqs === 1 ? "" : "s"} filled in.` : "None added. You can still send it."}{cur.validUntil ? ` Open until ${fmtDateTime(cur.validUntil)}.` : " Open for 30 days once sent."}</p>)}
-      <section className="rounded-2xl border border-line bg-bone/50 p-4">
+      <section className="sum-card">
         <h3 className="mb-1 text-base font-bold">See it as they will</h3>
         <p className="mb-3 text-sm text-muted">Nothing is sent when you preview.</p>
         <div className="flex flex-wrap items-center gap-3"><Link className="btn" href={`/proposals/${p.id}/preview`}>Preview what they will see</Link><a className="text-sm underline" href={`/proposals/${p.id}/preview/pdf`} target="_blank" rel="noreferrer">PDF preview</a></div>
       </section>
       {can(ctx.role, "proposal.send") && (
-        <form action={sendAgreementAction} id="send" className="space-y-3 rounded-2xl border-2 border-ink p-4"><input type="hidden" name="id" value={p.id} />
+        <form action={sendAgreementAction} id="send" className="send-box space-y-3"><input type="hidden" name="id" value={p.id} />
           <h3 className="text-base font-bold">Send for signature</h3>
           <ul className="text-sm">{checks.map(([label, ok, href]) => <li key={label} className="py-0.5"><Status label={ok ? "ready" : "needed"} kind={ok ? "good" : "warn"} /> {label}{!ok && <> · <Link className="underline" href={href}>fix</Link></>}</li>)}</ul>
           <label className="label" htmlFor="sn">Who signs? Their name</label><input id="sn" name="name" className="field" defaultValue={primary?.name} required />

@@ -111,7 +111,12 @@ async function resolve(tx: Tx | typeof db, token: string): Promise<Resolved> {
 export async function viewSigning(token: string) {
   const s = await resolve(db, token);
   if (!s.ok) return s;
-  const r = await db.signingRequest.findUniqueOrThrow({ where: { id: s.requestId }, include: { contract: { select: { title: true, reference: true, customer: { select: { displayName: true } } } } } });
+  const r = await db.signingRequest.findUniqueOrThrow({ where: { id: s.requestId }, include: { contract: { select: { title: true, reference: true, customerId: true, customer: { select: { displayName: true } } } } } });
+  // The first time this link is opened is a fact worth keeping (it shows on the agreement and company timeline); later opens are not logged.
+  try {
+    const seen = await db.auditEvent.findFirst({ where: { workspaceId: r.workspaceId, action: "signing.viewed", targetId: r.contractId, detail: { path: ["requestId"], equals: r.id } }, select: { id: true } });
+    if (!seen) await audit(db, { workspaceId: r.workspaceId, actor: { label: r.signerName }, action: "signing.viewed", targetType: "contract", targetId: r.contractId, customerId: r.contract.customerId, detail: { requestId: r.id } });
+  } catch { /* never block signing because a log line failed */ }
   return { ok: true as const, signerName: r.signerName, signerEmail: r.signerEmail, contentText: r.contentText, title: r.contract.title, reference: r.contract.reference, business: r.contract.customer.displayName, expiresAt: r.expiresAt, sentAt: r.createdAt };
 }
 

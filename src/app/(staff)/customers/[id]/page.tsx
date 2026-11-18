@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Timeline } from "@/components/timeline";
 import { MoreHorizontal, Pencil, Trash2, Archive } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/modules/identity/session";
@@ -27,7 +28,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   const [people, requests] = tab === "people" || tab === "overview" ? await Promise.all([listPeople(ctx, id), pendingRequests(ctx, id)]) : [[], []];
   const [tickets, billing] = await Promise.all([db.ticket.findMany({ where: { customerId: id, workspaceId: ctx.workspaceId }, orderBy: { updatedAt: "desc" }, take: 50, include: { contact: { select: { name: true } } } }), staffBilling(ctx, id)]);
   const [activity, notes] = await Promise.all([
-    tab === "activity" ? db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id }, orderBy: { createdAt: "desc" }, take: 40 }) : [],
+    tab === "activity" ? db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id }, orderBy: { createdAt: "desc" }, take: 120 }) : [],
     db.note.findMany({ where: { workspaceId: ctx.workspaceId, customerId: id, archivedAt: null, OR: [{ visibility: "team" }, { ownerId: ctx.staffId }] }, orderBy: { updatedAt: "desc" }, take: 20 }),
   ]);
   const missing = customerDetailsMissing(c);
@@ -175,7 +176,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
 
       {tab === "activity" && (
         <Section title="Activity">
-          {activity.length === 0 ? <p className="text-sm text-muted">No activity yet.</p> : <ul>{activity.map((a) => <li key={a.id} className="row flex flex-wrap justify-between gap-2 py-2.5 text-sm"><span>{a.actorLabel} <span className="text-muted">{a.action.replaceAll(".", " ").replaceAll("_", " ")}</span></span><span className="text-muted">{fmtDateTime(a.createdAt)}</span></li>)}</ul>}
+          <Timeline events={activity} empty="No activity yet." />
         </Section>
       )}
     </>

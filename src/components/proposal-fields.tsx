@@ -20,21 +20,21 @@ export function ProposalFields({ initial, defaults, plans = [], step = 1 }: { in
   return (
     <>
       <div hidden={step !== 1} className="space-y-4">
-        <h2 className="text-xl">Step 1: The job</h2>{hint(1)}
+        <h2 className="sr-only">Step 1: The job</h2>{hint(1)}
         <div><label className="label" htmlFor="title">Name of the agreement</label><input id="title" name="title" className="field" defaultValue={initial?.title ?? defaults?.title} required={step === 1} /><p className="hint mt-1">The customer sees this at the top of their agreement.</p></div>
         <div><label className="label" htmlFor="scope">What we are building</label><textarea id="scope" name="scope" className="field min-h-28" defaultValue={initial?.scope ?? defaults?.scope} required={step === 1} /><p className="hint mt-1">A plain summary in a sentence or two.</p></div>
         <div><label className="label" htmlFor="pjt">Kind of project</label><select id="pjt" name="projectType" className="field" defaultValue={initial?.requirements?.projectType ?? "new_site"}>{Object.entries(PROJECT_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select><p className="hint mt-1">Chosen when you started. Only change it if the job changed.</p></div>
       </div>
 
       <div hidden={step !== 2} className="space-y-4">
-        <h2 className="text-xl">Step 2: Price</h2>{hint(2)}
+        <h2 className="sr-only">Step 2: Price</h2>{hint(2)}
         <PriceLines lines={initial?.lines ?? []} />
         <input type="hidden" name="recurringPeriod" value={initial?.recurringPeriod ?? "month"} />
         {plans.length > 0 && <div><label className="label" htmlFor="plan">Care plan</label><select id="plan" name="plan" className="field" defaultValue={initial?.requirements?.plan ?? ""}><option value="">No care plan (website only)</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.name}, {p.price} a month</option>)}</select><p className="hint mt-1">Choosing a plan adds its monthly price for you and brings the Service Level Agreement and Hosting terms into the agreement.</p></div>}
       </div>
 
       <div hidden={step !== 3} className="space-y-4">
-        <h2 className="text-xl">Step 3: Payment and offer</h2>{hint(3)}
+        <h2 className="sr-only">Step 3: Payment and offer</h2>{hint(3)}
         <div><label className="label" htmlFor="dp">Deposit due when they sign</label><select id="dp" name="depositPercent" className="field" defaultValue={initial?.requirements?.depositPercent ?? ""}><option value="">No deposit, pay the website fee in one go</option>{["10", "20", "25", "30", "40", "50", "60", "70", "75"].map((n) => <option key={n} value={n}>{n}% deposit, the rest before launch</option>)}</select><p className="hint mt-1">Written into the agreement they sign, so there are no surprises. The two payments are created for you once they sign.</p></div>
         <fieldset className="rounded-xl border border-line p-4"><legend className="px-1 text-sm font-semibold">Offer for this company <span className="font-normal text-muted">(optional, leave empty for none)</span></legend>
           <p className="mb-3 text-sm text-muted">A promotion just for them. It is written into the agreement, and applied automatically when they pay.</p>
@@ -53,7 +53,7 @@ export function ProposalFields({ initial, defaults, plans = [], step = 1 }: { in
       </div>
 
       <div hidden={step !== 4} className="space-y-4">
-        <h2 className="text-xl">Step 4: Details</h2>{hint(4)}
+        <h2 className="sr-only">Step 4: Details</h2>{hint(4)}
         <div className="grid gap-3 sm:grid-cols-2">
           {REQUIREMENT_FIELDS.map(([k, label]) => (
             <div key={k} className={k === "payment" || k === "notes" ? "sm:col-span-2" : ""}>

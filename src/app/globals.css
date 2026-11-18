@@ -848,3 +848,24 @@ body:has(.wz) .sb { display: none; }
 html[data-kb] .composer { bottom: 6px; }
 @media (min-width: 1024px) { .composer { bottom: .75rem; } }
 .series .bars + figcaption span { min-width: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+
+/* Timeline: grouped by day, each line a sentence, an icon by kind, a rail joining them. */
+.tl { display: grid; gap: 18px; }
+.tl-day { margin-bottom: 8px; font-size: 13px; font-weight: 500; color: var(--color-muted); }
+.tl ol { position: relative; display: grid; gap: 4px; }
+.tl ol::before { content: ""; position: absolute; left: 17px; top: 18px; bottom: 18px; width: 2px; border-radius: 1px; background: rgba(20, 30, 12, .1); }
+.tl-row { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 6px 0; }
+.tl-ico { position: relative; z-index: 1; flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #fff; color: var(--color-olive-700); box-shadow: 0 0 0 4px rgba(255, 255, 255, .6), 0 6px 12px -8px rgba(18, 28, 12, .5); }
+.tl-row.good .tl-ico { background: var(--color-lime); color: var(--color-olive-950); }
+.tl-row.warn .tl-ico { background: #fbefd0; color: #7a5200; }
+.tl-row.bad .tl-ico { background: #fbe4df; color: #8a1c15; }
+.tl-row p { font-size: 15px; line-height: 1.35; padding-top: 1px; }
+.tl-row small { font-size: 13px; color: var(--color-muted); }
+.wz-bar li .wz-link { display: grid; gap: 6px; }
+.wz-bar li .wz-link::before { content: ""; display: block; height: 5px; border-radius: 3px; background: rgba(20, 30, 12, .12); }
+.wz-bar li.done .wz-link::before { background: var(--color-olive-700); }
+.wz-bar li.on .wz-link::before { background: linear-gradient(90deg, var(--color-olive-700), var(--color-olive-500)); }
+.wz-bar li button { cursor: pointer; }
+
+.sum-card { padding: 16px 18px; border-radius: 26px; background: rgba(255, 255, 255, .78); border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 8px 18px -16px rgba(18, 28, 12, .5); }
+.send-box { padding: 18px; border-radius: 30px; background: linear-gradient(160deg, rgba(255, 255, 255, .95), rgba(247, 250, 240, .86)); border: 1.5px solid var(--color-olive-700); box-shadow: 0 0 0 4px rgba(74, 96, 36, .12), 0 18px 34px -20px rgba(18, 28, 12, .5); }

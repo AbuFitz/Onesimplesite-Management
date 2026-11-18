@@ -1,4 +1,5 @@
 import { plainStatus, KIND_LABEL, isMonthly, isScheduled, scheduledLabel } from "@/modules/billing/service";
+import { Timeline } from "@/components/timeline";
 import { emailPaymentLinkAction, startCarePlanAction, continueFreePlanAction, requestFinalPaymentAction, markPaidAction, cancelChargeAction, splitFeeAction, cancelPlanAction, setPlanOfferAction } from "@/app/actions/billing";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -9,7 +10,7 @@ import { can } from "@/modules/identity/permissions";
 import { sendForSigningAction, voidSigningAction, completionAction, reviseProposalAction, cancelOrderAction } from "@/app/actions/crm";
 import { RecordHeader, Status, ErrorSummary, money, fmtDateTime, fmtDate } from "@/components/ui";
 import { Panel, SummaryTile, FactRow } from "@/components/panel";
-import { FileText, PenLine, CreditCard, FolderKanban, Download } from "lucide-react";
+import { FileText, PenLine, CreditCard, FolderKanban, History, Download } from "lucide-react";
 
 export const metadata = { title: "Contract" };
 export default async function ContractPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string; emailed?: string; cancelled?: string; paid?: string }> }) {
@@ -22,6 +23,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
   });
   if (!k) notFound();
   const pc = k.customer.contacts[0];
+  const events = await db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, targetId: { in: [k.id, ...(k.proposalVersion?.proposalId ? [k.proposalVersion.proposalId] : [])] } }, orderBy: { createdAt: "desc" }, take: 60, select: { id: true, action: true, actorLabel: true, createdAt: true } });
   const receiptsBy = new Map<string, { id: string; ref: string; paidAt: Date }[]>();
   for (const r of await db.receipt.findMany({ where: { intentId: { in: k.billingIntents.map((b) => b.id) } }, orderBy: { paidAt: "asc" }, select: { id: true, ref: true, paidAt: true, intentId: true } })) receiptsBy.set(r.intentId, [...(receiptsBy.get(r.intentId) ?? []), r]);
   const live = k.signingRequests.find((r) => r.status === "pending");
@@ -134,6 +136,7 @@ export default async function ContractPage({ params, searchParams }: { params: P
             )}
           </Panel>
           {k.project && <Panel title="Project" icon={FolderKanban} tone="amber"><p className="font-semibold">{k.project.name}</p><p className="mt-1 text-sm text-ink/65">{k.project.reference}</p><Link className="btn btn-quiet !min-h-11 sm:!min-h-9 mt-3" href={`/projects/${k.project.id}`}>Open the project</Link></Panel>}
+          <Panel title="Timeline" icon={History} tone="amber"><Timeline events={events} empty="Nothing has happened to this agreement yet." /></Panel>
         </aside>
       </div>
     </>
