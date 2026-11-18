@@ -30,7 +30,7 @@ export function TicketForm({ accounts, projects }: { accounts: { id: string; nam
     ];
   };
   return (
-    <Wizard action={act} review={review} error={<ErrorSummary message={s?.error} />}
+    <Wizard action={act} review={review} draftKey="portal-ticket" later={{ href: "/help" }} errorMessage={s?.error} onRestore={(v) => { if (typeof v.kind === "string" && v.kind) setKind(v.kind); }} error={<ErrorSummary message={s?.error} />}
       actions={<SubmitButton pendingText="Sending…">Send to the team</SubmitButton>}
       steps={[
         { id: "kind", title: "About", ready: !!kind, hint: "What's it about? Pick the closest one. You can explain in a moment.", node: (

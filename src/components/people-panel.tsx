@@ -1,4 +1,5 @@
 import { Avatar } from "@/components/ui";
+import { AddPersonForm } from "@/components/add-person-form";
 import { addPersonAction, updatePersonAction, invitePersonAction, setAccessAction, resetPasswordAction, revokeAccessAction, removePersonAction, approveRequestAction, declineRequestAction, makeMainContactAction, resetTwoStepAction } from "@/app/actions/people";
 import { ACCESS_LEVELS, levelLabel } from "@/modules/portal/access";
 import type { Person } from "@/modules/people/service";
@@ -117,18 +118,7 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
         <section aria-label="Add a person" className="max-w-3xl rounded-2xl border border-line bg-white p-4">
           <h2 className="text-lg">Add a person</h2>
           <p className="text-sm text-muted">Add them, and tick the box if they should get a portal login straight away. You can also invite them later.</p>
-          <form action={addPersonAction} className="mt-3 space-y-4"><input type="hidden" name="customerId" value={customerId} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div><label className="label" htmlFor="ap-n">Full name</label><input id="ap-n" name="name" className="field" required autoComplete="off" /></div>
-              <div><label className="label" htmlFor="ap-e">Email</label><input id="ap-e" name="email" type="email" inputMode="email" className="field" required autoComplete="off" /></div>
-              <div><label className="label" htmlFor="ap-p">Position <span className="font-normal text-muted">(optional)</span></label><input id="ap-p" name="position" list="positions" className="field" placeholder="Choose or type" autoComplete="off" /></div>
-              <div><label className="label" htmlFor="ap-t">Phone <span className="font-normal text-muted">(optional)</span></label><input id="ap-t" name="phone" type="tel" inputMode="tel" className="field" autoComplete="off" /></div>
-            </div>
-            <details className="rounded-xl bg-bone/60 p-3"><summary className="flex min-h-10 cursor-pointer items-center gap-2 text-sm font-semibold"><span>Give them portal access</span></summary>
-              <div className="mt-3 space-y-3"><label className="flex min-h-10 items-center gap-2 text-sm font-semibold"><input type="checkbox" name="invite" className="size-4 accent-[#0c6a49]" /> Send them a portal invitation now</label><Level id="add" role="member" /></div>
-            </details>
-            <button className="btn">Add person</button>
-          </form>
+          <div className="mt-3"><AddPersonForm customerId={customerId} action={addPersonAction} positions={POSITIONS} /></div>
         </section>
       )}
       <datalist id="positions">{POSITIONS.map((p) => <option key={p} value={p} />)}</datalist>

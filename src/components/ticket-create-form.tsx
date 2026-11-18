@@ -35,7 +35,7 @@ export function TicketCreateForm({ customer, people, team, me, initialType }: { 
     ];
   };
   return (
-    <Wizard action={act} review={review} error={<ErrorSummary message={s?.error} />}
+    <Wizard action={act} review={review} draftKey={`ticket:${customer.id}`} later={{ href: "/tickets" }} errorMessage={s?.error} onRestore={(v) => { if (typeof v.type === "string" && v.type) setType(v.type); }} error={<ErrorSummary message={s?.error} />}
       actions={<SubmitButton pendingText="Creating…">{type === "onboarding" ? "Create and open the quote" : "Create ticket"}</SubmitButton>}
       steps={[
         { id: "kind", title: "Kind", ready: !!type, hint: "What kind of ticket is it?", node: (

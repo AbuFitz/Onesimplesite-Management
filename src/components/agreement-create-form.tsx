@@ -22,7 +22,7 @@ export function AgreementCreateForm({ customer, people }: { customer: { id: stri
     ];
   };
   return (
-    <Wizard action={act} review={review} error={<ErrorSummary message={s?.error} />}
+    <Wizard action={act} review={review} draftKey={`agreement:${customer.id}`} later={{ href: "/agreements" }} errorMessage={s?.error} error={<ErrorSummary message={s?.error} />}
       intro={<p className="wz-hint">Four quick steps, then you set the price, deposit and any offer on the next page before anything is sent.</p>}
       actions={<SubmitButton pendingText="Starting…">Start the agreement</SubmitButton>}
       steps={[

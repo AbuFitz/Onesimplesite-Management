@@ -64,7 +64,7 @@ ok((await staff.locator("main").innerText()).includes("Team sync"), "calendar qu
 }
 
 // 1. Settings: company details
-await staff.goto(`${M}/settings`);
+await staff.goto(`${M}/settings/company`);
 await staff.fill("#legalName", "OneSimpleSite Ltd"); await staff.fill("#companyNumber", "01234567"); await staff.fill("#registeredAddress", "1 High Street, London");
 await staff.click("button:has-text('Save company details')"); await staff.waitForURL(/saved=1/);
 ok(true, "company details saved in Settings");

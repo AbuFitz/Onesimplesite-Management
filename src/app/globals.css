@@ -926,3 +926,11 @@ html[data-kb] .tb, body:has(.sheet-wrap) .tb { opacity: 0; transform: translateY
 .set-side .set-txt b { font-size: 15px; } .set-side .set-txt small { font-size: 12.5px; }
 .set-back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; margin: 0 0 4px -6px; padding: 0 10px 0 4px; font-size: 16px; color: var(--color-olive-700); text-decoration: none; font-weight: 500; }
 .set-back:active { opacity: .6; }
+
+/* Drafts: said once, quietly. */
+.wz-resume { padding: 10px 16px; border-radius: 999px; font-size: 14px; background: var(--color-lime); color: var(--color-olive-950); animation: pop-in .5s var(--spring) both; }
+.wz-resume button { margin-left: 6px; font-weight: 500; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.wz-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 0 6px; font-size: 13px; color: var(--color-muted); }
+.wz-saved { display: inline-flex; align-items: center; gap: 5px; animation: rise .4s var(--spring) both; }
+.wz-saved svg { color: var(--color-olive-700); }
+.wz-meta a { color: var(--color-ink-2); text-decoration: underline; text-underline-offset: 2px; }

@@ -36,7 +36,7 @@ export function RegisterForm() {
     );
   };
   return (
-    <Wizard action={act} review={review} check={check} error={<ErrorSummary message={s?.error} />}
+    <Wizard action={act} review={review} check={check} draftKey="company-new" later={{ href: "/customers" }} errorMessage={s?.error} onRestore={(v) => { if (typeof v.kind === "string" && v.kind) setKind(v.kind); }} error={<ErrorSummary message={s?.error} />}
       actions={<><SubmitButton pendingText="Saving…">Add company</SubmitButton><button name="next" value="ticket" className="btn btn-quiet">Add company and start an agreement</button></>}
       steps={[
         { id: "kind", title: "Kind", hint: "What kind of customer is this?", node: (<>
