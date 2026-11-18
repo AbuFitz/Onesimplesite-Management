@@ -81,9 +81,9 @@ export function Tabs({ tabs, current }: { tabs: { id: string; label: string; hre
   );
 }
 
-export function ErrorSummary({ message }: { message?: string }) {
+export function ErrorSummary({ message, title = "Couldn't save." }: { message?: string; title?: string }) {
   if (!message) return null;
-  return <p role="alert" tabIndex={-1} className="mb-5 rounded-lg bg-[#fdecea] px-4 py-3 text-sm text-[#7d1f16]"><strong className="font-semibold">Couldn't save.</strong> {message}</p>;
+  return <p role="alert" tabIndex={-1} className="mb-5 rounded-2xl bg-[#fdecea] px-4 py-3 text-sm text-[#7d1f16]"><strong className="font-semibold">{title}</strong> {message}</p>;
 }
 
 export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {

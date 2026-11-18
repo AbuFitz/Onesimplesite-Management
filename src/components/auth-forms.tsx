@@ -27,7 +27,7 @@ export function LoginForm({ staff = false, next }: { staff?: boolean; next?: str
   if (s?.mfa) {
     return (
       <form action={mfaAct} className="space-y-4">
-        <ErrorSummary message={m?.error} />
+        <ErrorSummary message={m?.error} title="That didn't work." />
         <input type="hidden" name="backup" value={backup ? "1" : "0"} /><input type="hidden" name="next" value={next ?? ""} />
         <p className="text-sm">{backup ? "Enter one of the backup codes you saved when you set up two-step sign-in. Each works once." : "Open your authenticator app and enter the 6-digit code for OneSimpleSite."}</p>
         <div><label className="label" htmlFor="code">{backup ? "Backup code" : "Authenticator code"}</label>
@@ -46,7 +46,7 @@ export function LoginForm({ staff = false, next }: { staff?: boolean; next?: str
     <div className="space-y-4">
       <form action={act} className="space-y-4">
         <input type="hidden" name="next" value={next ?? ""} />
-        <ErrorSummary message={s?.error} />
+        <ErrorSummary message={s?.error} title="Couldn't sign in." />
         <div><label className="label" htmlFor="email">{staff ? "Username or email" : "Email"}</label>
           <input id="email" name="email" type={staff ? "text" : "email"} className="field" autoComplete="username webauthn" autoCapitalize="none" spellCheck={false} placeholder={staff ? "first.surname" : undefined} required /></div>
         <div><label className="label" htmlFor="password">Password</label>

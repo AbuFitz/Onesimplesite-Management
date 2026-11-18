@@ -24,6 +24,25 @@ export async function signOutPortal() {
 
 const hostAuth2 = async () => ((await isPortalHost()) ? portalAuth() : staffAuth());
 
+/**
+ * The team app and the customer portal share the same login records, so a correct password can belong to someone with no access to this side.
+ * Without this check they would be signed in, then quietly bounced back to the sign-in page with no explanation. Say where to go instead.
+ */
+async function wrongPlace(portal: boolean, email: string): Promise<string | null> {
+  const u = await db.user.findUnique({ where: { email }, select: { id: true } });
+  if (!u) return null;
+  if (portal) {
+    const client = await db.clientMembership.findFirst({ where: { userId: u.id, revokedAt: null }, select: { id: true } });
+    if (client) return null;
+    const staff = await db.staffMembership.findFirst({ where: { userId: u.id, status: "active" }, select: { id: true } });
+    return staff ? `That is a team login. Team members sign in at ${new URL(origins().manage).host}.` : "That login has no access to the customer portal. Ask for an invitation.";
+  }
+  const staff = await db.staffMembership.findFirst({ where: { userId: u.id, status: "active" }, select: { id: true } });
+  if (staff) return null;
+  const client = await db.clientMembership.findFirst({ where: { userId: u.id, revokedAt: null }, select: { id: true } });
+  return client ? `That is a customer login. Customers sign in at ${new URL(origins().portal).host}.` : "That login has no access to the team app.";
+}
+
 export async function login(_: unknown, fd: FormData) {
   let email = String(fd.get("email") ?? "").trim().toLowerCase();
   const password = String(fd.get("password") ?? "");
@@ -37,6 +56,8 @@ export async function login(_: unknown, fd: FormData) {
   try {
     const remember = fd.get("remember") === "on";
     const r = (await auth.api.signInEmail({ body: { email, password, rememberMe: remember }, headers: await headers() })) as { twoFactorRedirect?: boolean };
+    const wrong = await wrongPlace(portal, email);
+    if (wrong) { if (!r?.twoFactorRedirect) await auth.api.signOut({ headers: await headers() }).catch(() => {}); return { error: wrong }; }
     if (r?.twoFactorRedirect) return { mfa: true as const, error: undefined };   // they have an authenticator app: ask for the code
   } catch {
     return { error: portal ? "Email or password is incorrect." : "Username, email or password is incorrect." }; // same message for unknown user and bad password
