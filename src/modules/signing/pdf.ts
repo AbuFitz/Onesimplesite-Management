@@ -3,15 +3,15 @@ import { parseDoc } from "@/documents/parse";
 import { WORDMARK_BOX, WORDMARK_COLOUR, WORDMARK_REVERSED } from "@/documents/wordmark";
 import { MAST_PNG, WISPS_JPG, WISPS_FLIP_JPG } from "@/documents/art";
 
-const A4: [number, number] = [595.28, 841.89];
+export const A4: [number, number] = [595.28, 841.89];
 const M = 51; // 18mm gutter, as in the template
 const INK = rgb(0.055, 0.075, 0.067), MOSS = rgb(0.047, 0.416, 0.286), GREY = rgb(0.36, 0.38, 0.37), BONE = rgb(0.937, 0.922, 0.89), LINE = rgb(0.85, 0.84, 0.81);
-const hex = (h: string) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
+export const hex = (h: string) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
 
 // Standard PDF fonts only cover WinAnsi; replace anything else so generation never throws.
-const safe = (s: string) => s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—−]/g, "-").replace(/…/g, "...").replace(/•/g, "-").replace(/[^\x09\x0A\x20-\x7E\xA0-\xFF]/g, "?");
+export const safe = (s: string) => s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—−]/g, "-").replace(/…/g, "...").replace(/•/g, "-").replace(/[^\x09\x0A\x20-\x7E\xA0-\xFF]/g, "?");
 
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
+export function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const out: string[] = [];
   for (const para of text.split("\n")) {
     if (!para.trim()) { out.push(""); continue; }
@@ -26,7 +26,7 @@ function wrap(text: string, font: PDFFont, size: number, width: number): string[
 }
 
 /** Draws the outlined wordmark as vector paths (crisp at any zoom). */
-function wordmark(page: PDFPage, paths: { fill: string; d: string }[], x: number, yTop: number, width: number) {
+export function wordmark(page: PDFPage, paths: { fill: string; d: string }[], x: number, yTop: number, width: number) {
   const s = width / WORDMARK_BOX.w;
   for (const p of paths) page.drawSvgPath(p.d, { x: x - WORDMARK_BOX.x * s, y: yTop + WORDMARK_BOX.y * s, scale: s, color: hex(p.fill), borderWidth: 0 });
   return WORDMARK_BOX.h * s;
