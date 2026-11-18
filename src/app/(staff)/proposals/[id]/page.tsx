@@ -35,7 +35,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const vars = await documentValues(ctx.workspaceId, planId);
   const needed = emptyVars([published?.body, sla?.body, hosting?.body].filter(Boolean).join("\n"), vars).map(labelFor);
   const checks: [string, boolean, string][] = [
-    ["Our company details", companyMissing(company).length === 0, "/settings"],
+    ["Our company details", companyMissing(company).length === 0, "/settings/company"],
     [`${p.customer.displayName}'s details`, customerDetailsMissing(p.customer).length === 0, `/customers/${p.customerId}/details`],
     ["Published Services Agreement", !!published || draftOk, "/settings/legal/terms"],
     ...(planId ? ([["Published Service Level Agreement", !!sla || draftOk, "/settings/legal/sla"], ["Published Hosting and Care Plan Terms", !!hosting || draftOk, "/settings/legal/hosting"]] as [string, boolean, string][]) : []),

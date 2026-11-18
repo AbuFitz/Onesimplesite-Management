@@ -34,16 +34,16 @@ export function NewMenu({ links }: { links: { href: string; label: string }[] })
   );
 }
 
-export function UserMenu({ name, role, staffId, children }: { name: string; role: string; staffId?: string; children: ReactNode }) {
+export function UserMenu({ name, role, staffId, avatarBase, accountLabel = "My account", children }: { name: string; role: string; staffId?: string; avatarBase?: string; accountLabel?: string; children: ReactNode }) {
   const { open, setOpen, ref } = usePopover();
   return (
     <div className="relative" ref={ref}>
-      <button type="button" aria-expanded={open} aria-haspopup="menu" aria-label={`Account menu for ${name}`} onClick={() => setOpen(!open)} className="rounded-full focus-visible:outline-offset-2"><Avatar name={name} size={36} staffId={staffId} /></button>
+      <button type="button" aria-expanded={open} aria-haspopup="menu" aria-label={`Account menu for ${name}`} onClick={() => setOpen(!open)} className="rounded-full focus-visible:outline-offset-2"><Avatar name={name} size={38} staffId={staffId} {...(avatarBase ? { base: avatarBase } : {})} /></button>
       {open && (
         <div role="menu" className={panel}>
           <div className="px-3 py-2"><p className="text-sm font-semibold">{name}</p><p className="text-xs text-muted">{role}</p></div>
           <div className="pop-rule" />
-          <Link role="menuitem" href="/account" className={item}>My account</Link>
+          <Link role="menuitem" href="/account" className={item}>{accountLabel}</Link>
           {children}
         </div>
       )}

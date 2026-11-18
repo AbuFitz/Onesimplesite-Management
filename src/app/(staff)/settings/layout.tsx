@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
-import { SettingsSidebar } from "@/components/settings-nav";
+import { requireStaff } from "@/modules/identity/session";
+import { can } from "@/modules/identity/permissions";
+import { SettingsFrame, type SettingsKey } from "@/components/settings-nav";
 
-/** Every settings page shares one frame: a grouped menu on the left, the section on the right. */
-export default function SettingsLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:gap-10">
-      <aside><p className="mb-3 hidden px-3 text-2xl font-bold tracking-tight lg:block" style={{ fontFamily: "var(--font-display)" }}>Settings</p><SettingsSidebar /></aside>
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
+/** Every settings page shares one frame (see SettingsFrame). Only the sections this person is allowed to use are listed. */
+export default async function SettingsLayout({ children }: { children: ReactNode }) {
+  const ctx = await requireStaff();
+  const show: SettingsKey[] = ["account", ...(can(ctx.role, "settings.write") ? (["company", "plans", "legal", "emails", "notifications", "security"] as SettingsKey[]) : []), ...(can(ctx.role, "staff.manage") ? (["team"] as SettingsKey[]) : []), ...(can(ctx.role, "data.export") ? (["backup"] as SettingsKey[]) : [])];
+  return <SettingsFrame show={show}>{children}</SettingsFrame>;
 }

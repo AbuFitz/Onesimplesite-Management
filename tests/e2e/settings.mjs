@@ -9,10 +9,10 @@ async function run(name, viewport) {
   const ctx = await b.newContext({ viewport, deviceScaleFactor: 1 });
   const pg = await ctx.newPage();
   await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
-  for (const [path, title] of [["/settings", "Company details"], ["/settings/plans", "Plans and details"], ["/settings/legal", "Legal documents"], ["/settings/emails", "Emails"], ["/settings/notifications", "Notifications"], ["/settings/security", "Sign-in security"]]) {
+  for (const [path, title] of [["/settings", "Settings"], ["/settings/company", "Company details"], ["/settings/plans", "Plans and details"], ["/settings/legal", "Legal documents"], ["/settings/emails", "Emails"], ["/settings/notifications", "Notifications"], ["/settings/security", "Sign-in security"]]) {
     await pg.goto(`${M}${path}`); await pg.waitForLoadState("networkidle");
     ok((await pg.locator("h1").first().innerText()).trim() === title, `${name}: ${path} is titled ${title}`);
-    ok(await pg.locator("[aria-current=page]:visible").count() >= 1, `${name}: ${path} highlights its section`);
+    ok(path === "/settings" || (await pg.locator("[aria-current=page]:visible, .set-back:visible").count()) >= 1, `${name}: ${path} shows where you are (highlighted section, or a back link on a phone)`);
     ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), `${name}: ${path} has no horizontal overflow`);
     if (shots) await pg.screenshot({ path: `${shots}/${name}${path.replaceAll("/", "-")}.png` });
   }

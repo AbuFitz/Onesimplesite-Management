@@ -153,7 +153,7 @@ import { saveSettings, savePlan } from "@/modules/settings/plans";
 export async function updateCompanyAction(fd: FormData) {
   const ctx = await requireStaff("settings.write");
   try { await updateCompany(ctx, { legalName: fd.get("legalName") || undefined, companyNumber: fd.get("companyNumber") || undefined, registeredAddress: fd.get("registeredAddress") || undefined, vatNumber: fd.get("vatNumber") || undefined }); } catch (e) { return back("/settings", e); }
-  redirect("/settings?saved=1");
+  redirect("/settings/company?saved=1");
 }
 export async function saveLegalAction(_: unknown, fd: FormData): Promise<{ error?: string }> {
   const ctx = await requireStaff("settings.write");

@@ -16,7 +16,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ e
   const roles = Object.entries(ROLE_INFO).map(([value, v]) => ({ value, ...v }));
   return (
     <>
-      <RecordHeader title="Team" meta="Logins and access levels" />
+      <RecordHeader back={{ href: "/settings", label: "Settings" }} title="Team" meta="Logins and access levels" />
       <ErrorSummary message={(await searchParams).error} />
       <section aria-labelledby="mem" className="card-section">
         <h2 id="mem">Members</h2>

@@ -32,8 +32,6 @@ export default async function StaffLayout({ children, modal }: { children: React
     { label: "Work", items: [...(seeCustomers ? [{ href: "/tickets", label: "Tickets", icon: "pipeline", badge: supportOpen }] : []), { href: "/projects", label: "Projects", icon: "projects" }, { href: "/calendar", label: "Calendar", icon: "calendar" }, { href: "/board", label: "Board", icon: "notes" }, ...(can(ctx.role, "vault.use") ? [{ href: "/vault", label: "Passwords", icon: "vault" }] : [])] },
     { label: "Company", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Settings", icon: "settings" }] : []),
-      ...(can(ctx.role, "data.export") ? [{ href: "/backup", label: "Backup", icon: "backup" }] : []),
-      ...(can(ctx.role, "staff.manage") ? [{ href: "/team", label: "Team", icon: "team" }] : []),
     ] },
     ...(can(ctx.role, "settings.write") ? [{ label: "Testing", items: [{ href: "/testing", label: "Testing", icon: "testing" }] }] : []),
   ].filter((g) => g.items.length) as NavGroup[];

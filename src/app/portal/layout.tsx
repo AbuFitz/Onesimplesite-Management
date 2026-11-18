@@ -8,7 +8,7 @@ import { requireClient } from "@/modules/identity/session";
 import { signOutPortal } from "@/app/actions/auth";
 import { PortalNav } from "@/components/portal-nav";
 import { PortalDock } from "@/components/mobile-dock";
-import { Avatar } from "@/components/ui";
+import { UserMenu } from "@/components/menus";
 
 export const dynamic = "force-dynamic";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -23,8 +23,9 @@ export default async function PortalLayout({ children }: { children: React.React
           <Link href="/overview" aria-label="Client portal home"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={164} height={34} priority className="h-[26px] w-auto min-[380px]:h-[30px] sm:h-[34px]" /></Link>
           <div className="flex items-center gap-3">
             <span className="hidden max-w-[16rem] truncate text-sm font-semibold sm:inline">{company}</span>
-            <Avatar name={c.name} size={38} staffId={c.userId} base="/avatar/u" />
-            <form action={signOutPortal}><button className="btn btn-quiet !min-h-10 !px-4 text-sm whitespace-nowrap">Sign out</button></form>
+            <UserMenu staffId={c.userId} avatarBase="/avatar/u" name={c.name} role={company} accountLabel="Settings">
+              <form action={signOutPortal}><button role="menuitem" className="pop-item w-full text-left">Sign out</button></form>
+            </UserMenu>
           </div>
         </div>
         <div className="mx-auto max-w-5xl px-4 pb-2 sm:px-6"><PortalNav show={show} /></div>

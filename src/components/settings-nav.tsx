@@ -1,51 +1,91 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, CreditCard, ScrollText, Mail, Bell, ShieldCheck } from "lucide-react";
+import { Building2, CreditCard, ScrollText, Mail, Bell, ShieldCheck, Users, DatabaseBackup, UserRound, ChevronRight, ChevronLeft, type LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
-type Item = { href: string; label: string; note: string; Icon: typeof Building2; match: string[]; exact?: boolean };
-const GROUPS: { title: string; items: Item[] }[] = [
-  { title: "Company", items: [
-    { href: "/settings", label: "Company details", note: "Who we are on every agreement", Icon: Building2, match: ["/settings"] , exact: true },
-    { href: "/settings/plans", label: "Plans and details", note: "Care plans and quoted details", Icon: CreditCard, match: ["/settings/plans"] },
-  ] },
-  { title: "Documents and emails", items: [
-    { href: "/settings/legal", label: "Legal documents", note: "What customers sign", Icon: ScrollText, match: ["/settings/legal", "/settings/terms"] },
-    { href: "/settings/emails", label: "Emails", note: "Preview and test each one", Icon: Mail, match: ["/settings/emails"] },
-  ] },
-  { title: "Alerts", items: [
-    { href: "/settings/notifications", label: "Notifications", note: "Which emails are sent, and when", Icon: Bell, match: ["/settings/notifications"] },
-  ] },
-  { title: "Security", items: [
-    { href: "/settings/security", label: "Sign-in security", note: "Two-step, passkeys, devices", Icon: ShieldCheck, match: ["/settings/security"] },
-  ] },
+export type SettingsKey = "company" | "plans" | "team" | "legal" | "emails" | "notifications" | "security" | "backup" | "account";
+type Item = { key: SettingsKey; href: string; label: string; note: string; Icon: LucideIcon; tint: string; match: string[] };
+const ITEMS: Item[] = [
+  { key: "account", href: "/account", label: "My account", note: "Your name, picture, password", Icon: UserRound, tint: "#6b7280", match: ["/account"] },
+  { key: "company", href: "/settings/company", label: "Company details", note: "Who we are on every agreement", Icon: Building2, tint: "#4a6024", match: ["/settings/company"] },
+  { key: "plans", href: "/settings/plans", label: "Plans and details", note: "Care plans and quoted details", Icon: CreditCard, tint: "#3b6ea5", match: ["/settings/plans"] },
+  { key: "team", href: "/team", label: "Team", note: "Logins and access levels", Icon: Users, tint: "#7a5bb5", match: ["/team"] },
+  { key: "legal", href: "/settings/legal", label: "Legal documents", note: "What customers sign", Icon: ScrollText, tint: "#b7791f", match: ["/settings/legal", "/settings/terms"] },
+  { key: "emails", href: "/settings/emails", label: "Emails", note: "Preview and test each one", Icon: Mail, tint: "#2b8aa0", match: ["/settings/emails"] },
+  { key: "notifications", href: "/settings/notifications", label: "Notifications", note: "Which emails are sent, and when", Icon: Bell, tint: "#c2410c", match: ["/settings/notifications"] },
+  { key: "security", href: "/settings/security", label: "Sign-in security", note: "Two-step, passkeys, devices", Icon: ShieldCheck, tint: "#161d0b", match: ["/settings/security"] },
+  { key: "backup", href: "/backup", label: "Backup", note: "Download a copy of your company data", Icon: DatabaseBackup, tint: "#5b6068", match: ["/backup"] },
 ];
+const GROUPS: { title: string; keys: SettingsKey[] }[] = [
+  { title: "You", keys: ["account"] },
+  { title: "Company", keys: ["company", "plans", "team"] },
+  { title: "Documents and emails", keys: ["legal", "emails", "notifications"] },
+  { title: "Safety", keys: ["security", "backup"] },
+];
+const on = (i: Item, path: string) => i.match.some((m) => path === m || path.startsWith(m + "/"));
 
-/** Settings sections: a grouped side menu on a desktop, a scrolling row of pills on a phone. */
-export function SettingsSidebar() {
-  const path = usePathname();
-  const active = (i: Item) => (i.exact ? path === i.href : i.match.some((m) => path === m || path.startsWith(m + "/")));
-  const flat = GROUPS.flatMap((g) => g.items);
+/** The rows of one group, as a calm list: a coloured icon tile, a name with its one-line purpose, and a chevron. */
+function Rows({ keys, show, path, status }: { keys: SettingsKey[]; show: SettingsKey[]; path?: string; status?: Partial<Record<SettingsKey, string>> }) {
+  const items = keys.filter((k) => show.includes(k)).map((k) => ITEMS.find((i) => i.key === k)!);
+  if (!items.length) return null;
   return (
-    <>
-      <nav aria-label="Settings sections" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden [scrollbar-width:none]">
-        {flat.map((i) => <Link key={i.href} href={i.href} aria-current={active(i) ? "page" : undefined} className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-2 text-sm font-semibold ${active(i) ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}><i.Icon size={15} aria-hidden />{i.label}</Link>)}
-      </nav>
-      <nav aria-label="Settings sections" className="sticky top-20 hidden space-y-6 lg:block">
+    <ul className="set-rows">
+      {items.map((i) => (
+        <li key={i.key}>
+          <Link href={i.href} aria-current={path && on(i, path) ? "page" : undefined} className="set-row">
+            <span className="set-ico" style={{ background: i.tint }} aria-hidden><i.Icon size={19} /></span>
+            <span className="set-txt"><b>{i.label}</b><small>{i.note}</small></span>
+            {status?.[i.key] && <em className="set-st">{status[i.key]}</em>}
+            <ChevronRight size={18} className="set-chev" aria-hidden />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The settings home: the sections, grouped, one tap each. On a phone it is a list; on a computer the groups sit side by side. */
+export function SettingsHub({ show, status, company }: { show: SettingsKey[]; status?: Partial<Record<SettingsKey, string>>; company: { name: string; missing: string[] } }) {
+  return (
+    <div className="set-hub">
+      <h1 className="set-h1">Settings</h1>
+      <Link href="/settings/company" className="set-me">
+        <span className="set-logo" aria-hidden>{company.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("")}</span>
+        <span className="set-txt"><b>{company.name}</b><small>{company.missing.length ? `Still needed: ${company.missing.join(", ")}` : "Company details are complete"}</small></span>
+        <ChevronRight size={18} className="set-chev" aria-hidden />
+      </Link>
+      <div className="set-groups">
         {GROUPS.map((g) => (
-          <div key={g.title}>
-            <p className="mb-1.5 px-3 text-xs font-bold text-muted">{g.title}</p>
-            <ul className="space-y-0.5">
-              {g.items.map((i) => (
-                <li key={i.href}><Link href={i.href} aria-current={active(i) ? "page" : undefined} className={`flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors ${active(i) ? "bg-white shadow-[0_1px_2px_rgba(14,19,17,.08)] ring-1 ring-line" : "hover:bg-white/70"}`}>
-                  <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${active(i) ? "bg-moss text-white" : "bg-white text-ink ring-1 ring-line"}`}><i.Icon size={16} aria-hidden /></span>
-                  <span className="min-w-0"><span className="block text-[14px] font-semibold leading-5">{i.label}</span><span className="block text-[12.5px] leading-4 text-muted">{i.note}</span></span>
-                </Link></li>
-              ))}
-            </ul>
-          </div>
+          <section key={g.title} aria-label={g.title}>
+            <h2 className="set-gh">{g.title}</h2>
+            <Rows keys={g.keys} show={show} status={status} />
+          </section>
         ))}
-      </nav>
-    </>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Every settings page shares this frame. The home (/settings) is the hub above. A section opens as its own screen: on a phone with a
+ * "‹ Settings" back link, on a computer with the grouped list on the left so you can jump between sections.
+ */
+export function SettingsFrame({ show, children }: { show: SettingsKey[]; children: ReactNode }) {
+  const path = usePathname();
+  if (path === "/settings") return <>{children}</>;
+  return (
+    <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-10">
+      <aside className="hidden lg:block">
+        <Link href="/settings" className="set-h1 set-h1-link">Settings</Link>
+        <nav aria-label="Settings sections" className="set-side">
+          {GROUPS.map((g) => <section key={g.title}><h2 className="set-gh">{g.title}</h2><Rows keys={g.keys} show={show} path={path} /></section>)}
+        </nav>
+      </aside>
+      <div className="min-w-0">
+        <Link href="/settings" className="set-back lg:hidden"><ChevronLeft size={20} aria-hidden /> Settings</Link>
+        {children}
+      </div>
+    </div>
   );
 }
