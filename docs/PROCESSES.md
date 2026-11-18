@@ -61,7 +61,7 @@ Sign-in, new-device checks, passkeys, two-step. Every sensitive change writes to
 
 Built: the `Wizard` (named steps, validation per step, review with edit links, one submit), used for the new ticket, add-a-company and start-an-agreement flows; the customer portal ticket flow already had its own stepper and should move onto the same component. Also built: signing with a live checklist, option cards and chips for choices, the glass confirm dialog, the team Manage sheet, keyboard-safe popups, a saved reply draft.
 
-Next, in order: the price, deposit, care plan and terms steps of the agreement as wizard steps, with a viewed event and countersign; duplicate check on company create; billing lifecycle states and the retry schedule (needs a scheduler: GitHub Actions or pg_cron, since Vercel Hobby cron runs once a day); one activity timeline component used on company, ticket and agreement; onboarding runner; project templates.
+Built since: the agreement already had a saved five-step flow (The job, Price, Payment and offer, Details, Check and send); it now uses the same step bar, footer and review look, a "viewed" event is recorded the first time the customer opens the link, and one Timeline (company activity and each agreement) turns the recorded events into sentences grouped by day. Next, in order: countersign; duplicate check on company create; billing lifecycle states and the retry schedule (needs a scheduler: GitHub Actions or pg_cron, since Vercel Hobby cron runs once a day); one activity timeline component used on company, ticket and agreement; onboarding runner; project templates.
 
 ## Decisions needed from the owner
 
