@@ -15,6 +15,6 @@ export async function GET(req: Request) {
     ...(email.includes("@") ? [{ contacts: { some: { email: { equals: email, mode: "insensitive" as const } } } }] : []),
   ];
   if (!or.length) return Response.json({ matches: [] });
-  const rows = await db.customer.findMany({ where: { workspaceId: ctx.workspaceId, OR: or }, select: { id: true, displayName: true, reference: true, companyNumber: true, archivedAt: true, contacts: { where: email.includes("@") ? { email: { equals: email, mode: "insensitive" } } : { id: "none" }, select: { id: true }, take: 1 } }, take: 5, orderBy: { displayName: "asc" } });
-  return Response.json({ matches: rows.map((r) => ({ id: r.id, name: r.displayName, ref: r.reference, archived: !!r.archivedAt, why: number && r.companyNumber === number ? "Same company number" : r.contacts.length ? "A contact there has the same email" : "Similar name" })) });
+  const rows = await db.customer.findMany({ where: { workspaceId: ctx.workspaceId, OR: or }, select: { id: true, displayName: true, reference: true, companyNumber: true, archivedAt: true, ...(email.includes("@") ? { contacts: { where: { email: { equals: email, mode: "insensitive" as const } }, select: { id: true }, take: 1 } } : {}) }, take: 5, orderBy: { displayName: "asc" } });
+  return Response.json({ matches: rows.map((r) => ({ id: r.id, name: r.displayName, ref: r.reference, archived: !!r.archivedAt, why: number && r.companyNumber === number ? "Same company number" : ("contacts" in r && (r.contacts as unknown[]).length) ? "A contact there has the same email" : "Similar name" })) });
 }
