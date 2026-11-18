@@ -876,3 +876,24 @@ html[data-kb] .composer { bottom: 6px; }
 .dup ul { display: grid; gap: 6px; }
 .dup a { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 10px 14px; border-radius: 18px; background: rgba(255, 255, 255, .75); color: var(--color-ink); text-decoration: none; }
 .dup a b { font-weight: 500; } .dup a em { font-style: normal; font-size: 13px; color: var(--color-muted); } .dup a span { grid-column: 1 / -1; font-size: 13px; color: #7a5200; }
+
+/* ---- Tab bar (phones): five labelled places, a lime thumb that slides to the one you are on, a raised + for teams. ---- */
+:root { --dock-h: 5.7rem; }
+.tb { position: fixed; z-index: 40; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); transition: opacity .2s var(--ease), transform .3s var(--ease); }
+.tb-in { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); align-items: center; height: 66px; padding: 4px; border-radius: 999px; background: linear-gradient(160deg, rgba(40, 58, 34, .92), rgba(16, 26, 12, .94)); -webkit-backdrop-filter: blur(24px) saturate(1.5); backdrop-filter: blur(24px) saturate(1.5); border: 1px solid rgba(255, 255, 255, .2); box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 22px 36px -16px rgba(12, 20, 8, .75); }
+.tb-thumb { position: absolute; top: 5px; bottom: 5px; left: 4px; width: calc((100% - 8px) / var(--n)); border-radius: 999px; background: linear-gradient(180deg, #e3f0bd, var(--color-lime)); box-shadow: 0 1px 0 rgba(255, 255, 255, .8) inset, 0 8px 16px -8px rgba(0, 0, 0, .5); transform: translateX(calc(var(--i) * 100%)); transition: transform .55s var(--spring); }
+.tb-t { position: relative; z-index: 1; display: grid; align-content: center; justify-items: center; gap: 1px; height: 100%; min-width: 0; border-radius: 999px; color: rgba(255, 255, 255, .82); text-decoration: none; cursor: pointer; transition: color .25s; -webkit-tap-highlight-color: transparent; }
+.tb-t.on { color: var(--color-olive-950); }
+.tb-i { position: relative; display: grid; place-items: center; height: 26px; transition: transform .3s var(--spring); }
+.tb-t:active .tb-i { transform: scale(.8); }
+.tb-t.on .tb-i { animation: tb-pop .55s var(--spring); }
+@keyframes tb-pop { 0% { transform: translateY(3px) scale(.8); } 55% { transform: translateY(-2px) scale(1.12); } 100% { transform: none; } }
+.tb-l { max-width: 100%; padding: 0 2px; font-size: 11px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-i b { position: absolute; top: -3px; right: -9px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; display: grid; place-items: center; font-size: 10px; font-weight: 600; line-height: 1; color: #0c1408; background: var(--color-lime); border: 2px solid rgba(20, 30, 14, .95); box-sizing: content-box; }
+.tb-t.on .tb-i b { background: var(--color-olive-700); color: #fff; border-color: #e3f0bd; }
+.tb-add { position: relative; z-index: 2; justify-self: center; display: grid; place-items: center; width: 54px; height: 54px; margin-top: -16px; border-radius: 50%; color: var(--color-olive-950); cursor: pointer; background: linear-gradient(180deg, #e8f4c6, var(--color-lime)); border: 3px solid rgba(20, 30, 14, .95); box-shadow: 0 12px 22px -8px rgba(0, 0, 0, .6), 0 1px 0 rgba(255, 255, 255, .8) inset; transition: transform .35s var(--spring); }
+.tb-add:active { transform: scale(.88) rotate(90deg); }
+html[data-kb] .tb, body:has(.sheet-wrap) .tb { opacity: 0; transform: translateY(24px); pointer-events: none; }
+@media (min-width: 1024px) { .tb, .tb.sm-hide { display: none; } }
+@media (min-width: 640px) { .tb.sm-hide { display: none; } }
+@media (prefers-reduced-motion: reduce) { .tb-thumb { transition: none; } .tb-t.on .tb-i { animation: none; } }
