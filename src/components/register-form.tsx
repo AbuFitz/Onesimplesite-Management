@@ -23,8 +23,20 @@ export function RegisterForm() {
       { label: "Main contact", value: [g("contactName"), g("contactPosition")].filter(Boolean).join(", "), step: "contact" }, { label: "Contact email", value: g("contactEmail"), step: "contact" }, { label: "Contact phone", value: g("contactPhone"), step: "contact" },
     ];
   };
+  const check = async (fd: FormData) => {
+    const q = new URLSearchParams({ name: String(fd.get("displayName") ?? ""), number: String(fd.get("companyNumber") ?? ""), email: String(fd.get("contactEmail") ?? "") });
+    const r = await fetch(`/api/duplicates?${q}`, { cache: "no-store" }); if (!r.ok) return null;
+    const { matches } = (await r.json()) as { matches: { id: string; name: string; ref: string; archived: boolean; why: string }[] };
+    if (!matches.length) return null;
+    return (
+      <div role="alert" className="dup">
+        <p><b>This might already exist.</b> Have a look before adding it again.</p>
+        <ul>{matches.map((m) => <li key={m.id}><a href={`/customers/${m.id}`} target="_blank" rel="noreferrer"><b>{m.name}</b><em>{m.ref}{m.archived ? " · archived" : ""}</em><span>{m.why}</span></a></li>)}</ul>
+      </div>
+    );
+  };
   return (
-    <Wizard action={act} review={review} error={<ErrorSummary message={s?.error} />}
+    <Wizard action={act} review={review} check={check} error={<ErrorSummary message={s?.error} />}
       actions={<><SubmitButton pendingText="Saving…">Add company</SubmitButton><button name="next" value="ticket" className="btn btn-quiet">Add company and start an agreement</button></>}
       steps={[
         { id: "kind", title: "Kind", hint: "What kind of customer is this?", node: (<>

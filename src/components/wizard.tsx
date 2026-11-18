@@ -11,20 +11,23 @@ export type ReviewRow = { label: string; value: string; step: string };
  * with a way back to change any of it, and one submit at the end. Every step stays in the page (just hidden), so nothing is lost
  * going back and forth, and the server gets one complete form.
  */
-export function Wizard({ steps, action, review, actions, error, intro }: {
+export function Wizard({ steps, action, review, actions, error, intro, check }: {
   steps: WizardStep[]; action: (fd: FormData) => void; review: (fd: FormData) => ReviewRow[]; actions: ReactNode; error?: ReactNode; intro?: ReactNode;
+  /** Runs when the person reaches the final step; whatever it returns (a warning, for example) is shown above the summary. */
+  check?: (fd: FormData) => Promise<ReactNode>;
 }) {
   const live = steps.filter((s) => !s.skip);
   const all = [...live, { id: "__review", title: "Check", node: null as ReactNode }];
   const [i, setI] = useState(0);
   const [rows, setRows] = useState<ReviewRow[]>([]);
+  const [notice, setNotice] = useState<ReactNode>(null);
   const form = useRef<HTMLFormElement>(null);
   const cur = all[Math.min(i, all.length - 1)];
   const last = cur.id === "__review";
 
   const go = (n: number) => {
     const f = form.current; if (!f) return;
-    if (all[n]?.id === "__review") setRows(review(new FormData(f)));
+    if (all[n]?.id === "__review") { const fd = new FormData(f); setRows(review(fd)); setNotice(null); check?.(fd).then(setNotice).catch(() => {}); }
     setI(n);
   };
   const valid = () => {
@@ -68,6 +71,7 @@ export function Wizard({ steps, action, review, actions, error, intro }: {
         </section>
       ))}
       <section data-step="__review" hidden={!last} className="wz-step" aria-label="Check">
+        {notice}
         <p className="wz-hint">Have a last look. You can change anything.</p>
         <dl className="wz-review">
           {rows.filter((r) => r.value.trim()).map((r) => (
