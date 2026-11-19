@@ -1140,3 +1140,13 @@ body:has(.wcell.editing) .sb { display: none; }
 .achip:hover { background: #cde39a; }
 .achip-clear { display: inline-flex; align-items: center; min-height: 34px; padding: 0 10px; font-size: 13.5px; color: var(--color-ink-2); text-decoration: underline; text-underline-offset: 2px; }
 .qchips { margin: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
+
+/* Calendar toolbar: one slim row, no title block. */
+.cal-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.cal-nav, .cal-ctl { display: flex; align-items: center; gap: 8px; }
+.cal-title { min-width: 9rem; text-align: center; font-size: 1.05rem; font-weight: 600; letter-spacing: -.01em; }
+.cal-today { min-height: 36px; display: inline-grid; place-items: center; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 600; background: rgba(255,255,255,.7); border: 1px solid var(--card-line); }
+.sl { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(20, 30, 12, .08); }
+.sl a { min-height: 34px; display: grid; place-items: center; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--color-muted); transition: background .25s var(--ease), color .2s; }
+.sl a[aria-current="true"] { background: #fff; color: var(--color-ink); box-shadow: 0 1px 0 #fff inset, 0 6px 14px -8px rgba(20, 30, 12, .45); }
+@media (max-width: 640px) { .cal-bar { gap: 8px; } .cal-title { min-width: 7.5rem; font-size: 1rem; } .cal-ctl { width: 100%; justify-content: space-between; } }

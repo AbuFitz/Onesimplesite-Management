@@ -82,6 +82,12 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   const upcoming = events.filter((e) => e.status === "scheduled" && e.endsAt >= now).slice(0, 4);
   const dueSoon = [...marks.entries()].filter(([k]) => k >= today).sort(([a], [b]) => a.localeCompare(b)).flatMap(([k, list]) => list.map((x) => ({ ...x, k }))).slice(0, 5);
 
+  const dshort = (k: string) => fmt(k, { weekday: "short", day: "numeric", month: "short" });
+  const coming = [
+    ...upcoming.map((e) => ({ id: "e" + e.id, k: dayKey(e.startsAt), label: e.title, when: `${dshort(dayKey(e.startsAt))} ${timeOf(e.startsAt)}`, href: q({ day: dayKey(e.startsAt) }), dot: kind(e.type).bar })),
+    ...dueSoon.map((x) => ({ id: x.kind + x.id, k: x.k, label: x.label, when: dshort(x.k), href: x.kind === "project" ? `/projects/${x.id}` : "/", dot: x.kind === "project" ? "bg-[#d98a00]" : "bg-[#0c6a49]" })),
+  ].sort((a, b) => a.k.localeCompare(b.k)).slice(0, 7);
+
   const Dots = ({ k, light }: { k: string; light?: boolean }) => {
     const ev = (byDay.get(k) ?? []).filter((e) => e.status !== "cancelled"), mk = marks.get(k) ?? [];
     return <span className="flex h-2 items-center justify-center gap-0.5" aria-hidden>{ev.slice(0, 3).map((e) => <i key={e.id} className={`size-1.5 rounded-full ${light ? "bg-white/80" : kind(e.type).bar}`} />)}{mk.slice(0, 2).map((x) => <i key={x.id} className={`size-1.5 rounded-full ${light ? "bg-white/80" : x.kind === "project" ? "bg-[#d98a00]" : "bg-[#0c6a49]"}`} />)}</span>;
@@ -91,7 +97,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
     const kd = kind(e.type), cancelled = e.status === "cancelled", past = e.endsAt < now && !cancelled, who = e.customerId ? custName.get(e.customerId) : undefined;
     const allDay = e.endsAt.getTime() - e.startsAt.getTime() >= 23 * 3600e3;
     return (
-      <li className={`flex gap-3 rounded-xl border border-[var(--card-line)] bg-white p-3 ${past ? "opacity-60" : ""}`}>
+      <li className={`flex gap-3 rounded-xl border border-[var(--card-line)] bg-white p-3 ${past ? "opacity-80" : ""}`}>
         <span className={`w-1 shrink-0 rounded-full ${cancelled ? "bg-[#d4d4d8]" : kd.bar}`} aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 text-[13px] font-semibold text-muted"><Clock size={13} aria-hidden />{allDay ? "All day" : `${timeOf(e.startsAt)} – ${timeOf(e.endsAt)}`}<span className={`rounded-md px-1.5 py-0.5 text-[11.5px] ${kd.chip}`}>{kd.label}</span>{cancelled && <span className="rounded-md bg-[#fdecea] px-1.5 py-0.5 text-[11.5px] text-[#a12a1f]">Cancelled</span>}</p>
@@ -124,14 +130,18 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   const isToday = selected === today;
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="min-w-0"><h1 className="!text-2xl sm:!text-3xl">Calendar</h1><p className="mt-0.5 hidden text-sm text-muted sm:block">Meetings, project due dates and your tasks in one place.</p></div>
-        <div className="flex items-center gap-2">
-          <nav aria-label="Whose events" className="flex rounded-lg border border-[var(--card-line)] bg-white p-0.5">
-            <Link className={`grid min-h-10 place-items-center rounded-md px-3 text-sm font-semibold sm:min-h-8 ${scope === "mine" ? "bg-[#18181b] text-white" : "text-muted"}`} href={`/calendar?view=${view}&day=${selected}`}>Mine</Link>
-            <Link className={`grid min-h-10 place-items-center rounded-md px-3 text-sm font-semibold sm:min-h-8 ${scope === "team" ? "bg-[#18181b] text-white" : "text-muted"}`} href={`/calendar?scope=team&view=${view}&day=${selected}`}>Team</Link>
-          </nav>
-          {canWrite && <Link href={q({ add: true })} replace scroll={false} className="btn !min-h-10 sm:!min-h-9"><Plus size={16} aria-hidden /> Add<span className="max-sm:hidden"> event</span></Link>}
+      <h1 className="sr-only">Calendar</h1>
+      <div className="cal-bar">
+        <div className="cal-nav">
+          <Link aria-label={view === "month" ? "Previous month" : "Previous week"} className="iconbtn" href={q({ day: prev })}><ChevronLeft size={18} aria-hidden /></Link>
+          <p className="cal-title" aria-live="polite">{title}</p>
+          <Link aria-label={view === "month" ? "Next month" : "Next week"} className="iconbtn" href={q({ day: next })}><ChevronRight size={18} aria-hidden /></Link>
+          {!isToday && <Link className="cal-today" href={q({ day: today })}>Today</Link>}
+        </div>
+        <div className="cal-ctl">
+          <nav aria-label="Whose events" className="sl"><Link aria-current={scope === "mine" ? "true" : undefined} href={`/calendar?view=${view}&day=${selected}`}>Mine</Link><Link aria-current={scope === "team" ? "true" : undefined} href={`/calendar?scope=team&view=${view}&day=${selected}`}>Team</Link></nav>
+          <nav aria-label="View" className="sl max-lg:hidden"><Link aria-current={view === "week" ? "true" : undefined} href={q({ view: "week" })}>Week</Link><Link aria-current={view === "month" ? "true" : undefined} href={q({ view: "month" })}>Month</Link></nav>
+          {canWrite && <Link href={q({ add: true })} replace scroll={false} className="lt-add" aria-label="Add an event"><Plus size={18} aria-hidden /><span className="max-sm:hidden">Add event</span></Link>}
         </div>
       </div>
       {(sp.added || sp.updated) && <p role="status" className="mb-3 rounded-lg bg-[#dff5ea] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">{sp.updated ? "Event updated." : "Event added."}</p>}
@@ -139,21 +149,6 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-4">
-          {/* Navigation bar */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              <Link aria-label={view === "month" ? "Previous month" : "Previous week"} className="btn btn-quiet !min-h-11 !w-11 !px-0 sm:!min-h-9 sm:!w-9" href={q({ day: prev })}><ChevronLeft size={18} /></Link>
-              <h2 className="min-w-[8.5rem] text-center text-base font-bold sm:min-w-44 sm:text-lg">{title}</h2>
-              <Link aria-label={view === "month" ? "Next month" : "Next week"} className="btn btn-quiet !min-h-11 !w-11 !px-0 sm:!min-h-9 sm:!w-9" href={q({ day: next })}><ChevronRight size={18} /></Link>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {!isToday && <Link className="btn btn-quiet !min-h-11 sm:!min-h-9" href={q({ day: today })}>Today</Link>}
-              <nav aria-label="View" className="hidden rounded-lg border border-[var(--card-line)] bg-white p-0.5 lg:flex">
-                <Link className={`grid min-h-8 place-items-center rounded-md px-3 text-sm font-semibold ${view === "week" ? "bg-[#18181b] text-white" : "text-muted"}`} href={q({ view: "week" })}>Week</Link>
-                <Link className={`grid min-h-8 place-items-center rounded-md px-3 text-sm font-semibold ${view === "month" ? "bg-[#18181b] text-white" : "text-muted"}`} href={q({ view: "month" })}>Month</Link>
-              </nav>
-            </div>
-          </div>
 
           {/* Phone + tablet: a week strip you can tap through */}
           <div className={`${view === "week" ? "" : ""} lg:hidden`}>
@@ -213,8 +208,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
             <h2 className="mb-2 flex items-center justify-between text-base font-bold">{isToday ? "Today" : fmt(selected, { weekday: "long" })}<span className="text-sm font-medium text-muted">{fmt(selected, { day: "numeric", month: "long" })}</span></h2>
             {dayEvents.length === 0 && dayMarks.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[var(--card-line)] bg-white px-4 py-8 text-center">
-                <p className="font-semibold">Nothing planned</p>
-                <p className="mt-1 text-sm text-muted">{isToday ? "A clear day." : "This day is free."}</p>
+                <p className="font-semibold">{isToday ? "A clear day" : "Free"}</p>
                 {canWrite && <Link href={q({ add: true })} replace scroll={false} className="btn mt-4"><Plus size={16} aria-hidden /> Add an event</Link>}
               </div>
             ) : (
@@ -226,15 +220,11 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         <aside className="hidden space-y-4 lg:block">
           <section className="rounded-xl border border-[var(--card-line)] bg-white p-4">
             <div className="mb-3 flex items-center justify-between"><h2 className="text-base font-bold">{isToday ? "Today" : fmt(selected, { weekday: "long" })}<span className="ml-2 text-sm font-medium text-muted">{fmt(selected, { day: "numeric", month: "long" })}</span></h2>{canWrite && <Link href={q({ add: true })} replace scroll={false} aria-label="Add an event on this day" className="btn btn-quiet !min-h-8 !w-8 !px-0"><Plus size={16} aria-hidden /></Link>}</div>
-            {dayEvents.length === 0 && dayMarks.length === 0 ? <p className="text-sm text-muted">Nothing planned for this day.</p> : <ul className="space-y-2">{dayMarks.map((x) => <MarkRow key={x.kind + x.id} x={x} />)}{dayEvents.map((e) => <EventCard key={e.id} e={e} />)}</ul>}
+            {dayEvents.length === 0 && dayMarks.length === 0 ? <p className="text-sm text-muted">Free.</p> : <ul className="space-y-2">{dayMarks.map((x) => <MarkRow key={x.kind + x.id} x={x} />)}{dayEvents.map((e) => <EventCard key={e.id} e={e} />)}</ul>}
           </section>
           <section className="rounded-xl border border-[var(--card-line)] bg-white p-4">
-            <h2 className="mb-2 text-base font-bold">Next up</h2>
-            {upcoming.length === 0 ? <p className="text-sm text-muted">Nothing coming up.</p> : <ul className="divide-y divide-[var(--card-rule)]">{upcoming.map((e) => <li key={e.id}><Link href={q({ day: dayKey(e.startsAt) })} className="flex items-center justify-between gap-3 py-2.5"><span className="min-w-0 truncate font-semibold">{e.title}</span><span className="shrink-0 text-sm text-muted">{new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TZ }).format(e.startsAt)} {timeOf(e.startsAt)}</span></Link></li>)}</ul>}
-          </section>
-          <section className="rounded-xl border border-[var(--card-line)] bg-white p-4">
-            <h2 className="mb-2 text-base font-bold">Due soon</h2>
-            {dueSoon.length === 0 ? <p className="text-sm text-muted">No project or task due dates coming up.</p> : <ul className="divide-y divide-[var(--card-rule)]">{dueSoon.map((x) => <li key={x.kind + x.id} className="flex items-center justify-between gap-3 py-2.5"><Link className="min-w-0 truncate font-semibold hover:underline" href={x.kind === "project" ? `/projects/${x.id}` : "/"}>{x.label}</Link><span className="shrink-0 text-sm text-muted">{fmt(x.k, { day: "numeric", month: "short" })}</span></li>)}</ul>}
+            <h2 className="mb-2 text-base font-bold">Coming up</h2>
+            {coming.length === 0 ? <p className="text-sm text-muted">Nothing yet.</p> : <ul className="divide-y divide-[var(--card-rule)]">{coming.map((x) => <li key={x.id}><Link href={x.href} className="flex items-center gap-2.5 py-2.5"><i className={`size-2 shrink-0 rounded-full ${x.dot}`} aria-hidden /><span className="min-w-0 flex-1 truncate font-semibold">{x.label}</span><span className="shrink-0 text-sm text-muted">{x.when}</span></Link></li>)}</ul>}
           </section>
         </aside>
       </div>
