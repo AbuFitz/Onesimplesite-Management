@@ -1,6 +1,9 @@
 "use client";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, Copy, Check, Pencil, Trash2, Dices, ExternalLink } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, Pencil, Trash2, Dices, ExternalLink, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import { Sheet } from "./sheet";
 import { saveVaultAction, deleteVaultAction, revealVaultAction } from "@/app/actions/vault";
 import { ErrorSummary, Avatar, timeAgo } from "./ui";
 import { ConfirmForm } from "./confirm";
@@ -110,5 +113,22 @@ export function VaultItem({ row }: { row: VaultRow }) {
         </div>
       )}
     </li>
+  );
+}
+
+/** "+ Add a login" opens the form in a sheet, so the list gets the whole page. */
+export function AddLogin() {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  return (
+    <>
+      <button type="button" className="lt-add" onClick={() => setOpen(true)} aria-haspopup="dialog"><Plus size={18} aria-hidden /><span>Add a login</span></button>
+      {open && createPortal(
+        <Sheet open={open} onClose={() => setOpen(false)} title="Add a login">
+        <VaultForm onDone={() => { setOpen(false); router.refresh(); }} />
+        <p className="hint mt-3">Encrypted, shared with the team, and every view is logged.</p>
+        </Sheet>
+      , document.body)}
+    </>
   );
 }
