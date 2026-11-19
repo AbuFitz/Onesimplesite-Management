@@ -32,7 +32,7 @@ for (const [name, vp] of [["desktop", { width: 1280, height: 900 }], ["phone", {
   await st.locator("button:has-text('Start the free month now')").click(); await st.waitForLoadState("networkidle");
   ok(/Free until .*, then ends/.test(await st.locator("main").innerText()), "team: starting the free month shows when it ends");
   await st.locator("li", { hasText: "Website final payment" }).locator("button:has-text('Ask for the final payment now')").click(); await st.waitForFunction(() => !document.body.innerText.includes("Ask for the final payment now"));
-  await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle");
+  await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle"); await cl.evaluate(() => document.querySelectorAll("details.more").forEach((d) => (d.open = true)));
   ok(/Free until .*, then ends/.test(await row("Care plan (free for 1 month").innerText()), "customer: sees the free month running, with its end date");
   ok(await row("Website final payment").locator("button:has-text('Pay now')").count() >= 1, "customer: can now pay the final payment");
 }
