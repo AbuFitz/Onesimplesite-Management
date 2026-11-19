@@ -81,7 +81,7 @@ await staff.goto(`${M}/settings/plans`);
 await staff.fill("#v-phone_number", "01923 000000"); await staff.fill("#v-payment_methods", "Bank transfer"); await staff.fill("#v-liability_cap", "the fees paid in the previous 12 months"); await staff.fill("#v-handover_service", "A copy of your site files and a handover call");
 await staff.click("button:has-text('Save details')"); await staff.waitForURL(/saved=1/);
 ok((await staff.locator("main").innerText()).includes("Standard Care Plan") || true, "plans and details page saves");
-await staff.goto(`${M}/settings/terms`);
+await staff.goto(`${M}/settings/terms`); await staff.waitForSelector("text=Live: ", { timeout: 15000 }).catch(() => {});
 ok(await staff.locator("text=Live: ").count() > 0, "terms published");
 
 // 3. Enquiry -> customer details -> proposal with requirements
@@ -193,8 +193,8 @@ ok((await get(other, `/documents/${contractPath.split("/").pop()}/pdf`)).status 
 
 // 8. Roles: delivery cannot author proposals or open Settings/Team/Backup
 const del = await login(await browser.newContext(), M, "demo.delivery@example.test");
-await del.goto(`${M}/settings`); ok(del.url().endsWith("/denied"), "delivery denied Settings");
-await del.goto(`${M}/backup`); ok(del.url().endsWith("/denied"), "delivery denied Backup");
+await del.goto(`${M}/settings`); await del.waitForURL(/denied/, { timeout: 8000 }).catch(() => {}); ok(del.url().endsWith("/denied"), "delivery denied Settings");
+await del.goto(`${M}/backup`); await del.waitForURL(/denied/, { timeout: 8000 }).catch(() => {}); ok(del.url().endsWith("/denied"), "delivery denied Backup");
 // Owner: Backup downloads JSON, Team page loads
 const bk = await get(staff, "/backup/download"); ok(bk.status === 200 && bk.head.startsWith("{"), "owner can download a backup");
 await staff.goto(`${M}/team`); ok(await staff.locator("h1:has-text('Team')").count() === 1, "owner sees Team");

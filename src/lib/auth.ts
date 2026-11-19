@@ -55,6 +55,8 @@ function make(ns: "staff" | "portal", allowSignUp: boolean) {
         await sendMail({ from: fmtFrom("noreply"), to: user.email, subject: r.subject, html: r.html, text: r.text });
       },
     },
+    // Written out so it is a decision, not a default: sign-in and password reset are limited per address. (Held in each server's memory, so it slows a guesser rather than stopping a determined one.)
+    rateLimit: { enabled: true, window: 60, max: 60, customRules: { "/sign-in/email": { window: 60, max: 10 }, "/request-password-reset": { window: 300, max: 5 }, "/reset-password": { window: 300, max: 10 } } },
     advanced: { cookiePrefix: `oss-${ns}`, useSecureCookies: e.APP_ENV === "production" },
     // "Keep me signed in" ticked: the full length below. Not ticked: a one-day session that ends when the browser closes.
     session: { expiresIn: 60 * 60 * 24 * (ns === "staff" ? 14 : 30), updateAge: 60 * 60 * 24 },

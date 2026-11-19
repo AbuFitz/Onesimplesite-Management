@@ -16,7 +16,21 @@ if (REMOTE && (!BYPASS || !PW || !process.env.CRON_SECRET)) { console.error("The
 /** A browser; on the dev site every request carries the protection bypass. */
 export async function launch() {
   const b = await chromium.launch();
-  if (REMOTE) { const nc = b.newContext.bind(b); b.newContext = (o = {}) => nc({ ...o, extraHTTPHeaders: { ...(o.extraHTTPHeaders ?? {}), "x-vercel-protection-bypass": BYPASS } }); }
+  const nc = b.newContext.bind(b);
+  // Pages now show a loading skeleton first and fill in as they stream. Every page load here waits for the skeleton to go, so a check never runs against the placeholder.
+  b.newContext = async (o = {}) => {
+    const ctx = await nc(REMOTE ? { ...o, extraHTTPHeaders: { ...(o.extraHTTPHeaders ?? {}), "x-vercel-protection-bypass": BYPASS } } : o);
+    const np = ctx.newPage.bind(ctx);
+    ctx.newPage = async () => {
+      const pg = await np(); const go = pg.goto.bind(pg);
+      const settle = () => pg.waitForSelector("[aria-label=Loading]", { state: "detached", timeout: 20000 }).catch(() => {});
+      pg.goto = async (...a) => { const r = await go(...a); await settle(); return r; };
+      const wu = pg.waitForURL.bind(pg);
+      pg.waitForURL = async (...a) => { const r = await wu(...a); await settle(); return r; };
+      return pg;
+    };
+    return ctx;
+  };
   return b;
 }
 export { chromium };

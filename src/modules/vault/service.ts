@@ -62,9 +62,14 @@ export async function deleteVaultEntry(ctx: StaffCtx, id: string) {
   });
 }
 
+export const REVEAL_LIMIT_PER_HOUR = 30;
+
 /** Decrypts one password for one person and records who looked. */
 export async function revealVaultSecret(ctx: StaffCtx, id: string) {
   guard(ctx);
+  // A limit on how many passwords one person can reveal in an hour, counted from the audit log we already keep. It stops a stolen session from emptying the vault quietly.
+  const recent = await db.auditEvent.count({ where: { workspaceId: ctx.workspaceId, action: "vault.revealed", actorId: ctx.userId, createdAt: { gte: new Date(Date.now() - 3600_000) } } });
+  if (recent >= REVEAL_LIMIT_PER_HOUR) throw new DomainError("unavailable", "You have looked at a lot of passwords in the last hour. Wait a little, or ask an owner if you need more.");
   const e = await db.vaultEntry.findFirst({ where: { id, workspaceId: ctx.workspaceId }, select: { secret: true, title: true } });
   if (!e) throw notFound();
   let plain: string;

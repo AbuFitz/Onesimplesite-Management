@@ -33,8 +33,10 @@ Retrying unsent emails, ticket reminders, the daily digest and legal-document sy
 ### 3.2 No loading or error screens (verified, fixed)
 There were no `loading.tsx`, `error.tsx` or `not-found.tsx` anywhere, so every slow page looked frozen and any failure showed the framework's bare error page. Added: a loading skeleton for the team app and portal, a friendly error card with a retry and a reference code, and a not-found page.
 
-### 3.3 No rate limiting of our own (verified absent)
-No code in `src/` limits attempts on sign-in, password reset, or reveal of a stored password. The sign-in library may apply defaults, but I have not confirmed which. **To do:** explicit limits on sign-in and reset by account and by address, and a limit on password reveals per person per hour, ideally with re-entering their password for a reveal.
+### 3.3 Rate limiting (corrected, partly fixed)
+I first wrote that nothing limited attempts. That was wrong: the sign-in library limits sign-ins by default (3 attempts per 10 seconds per address). What was missing was any limit on password reveals and password-reset requests, and the limits were implicit.
+**Fixed:** the sign-in, reset-request and reset limits are now written out in `src/lib/auth.ts`, and one person can reveal at most 30 stored passwords an hour (counted from the audit log, so no schema change).
+**Still true:** the sign-in limiter keeps its counts in each server's memory, so on serverless hosting it slows a guesser rather than stopping a determined one. Shared storage (a database table) would make it exact; that is a schema change. Re-entering your password to reveal a stored one is also not built.
 
 ### 3.4 Webhook replays re-apply the event (verified)
 The Stripe webhook records an event once but then applies it again on every delivery. That is safe today only because applying is idempotent (status moves and unique receipts). A short comment and a test would keep it that way.
@@ -75,7 +77,7 @@ Public pages
 
 ## 5. Next, in order of value
 1. Add `CRON_SECRET` and `JOBS_URLS` secrets so the scheduler runs (3.1).
-2. Rate limits and reveal re-authentication (3.3).
+2. Shared storage for the sign-in limiter, and re-entering a password to reveal a stored one (3.3).
 3. SLA clock and snooze on tickets (Chatwoot model).
 4. Project page as tabs; company details and legal editor on autosave.
 5. Server-side drafts (needs an approved migration).
