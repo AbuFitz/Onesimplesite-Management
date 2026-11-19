@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Plus } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { listCustomers, customerStatusCounts, LIFECYCLE, LIFECYCLE_KEYS, type LifecycleKey } from "@/modules/crm/service";
 import { RecordHeader, Status, Empty, Avatar, timeAgo } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
-import { QuickChips, FilterPanel } from "@/components/filter-bar";
+import { QuickChips, FilterPanel, AppliedChips } from "@/components/filter-bar";
 
 export const metadata = { title: "Companies" };
 type SP = { q?: string; page?: string; mine?: string; status?: string; risk?: string; sort?: string; archived?: string; deleted?: string };
@@ -36,26 +36,34 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   ];
   return (
     <>
-      <RecordHeader title="Companies" meta={`${total} ${total === 1 ? "company" : "companies"}${status !== "all" ? ` · ${status === "archived" ? "archived" : LIFECYCLE[status as LifecycleKey].label.toLowerCase()}` : ""}`} action={can(ctx.role, "customer.write") ? <Link href="/customers/new" className="btn">Add a company</Link> : undefined} />
+      <h1 className="sr-only">Companies</h1>
       {sp.archived && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Company archived. You can restore it from here any time.</p>}
       {sp.deleted && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Company deleted.</p>}
 
-      <QuickChips label="Company status" items={chips.map((c) => ({ label: c.label, count: c.count, href: c.href, on: c.active }))} />
-      <AutoGetForm className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))_auto]">
-        <div className="relative min-w-0 sm:col-span-2 lg:col-span-1"><Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-[2.2rem] text-muted" /><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="q">Search</label>
-          <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Name, reference, person or email" className="field !pl-9" /></div>
-        <div className="hidden lg:block"><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="status">Status</label>
-          <select id="status" name="status" defaultValue={status} className="field">{chips.map((c) => <option key={c.label} value={c.label === "All" ? "all" : c.label === "On hold" ? "paused" : c.label.toLowerCase()}>{c.label} ({c.count})</option>)}</select></div>
-        <FilterPanel active={[!!sp.sort && sp.sort !== SORTS[0][0], sp.mine === "1", sp.risk === "1"].filter(Boolean).length}>
-        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="sort">Sort by</label>
-          <select id="sort" name="sort" defaultValue={sort} className="field">{SORTS.map(([id, l]) => <option key={id} value={id}>{l}</option>)}</select></div>
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-1">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="checkbox" name="mine" value="1" defaultChecked={sp.mine === "1"} className="size-4 accent-[#0c6a49]" /> Mine</label>
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="checkbox" name="risk" value="1" defaultChecked={sp.risk === "1"} className="size-4 accent-[#b3261e]" /> At risk{counts.atRisk ? <span className="rounded-md bg-bone px-1.5 text-xs tabular-nums text-muted">{counts.atRisk}</span> : null}</label>
-          {(active > 0 || status !== "all") && <Link href="/customers" className="min-h-11 py-2.5 text-sm underline">Clear</Link>}
-        </div>
-        </FilterPanel>
-      </AutoGetForm>
+      <div className="lt">
+        <AutoGetForm className="lt-form">
+          <div className="lt-row">
+            <label className="lt-search"><span className="sr-only">Search companies</span><Search size={17} aria-hidden /><input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Search by name, reference, person or email" autoComplete="off" /></label>
+            <FilterPanel active={[sort !== "new", sp.mine === "1", sp.risk === "1"].filter(Boolean).length}>
+              <div className="col-span-full"><label className="label" htmlFor="sort">Sort by</label>
+                <select id="sort" name="sort" defaultValue={sort} className="field">{SORTS.map(([id, l]) => <option key={id} value={id}>{l}</option>)}</select></div>
+              <label className="grp grp-row col-span-full" htmlFor="f-mine"><span>Mine</span><span className="sw"><input id="f-mine" type="checkbox" name="mine" value="1" defaultChecked={sp.mine === "1"} /><i aria-hidden /></span></label>
+              <label className="grp grp-row col-span-full" htmlFor="f-risk"><span>At risk{counts.atRisk ? <small className="ml-2 text-muted">{counts.atRisk}</small> : null}</span><span className="sw"><input id="f-risk" type="checkbox" name="risk" value="1" defaultChecked={sp.risk === "1"} /><i aria-hidden /></span></label>
+            </FilterPanel>
+            {can(ctx.role, "customer.write") && <Link href="/customers/new" className="lt-add" aria-label="Add a company"><Plus size={18} aria-hidden /><span>Add a company</span></Link>}
+          </div>
+          <div className="sr-only"><label htmlFor="status">Status</label>
+            <select id="status" name="status" defaultValue={status}>{chips.map((c) => <option key={c.label} value={c.label === "All" ? "all" : c.label === "On hold" ? "paused" : c.label.toLowerCase()}>{c.label} ({c.count})</option>)}</select></div>
+        </AutoGetForm>
+        <QuickChips label="Company status" items={chips.map((c) => ({ label: c.label, count: c.count, href: c.href, on: c.active }))} />
+        <AppliedChips clearHref={status !== "all" ? `/customers?status=${status}` : "/customers"} items={[
+          ...(sp.mine === "1" ? [{ label: "Owner", value: "Mine", href: href({ mine: "" }) }] : []),
+          ...(sp.risk === "1" ? [{ label: "Health", value: "At risk", href: href({ risk: "" }) }] : []),
+          ...(sort !== "new" ? [{ label: "Sort", value: SORTS.find(([id]) => id === sort)?.[1] ?? sort, href: href({ sort: "" }) }] : []),
+          ...(sp.q ? [{ label: "Search", value: sp.q, href: href().replace(/([?&])q=[^&]*&?/, "$1").replace(/[?&]$/, "") }] : []),
+        ]} />
+        <p className="lt-count">{total} {total === 1 ? "company" : "companies"}</p>
+      </div>
 
       {rows.length === 0 ? (
         <Empty title={active || status !== "all" ? "No companies match" : "No companies yet"}>{active || status !== "all" ? <Link className="underline" href="/customers">Show everything</Link> : <Link className="underline" href="/customers/new">Add your first company</Link>}</Empty>

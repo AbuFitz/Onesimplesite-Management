@@ -6,9 +6,9 @@ const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -
 await ensureTicket();   // the list needs a ticket to open
 const browser = await launch(); const pg = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
-await pg.goto(`${M}/tickets`); await pg.selectOption("#tab", "done"); await pg.waitForURL(/tab=done/);
+await pg.goto(`${M}/tickets`); await pg.click("a:has-text('Done')"); await pg.waitForURL(/tab=done/);
 ok(true, "choosing a status in the tickets dropdown filters straight away");
-await pg.selectOption("#type", "support"); await pg.waitForURL(/type=support/); ok(true, "the type dropdown filters too");
+await pg.click("button:has-text('Filters')"); await pg.selectOption("#type", "support"); await pg.waitForURL(/type=support/); ok(true, "the type dropdown filters too");
 await pg.goto(`${M}/tickets?tab=all&type=support`); const href = await pg.locator("a[href^='/support/']").first().getAttribute("href");
 await pg.goto(`${M}${href}`); const before = await pg.locator("#as-status").inputValue();
 const next = before === "in_progress" ? "waiting_customer" : "in_progress"; await pg.selectOption("#as-status", next); await pg.waitForURL(/saved=1/);

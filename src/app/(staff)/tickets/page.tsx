@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { STATUS_LABEL, CATEGORY_LABEL } from "@/modules/support/options";
 import { RecordHeader, Status, Empty, timeAgo, money } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
-import { QuickChips, FilterPanel } from "@/components/filter-bar";
+import { QuickChips, FilterPanel, AppliedChips } from "@/components/filter-bar";
 import { Search } from "lucide-react";
 
 export const metadata = { title: "Tickets" };
@@ -46,32 +46,42 @@ export default async function Tickets({ searchParams }: { searchParams: Promise<
     if (sp.q) p.set("q", sp.q); if (st) p.set("s", st); if (company) p.set("c", company); if (pr) p.set("p", pr);
     const qs = p.toString(); return `/tickets${qs ? `?${qs}` : ""}`;
   };
+  const without = (key: string) => { const p = new URLSearchParams(); if (tab !== "needs") p.set("tab", tab); if (type !== "all") p.set("type", type); if (mine) p.set("mine", "1"); if (sp.q) p.set("q", sp.q); if (st) p.set("s", st); if (company) p.set("c", company); if (pr) p.set("p", pr); p.delete(key); const qs = p.toString(); return `/tickets${qs ? `?${qs}` : ""}`; };
   const extra = [!!st, !!company, !!pr, mine, !!q].filter(Boolean).length;
   return (
     <>
-      <RecordHeader title="Tickets" meta="Change requests and support. New websites are in Agreements." action={<Link className="btn" href="/tickets/new"><Plus size={16} aria-hidden /> New ticket</Link>} />
-      <QuickChips label="Show tickets" items={TABS.map(([id, l]) => ({ label: l, count: tabCount(id), href: href({ tab: id }), on: tab === id }))} />
-      <AutoGetForm className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(5,minmax(0,1fr))_auto]">
-        <div className="relative col-span-2 min-w-0 lg:col-span-1"><Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-[2.2rem] text-muted" /><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="q">Search</label>
-          <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Title or company" className="field !pl-9" /></div>
-        <div className="hidden lg:block"><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="tab">Show</label>
-          <select id="tab" name="tab" defaultValue={tab} className="field">{TABS.map(([id, l]) => <option key={id} value={id}>{l} ({tabCount(id)})</option>)}</select></div>
-        <FilterPanel active={[type !== "all", !!st, !!company, !!pr, mine].filter(Boolean).length}>
-        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="type">Type</label>
-          <select id="type" name="type" defaultValue={type} className="field">{TYPES.map(([id, l]) => <option key={id} value={id}>{l} ({typeCount(id)})</option>)}</select></div>
-        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="f-s">Exact status</label>
-          <select id="f-s" name="s" defaultValue={st} className="field"><option value="">Any</option>{labels.map((l) => <option key={l} value={l}>{l}</option>)}</select></div>
-        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="f-c">Company</label>
-          <select id="f-c" name="c" defaultValue={company} className="field"><option value="">Any</option>{companies.map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></div>
-        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="f-p">Priority</label>
-          <select id="f-p" name="p" defaultValue={pr} className="field"><option value="">Any</option><option value="attention">Urgent or high</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select></div>
-        <div className="col-span-2 flex flex-wrap items-end gap-x-4 gap-y-1 lg:col-span-1">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="checkbox" name="mine" value="1" defaultChecked={mine} className="size-4 accent-[#0c6a49]" /> Only mine</label>
-          {(extra > 0 || tab !== "needs" || type !== "all") && <Link href="/tickets" className="min-h-11 py-2.5 text-sm underline">Clear</Link>}
-        </div>
-        </FilterPanel>
-      </AutoGetForm>
-      <p className="-mt-2 mb-3 text-sm text-muted">{rows.length} {rows.length === 1 ? "ticket" : "tickets"}</p>
+      <h1 className="sr-only">Tickets</h1>
+      <div className="lt">
+        <AutoGetForm className="lt-form">
+          <div className="lt-row">
+            <label className="lt-search"><span className="sr-only">Search tickets</span><Search size={17} aria-hidden /><input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Search tickets" autoComplete="off" /></label>
+            <FilterPanel active={[type !== "all", !!st, !!company, !!pr, mine].filter(Boolean).length}>
+              <div><label className="label" htmlFor="type">Type</label>
+                <select id="type" name="type" defaultValue={type} className="field">{TYPES.map(([id, l]) => <option key={id} value={id}>{l} ({typeCount(id)})</option>)}</select></div>
+              <div><label className="label" htmlFor="f-s">Exact status</label>
+                <select id="f-s" name="s" defaultValue={st} className="field"><option value="">Any</option>{labels.map((l) => <option key={l} value={l}>{l}</option>)}</select></div>
+              <div><label className="label" htmlFor="f-c">Company</label>
+                <select id="f-c" name="c" defaultValue={company} className="field"><option value="">Any</option>{companies.map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></div>
+              <div><label className="label" htmlFor="f-p">Priority</label>
+                <select id="f-p" name="p" defaultValue={pr} className="field"><option value="">Any</option><option value="attention">Urgent or high</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select></div>
+              <label className="grp grp-row col-span-full" htmlFor="f-m"><span>Only mine</span><span className="sw"><input id="f-m" type="checkbox" name="mine" value="1" defaultChecked={mine} /><i aria-hidden /></span></label>
+            </FilterPanel>
+            <Link className="lt-add" href="/tickets/new" aria-label="New ticket"><Plus size={18} aria-hidden /><span>New ticket</span></Link>
+          </div>
+          <div className="sr-only"><label htmlFor="tab">Show</label>
+            <select id="tab" name="tab" defaultValue={tab}>{TABS.map(([id, l]) => <option key={id} value={id}>{l} ({tabCount(id)})</option>)}</select></div>
+        </AutoGetForm>
+        <QuickChips label="Show tickets" items={TABS.map(([id, l]) => ({ label: l, count: tabCount(id), href: href({ tab: id }), on: tab === id }))} />
+        <AppliedChips clearHref={href({ type: "all", mine: false }).split("?")[0] + (tab !== "needs" ? `?tab=${tab}` : "")} items={[
+          ...(type !== "all" ? [{ label: "Type", value: TYPES.find(([id]) => id === type)?.[1] ?? type, href: without("type") }] : []),
+          ...(st ? [{ label: "Status", value: st, href: without("s") }] : []),
+          ...(company ? [{ label: "Company", value: companies.find(([id]) => id === company)?.[1] ?? "", href: without("c") }] : []),
+          ...(pr ? [{ label: "Priority", value: pr === "attention" ? "Urgent or high" : pr, href: without("p") }] : []),
+          ...(mine ? [{ label: "Owner", value: "Only mine", href: without("mine") }] : []),
+          ...(sp.q ? [{ label: "Search", value: sp.q, href: without("q") }] : []),
+        ]} />
+        <p className="lt-count">{rows.length} {rows.length === 1 ? "ticket" : "tickets"}</p>
+      </div>
       {rows.length === 0 ? <Empty title="Nothing here">{tab === "needs" ? "You're all caught up." : "No tickets match."}</Empty> : (
         <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
           {rows.map((r) => (
