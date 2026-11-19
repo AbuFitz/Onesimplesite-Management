@@ -42,7 +42,7 @@ export function WidgetGrid({ storageKey, widgets }: { storageKey: string; widget
           {edit ? <><Check size={14} aria-hidden /> Done</> : <><LayoutGrid size={14} aria-hidden /> Customise</>}
         </button>
       </div>
-      {edit && <p className="wgrid-tip" role="status">Drag a widget by its handle (or focus it and press Space, then the arrow keys) to move it. Use the eye to hide it.</p>}
+      {edit && <p className="wgrid-tip" role="status">Drag the handle to move a widget. Tap the eye to hide it.<span className="sr-only"> With a keyboard, focus the handle, press Space, then use the arrow keys.</span></p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onEnd}>
         <SortableContext items={shown} strategy={rectSortingStrategy}>
           <div className="wgrid">

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
-const TONES = { neutral: "bg-[#f4f4f5]", green: "bg-[#f4f4f5]", amber: "bg-[#f4f4f5]", blue: "bg-[#f4f4f5]", lilac: "bg-[#f4f4f5]", rose: "bg-[#f4f4f5]" } as const;
+const TONES = { neutral: "bg-lime/70", green: "bg-lime/70", amber: "bg-lime/70", blue: "bg-lime/70", lilac: "bg-lime/70", rose: "bg-lime/70" } as const;
 const DOT = { neutral: "#a1a1aa", green: "#65a30d", amber: "#d99a06", blue: "#0c6a49", lilac: "#7c6ee6", rose: "#dc4c3e" } as const;
 export type Tone = keyof typeof TONES;
 
@@ -10,10 +10,10 @@ export function Panel({ title, icon: Icon, tone = "neutral", action, children, c
   return (
     <section className={`overflow-hidden rounded-xl border border-[var(--card-line)] bg-white ${className}`}>
       <header className="flex items-center justify-between gap-3 border-b border-[var(--card-rule)] bg-[var(--card-head)] px-4 py-2.5">
-        <h2 className="flex items-center gap-2.5 text-[14px] font-bold leading-none text-ink">{Icon && <span className={`grid size-7 place-items-center rounded-md ${TONES[tone]}`}><Icon size={15} aria-hidden /></span>}{title}</h2>
+        <h2 className="flex items-center gap-2.5 text-[15px] font-medium leading-none tracking-tight text-ink">{Icon && <span className={`grid size-8 place-items-center rounded-full text-olive-950 ${TONES[tone]}`}><Icon size={15} aria-hidden /></span>}{title}</h2>
         {action}
       </header>
-      <div className="p-4">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </section>
   );
 }
@@ -23,7 +23,7 @@ export function SummaryTile({ label, value, sub, tone = "neutral" }: { label: st
   return (
     <div className="rounded-xl border border-[var(--card-line)] bg-white px-4 py-3">
       <p className="flex items-center gap-2 text-[12.5px] font-semibold text-ink/65"><span className="size-2 rounded-full" style={{ background: DOT[tone] }} aria-hidden />{label}</p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-[26px] font-bold leading-tight tracking-tight text-ink">{value}</p>
+      <p className="mt-1 font-[family-name:var(--font-display)] text-[28px] font-light leading-tight tracking-tight text-ink">{value}</p>
       {sub && <p className="mt-0.5 text-[12.5px] text-ink/65">{sub}</p>}
     </div>
   );

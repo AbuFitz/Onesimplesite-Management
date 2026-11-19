@@ -1,4 +1,5 @@
 import { ImageLink } from "@/components/lightbox";
+import { StageBar } from "@/components/stage-bar";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Check, ListChecks, Files as FilesIcon, Ticket, Package, Megaphone, Sparkles, ArrowRight, Folder, Download, Eye, EyeOff, Trash2, Paperclip, CircleDot, Circle } from "lucide-react";
@@ -52,10 +53,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         meta={<><Link className="underline" href={`/customers/${p.customerId}`}>{p.customer.displayName}</Link>{p.dueDate ? ` · due ${fmtDate(p.dueDate)}` : ""}{contract ? <> · <Link className="underline" href={`/contracts/${contract.id}`}>{contract.reference}</Link></> : null}</>} />
       <ErrorSummary message={error} />
 
-      <ol className="mb-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${tpl.stages.length}, minmax(0, 1fr))` }} aria-label="Progress">
-        {tpl.stages.map((st, i) => { const done = (idx > i) || p.stage === "completed", cur = idx === i; return (
-          <li key={st} aria-current={cur ? "step" : undefined}><div className={`h-2.5 rounded-full ${done ? "bg-[#18181b]" : cur ? "bg-[#0c6a49]" : "bg-[#e4e4e7]"}`} /><p className={`mt-1.5 text-[12.5px] leading-tight ${cur ? "font-bold text-ink" : "text-ink/65"}`}>{label(st)}</p></li>); })}
-      </ol>
+      <StageBar stages={tpl.stages.map((st, i) => ({ key: st, label: label(st), state: (idx > i) || p.stage === "completed" ? "done" : idx === i ? "cur" : "todo" }))} />
       <p className="mb-5 text-[13px] text-ink/65">{tpl.label}. {idx < 0 ? <strong className="text-ink">The project is at “{label(p.stage)}”, which isn't one of this type's usual steps. That's fine.</strong> : "Move to any stage you like, forwards, back or skipping steps."}</p>
 
       {(guide || p.stage === "held" || finished) && (

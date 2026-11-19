@@ -101,10 +101,10 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
             ? <a href={e.location} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#18181b] px-3 text-sm font-semibold text-white"><Video size={14} aria-hidden />Join meeting</a>
             : <p className="mt-0.5 flex items-start gap-1.5 break-words text-sm text-muted"><MapPin size={13} className="mt-0.5 shrink-0" aria-hidden />{e.location}</p>)}
           {!cancelled && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <a className="btn btn-quiet !min-h-10 text-[13px] sm:!min-h-8" href={`/calendar/${e.id}/ics`}><Download size={13} aria-hidden /> Add to my calendar</a>
-              {canWrite && e.status === "scheduled" && <Link href={q({ day: dayKey(e.startsAt), edit: e.id })} replace scroll={false} className="btn btn-quiet !min-h-10 text-[13px] sm:!min-h-8">Edit</Link>}
-              {canWrite && e.status === "scheduled" && <form action={cancelEventAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="version" value={e.version} /><input type="hidden" name="back" value={here} /><button className="btn btn-quiet !min-h-10 text-[13px] sm:!min-h-8"><X size={13} aria-hidden /> Cancel</button></form>}
+            <div className="evt-act">
+              <a className="evt-b" href={`/calendar/${e.id}/ics`}><Download size={13} aria-hidden /> Add to my calendar</a>
+              {canWrite && e.status === "scheduled" && <Link href={q({ day: dayKey(e.startsAt), edit: e.id })} replace scroll={false} className="evt-b">Edit</Link>}
+              {canWrite && e.status === "scheduled" && <form action={cancelEventAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="version" value={e.version} /><input type="hidden" name="back" value={here} /><button className="evt-b evt-x"><X size={13} aria-hidden /> Cancel</button></form>}
             </div>
           )}
         </div>

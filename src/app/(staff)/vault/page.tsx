@@ -33,7 +33,7 @@ export default async function Vault({ searchParams }: { searchParams: Promise<{ 
             <ul>{rows.map((r) => <VaultItem key={r.id} row={{ ...r, updatedAt: r.updatedAt.toISOString() }} />)}</ul>
           )}
         </section>
-        <aside className="lg:sticky lg:top-20 lg:self-start">
+        <aside className="card-section lg:sticky lg:top-20 lg:self-start">
           <h2 className="mb-3">Add a login</h2>
           <VaultForm />
           <p className="hint mt-4">Everyone on the team can see these. Passwords are encrypted in the database, and every time one is shown or changed it is recorded with the person's name. They are not included in the backup file.</p>
