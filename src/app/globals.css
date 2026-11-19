@@ -1073,3 +1073,11 @@ body:has(.wcell.editing) .sb { display: none; }
 .pay-offer-f { display: grid; gap: 8px; padding: 0 14px 10px; }
 .pay-offer .pay-note { padding: 0 14px 12px; color: var(--color-muted); }
 .send-box { padding: 16px; border-radius: 24px; background: rgba(255, 255, 255, .8); border: 1.5px solid var(--color-olive-700); scroll-margin-top: 1.5rem; }
+
+/* Per-widget range switch (buttons now, not links): same look. */
+.wdg-range button { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 550; color: var(--color-muted); min-height: 26px; display: grid; place-items: center; cursor: pointer; transition: background-color .2s, color .2s, transform .25s var(--spring); }
+.wdg-range button:active { transform: scale(.94); }
+.wdg-range button[aria-pressed="true"] { background: #fff; color: var(--color-ink); box-shadow: 0 1px 0 #fff inset, 0 4px 10px -4px rgba(14, 16, 22, .35); }
+.wdg-swap { animation: swap-in .35s var(--ease) both; }
+@keyframes swap-in { from { opacity: .35; transform: translateY(4px); } }
+.wdg-quiet { display: grid; gap: 4px; padding: 26px 8px; text-align: center; } .wdg-quiet b { font-weight: 500; } .wdg-quiet span { font-size: 14px; color: var(--color-muted); }

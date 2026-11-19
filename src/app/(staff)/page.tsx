@@ -8,7 +8,8 @@ import { lastExport, isBackupDue } from "@/modules/export/service";
 import { todayData, todayTrends } from "@/modules/today/service";
 import { STATUS_LABEL } from "@/modules/support/options";
 import { Donut, Ring, CHART } from "@/components/charts";
-import { Widget, SeeAll, RangeTabs, Kpi } from "@/components/widgets/widget";
+import { Widget, SeeAll, Kpi } from "@/components/widgets/widget";
+import { RangeProvider, RangeSwitch, ByRange } from "@/components/widgets/ranged";
 import { Series, Funnel, Delta } from "@/components/widgets/spark";
 import { WidgetGrid, type GridWidget } from "@/components/widgets/grid";
 import { Dial, DialPanel } from "@/components/widgets/dial";
@@ -21,16 +22,16 @@ const gbp = (minor: number) => new Intl.NumberFormat("en-GB", { style: "currency
 export default async function Today({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const ctx = await requireStaff();
   const sp = await searchParams;
-  const days = ([7, 30, 90] as const).find((n) => String(sp.range) === String(n)) ?? 30;
+  const DAYS = [7, 30, 90] as const;
   const w = ctx.workspaceId;
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(startOfDay.getTime() + 864e5);
   const seeBusiness = can(ctx.role, "customer.read");
   const mineOnly = can(ctx.role, "project.read_all") ? {} : { ownerId: ctx.staffId };
   const backupDue = can(ctx.role, "data.export") && isBackupDue(await lastExport(w));
-  const [d, trends, tasks, events, signed, myProjects] = await Promise.all([
+  const [d, trendSet, tasks, events, signed, myProjects] = await Promise.all([
     todayData(w, { staffId: ctx.staffId, seeBusiness }),
-    seeBusiness ? todayTrends(w, days) : null,
+    seeBusiness ? Promise.all(DAYS.map((n) => todayTrends(w, n))) : null,
     db.task.findMany({ where: { workspaceId: w, assigneeId: ctx.staffId, doneAt: null }, orderBy: { dueDate: "asc" }, take: 6 }),
     db.calendarEvent.findMany({ where: { workspaceId: w, status: "scheduled", startsAt: { gte: startOfDay, lt: endOfDay }, OR: [{ organiserId: ctx.staffId }, { attendees: { some: { staffId: ctx.staffId } } }] }, orderBy: { startsAt: "asc" } }),
     seeBusiness ? db.contract.findMany({ where: { workspaceId: w, status: "completed", cancelledAt: null, completedAt: { gte: new Date(Date.now() - 14 * 864e5) } }, orderBy: { completedAt: "desc" }, take: 4, include: { customer: true } }) : [],
@@ -39,13 +40,13 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
   const greeting = hello();
   const STEP = { planned: 0.1, awaiting_assets: 0.2, design: 0.4, development: 0.6, qa: 0.75, client_review: 0.85, ready_to_launch: 0.95 } as Record<string, number>;
   const quick = [["/tickets/new", "New ticket", Ticket], ["/customers/new", "Add a company", Building2], ["/calendar/new", "Add an event", CalendarDays]] as const;
-  const range = <RangeTabs current={days} />;
-  const per = `last ${days} days`;
   const gbpShort = (n: number) => `£${n.toLocaleString("en-GB")}`;
   const widgets: GridWidget[] = [];
 
-  if (d && trends) {
-    const t = trends;
+  if (d && trendSet) {
+    const t = trendSet[1];   // the small tiles show the 30 day trend; the bigger widgets each pick their own range
+    const per = "last 30 days";
+    const byDays = { 7: trendSet[0], 30: trendSet[1], 90: trendSet[2] } as const;
     widgets.push(
       { id: "k-needs", title: "Needs us", size: "s", node: <Kpi label="Needs us" tone="blue" value={d.tickets.open} href="/tickets" note={d.tickets.replied ? `${d.tickets.replied} customer ${d.tickets.replied === 1 ? "reply" : "replies"}` : "All answered"} spark={t.tickets.series.map((p) => p.value)} sparkLabel={`Tickets per period, ${per}`} /> },
       { id: "k-sign", title: "Waiting to sign", size: "s", node: <Kpi label="Waiting to sign" tone="amber" value={d.awaiting} href="/agreements?show=awaiting" note={`${d.pipeline.contract_pending ?? 0} in the pipeline`} spark={t.signed.series.map((p) => p.value)} sparkLabel={`Agreements signed, ${per}`} /> },
@@ -61,16 +62,22 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
           <Donut slices={[{ label: "Needs us", value: d.tickets.open, color: CHART.green }, { label: "Waiting on customer", value: d.tickets.waiting, color: CHART.amber }, { label: "Done", value: d.tickets.done, color: CHART.teal }]} centre={<div><p className="font-[family-name:var(--font-display)] text-3xl font-medium leading-none">{d.tickets.open + d.tickets.waiting}</p><p className="text-xs text-muted">open</p></div>} />
         </Widget>) },
       { id: "w-new-tickets", title: "New tickets", size: "m", node: (
-        <Widget title="New tickets" icon={Ticket} range={range} action={<SeeAll href="/tickets?tab=all">See them</SeeAll>} empty={t.tickets.total === 0 && t.tickets.prev === 0 ? { title: `No new tickets in the ${per}`, hint: "Good news, or a quiet spell." } : null}>
-          <p className="wdg-big"><span className="num">{t.tickets.total}</span><Delta now={t.tickets.total} prev={t.tickets.prev} goodWhen="down" label="vs the period before" /></p>
-          <Series data={t.tickets.series} color={CHART.lilac} height={140} />
-        </Widget>) },
+        <RangeProvider id="w-new-tickets">
+          <Widget title="New tickets" icon={Ticket} range={<RangeSwitch />} action={<SeeAll href="/tickets?tab=all">See them</SeeAll>}>
+            <ByRange views={Object.fromEntries(DAYS.map((n) => { const x = byDays[n].tickets; return [n, x.total === 0 && x.prev === 0 ? <div key={n} className="wdg-quiet"><b>No new tickets in the last {n} days</b><span>Good news, or a quiet spell.</span></div> : (<div key={n}>
+              <p className="wdg-big"><span className="num">{x.total}</span><Delta now={x.total} prev={x.prev} goodWhen="down" label="vs the period before" /></p>
+              <Series data={x.series} color={CHART.lilac} height={140} /></div>)]; })) as Record<7 | 30 | 90, React.ReactNode>} />
+          </Widget>
+        </RangeProvider>) },
       { id: "w-money", title: "Money in", size: "m", node: (
-        <Widget title="Money in" icon={CreditCard} range={range} action={<SeeAll href="/payments?show=paid">Payments</SeeAll>} empty={t.money.total === 0 && t.money.prev === 0 ? { title: `No payments in the ${per}`, hint: "Receipts show here as money arrives." } : null}
-          foot={<>Monthly plans running: <b className="num">{gbpShort(Math.round(d.money.monthlyMinor / 100))}</b> a month ({d.money.plans})</>}>
-          <p className="wdg-big"><span className="num">{gbpShort(t.money.total)}</span><Delta now={t.money.total} prev={t.money.prev} label="vs the period before" /></p>
-          <Series data={t.money.series} kind="area" color={CHART.teal} height={140} format={gbpShort} />
-        </Widget>) },
+        <RangeProvider id="w-money">
+          <Widget title="Money in" icon={CreditCard} range={<RangeSwitch />} action={<SeeAll href="/payments?show=paid">Payments</SeeAll>}
+            foot={<>Monthly plans running: <b className="num">{gbpShort(Math.round(d.money.monthlyMinor / 100))}</b> a month ({d.money.plans})</>}>
+            <ByRange views={Object.fromEntries(DAYS.map((n) => { const x = byDays[n].money; return [n, x.total === 0 && x.prev === 0 ? <div key={n} className="wdg-quiet"><b>No payments in the last {n} days</b><span>Receipts show here as money arrives.</span></div> : (<div key={n}>
+              <p className="wdg-big"><span className="num">{gbpShort(x.total)}</span><Delta now={x.total} prev={x.prev} label="vs the period before" /></p>
+              <Series data={x.series} kind="area" color={CHART.teal} height={140} format={gbpShort} /></div>)]; })) as Record<7 | 30 | 90, React.ReactNode>} />
+          </Widget>
+        </RangeProvider>) },
       { id: "w-health", title: "How we're doing", size: "m", node: (
         <Widget title="How we're doing" icon={Trophy} action={<SeeAll href="/projects">Projects</SeeAll>}>
           <div className="space-y-5">
