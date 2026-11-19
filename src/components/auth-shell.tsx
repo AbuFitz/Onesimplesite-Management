@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { origins } from "@/lib/env";
 import { LegalLinks } from "./legal-links";
 import { CookieNotice } from "./cookie-notice";
-import { FolderKanban, FileText, CreditCard, LifeBuoy, Ticket, Building2, PenLine, CalendarDays } from "lucide-react";
+import { FolderKanban, FileText, CreditCard, LifeBuoy } from "lucide-react";
 
 /**
  * One layout for every page reached from sign-in or an emailed link, in the OSS Commerce language (floating glass, olive and lime).
@@ -16,28 +16,41 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
   const other = portal ? { href: origins().manage + "/login", text: "Are you part of the OneSimpleSite team?", link: "Team sign-in" } : { href: origins().portal + "/login", text: "Are you a customer?", link: "Customer portal sign-in" };
   const foot = footer ?? (portal ? <>Need a hand? <a className="font-semibold text-ink underline" href="mailto:support@onesimplesite.co.uk">support@onesimplesite.co.uk</a></> : null);
 
+  if (!portal) {
+    return (
+      <div className="auth-wrap">
+        <main id="main" className="auth-card">
+          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={190} height={39} priority />
+          <div className="auth-head">
+            <h1>{title}</h1>
+            {intro && <p>{intro}</p>}
+          </div>
+          <div className="auth-body">{children}</div>
+          {foot && <div className="auth-foot">{foot}</div>}
+        </main>
+        <p className="auth-other">{other.text} <a href={other.href}>{other.link}</a></p>
+        <LegalLinks className="mt-3" />
+      </div>
+    );
+  }
+
   return (
     <div className="auth-split">
-      {portal && <CookieNotice />}
+      <CookieNotice />
       <aside className="auth-hero" style={{ paddingTop: "max(1.4rem, env(safe-area-inset-top))" }}>
         <Image src="/brand/wordmark-reversed-colour.svg" alt="OneSimpleSite" width={210} height={43} priority className="auth-hero-logo" />
-        <div className="auth-hero-copy">
-          <p className="auth-hero-title">{portal ? "Your website, all in one place." : "The whole business, one calm screen."}</p>
-          <ul className="auth-points">
-            {portal ? (<>
+        {(
+          <div className="auth-hero-copy">
+            <p className="auth-hero-title">Your website, all in one place.</p>
+            <ul className="auth-points">
               <li><FolderKanban size={18} aria-hidden /><span><b>Follow your project</b> from first plan to launch day</span></li>
               <li><FileText size={18} aria-hidden /><span><b>Find every document</b> you have signed or been sent</span></li>
               <li><CreditCard size={18} aria-hidden /><span><b>Pay securely online</b> and keep your receipts</span></li>
               <li><LifeBuoy size={18} aria-hidden /><span><b>Get help</b> from a real person, fast</span></li>
-            </>) : (<>
-              <li><Ticket size={18} aria-hidden /><span><b>Tickets</b> that need you, with the customer's side of the story</span></li>
-              <li><Building2 size={18} aria-hidden /><span><b>Companies</b> with people, projects, plans and money in one place</span></li>
-              <li><PenLine size={18} aria-hidden /><span><b>Agreements</b> sent, signed and filed without chasing</span></li>
-              <li><CalendarDays size={18} aria-hidden /><span><b>Today</b> shows what to do next, and what is at risk</span></li>
-            </>)}
-          </ul>
-        </div>
-        <p className="auth-hero-url">{portal ? "onesimplesite.co.uk" : "OneSimpleSite team"}</p>
+            </ul>
+          </div>
+        )}
+        <p className="auth-hero-url">onesimplesite.co.uk</p>
       </aside>
       <main id="main" className="auth-main">
         <div className="auth-card">
