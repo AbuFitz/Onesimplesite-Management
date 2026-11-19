@@ -1,0 +1,28 @@
+# Runs the background jobs (retry unsent emails, ticket reminders, the daily digest, document sync) every 15 minutes.
+# Vercel's free plan can only run a cron job once a day, and the app's own "run on page load" fallback only fires when someone is using it.
+# It needs two repository secrets (Settings > Secrets and variables > Actions):
+#   CRON_SECRET   the same value as the CRON_SECRET setting on the site
+#   JOBS_URLS     the sites to call, one per line, e.g.  https://manage.onesimplesite.co.uk  (add the dev one too if you like)
+# If either is missing this does nothing and says so, so it can never fail a build.
+name: scheduler
+on:
+  schedule: [{ cron: "*/15 * * * *" }]
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the jobs endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          JOBS_URLS: ${{ secrets.JOBS_URLS }}
+        run: |
+          if [ -z "${CRON_SECRET:-}" ] || [ -z "${JOBS_URLS:-}" ]; then echo "Not set up yet: add the CRON_SECRET and JOBS_URLS repository secrets."; exit 0; fi
+          fail=0
+          while IFS= read -r base; do
+            [ -z "$base" ] && continue
+            code=$(curl -sS -o /tmp/out.txt -w "%{http_code}" --max-time 60 -H "Authorization: Bearer $CRON_SECRET" "${base%/}/api/cron/outbox" || echo 000)
+            echo "$base -> $code"; [ "$code" = "200" ] || { fail=1; head -c 300 /tmp/out.txt; echo; }
+          done <<< "$JOBS_URLS"
+          exit $fail
