@@ -11,7 +11,7 @@ async function login(origin, email, vp) { const ctx = await b.newContext({ viewp
 for (const [name, vp] of [["desktop", { width: 1280, height: 900 }], ["phone", { width: 390, height: 844 }]]) {
   if (name === "phone") { /* the phone pass re-checks the customer's side only */ }
   const cl = await login(P, "client.b@example.test", vp); const row = (t) => cl.locator("li").filter({ hasText: title }).filter({ hasText: t }).first();
-  await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle");
+  await cl.goto(`${P}/billing`); await cl.waitForLoadState("networkidle"); await cl.evaluate(() => document.querySelectorAll("details.more").forEach((d) => (d.open = true)));
   ok(await row("Website deposit").locator("button:has-text('Pay now')").count() >= 1, `${name}: the customer can pay the deposit`);
   if (name === "phone") ok(await row("Website final payment").locator("button:has-text('Pay now')").count() >= 1, "phone: and the final payment, once asked for");
   const plan = row("Care plan (free for 1 month");
