@@ -35,10 +35,10 @@ ok(await staff.locator("text=Finish setting up your profile").count() === 0, "ba
 
 // 0b. Team Board: post, edit with autosave, comment, delete. Calendar quick-add.
 await staff.goto(`${M}/board`); await staff.waitForLoadState("networkidle");
-await staff.click("button:has-text('Post something to the team')");
+await staff.click("button:has-text('New topic')");
 const postTitle = `Launch checklist ${stamp}`;
 await staff.fill("#bp-title", postTitle); await staff.fill("#bp-body", "# Before launch\n- [ ] Call the customer");
-await staff.click("button:has-text('Post')"); await staff.waitForSelector(`a:has-text("${postTitle}")`);
+await staff.click("[role=dialog] button:has-text('Post')"); await staff.waitForSelector(`a:has-text("${postTitle}")`);
 ok(true, "a post appears in the board feed");
 await staff.click(`a:has-text("${postTitle}")`); await staff.waitForURL(/\/board\/[0-9a-f-]{36}/);
 await staff.click("input[type=checkbox]"); await staff.waitForSelector("[role=status]:has-text('Saved')", { timeout: 8000 }); await staff.reload();

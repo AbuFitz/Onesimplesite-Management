@@ -1,6 +1,8 @@
 "use client";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Lock, Users } from "lucide-react";
+import { Lock, Users, Plus } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Sheet } from "./sheet";
 import { postAction, commentAction } from "@/app/actions/board";
 import { Avatar, ErrorSummary } from "./ui";
 
@@ -59,3 +61,30 @@ export function CommentForm({ id, name, staffId }: { id: string; name: string; s
 export const VisBadge = ({ v }: { v: string }) => (
   <span className="inline-flex items-center gap-1 rounded-full bg-soft px-2 py-0.5 text-xs text-muted">{v === "private" ? <Lock size={11} aria-hidden /> : <Users size={11} aria-hidden />}{v === "private" ? "Only me" : "Team"}</span>
 );
+
+/** "New topic" opens the composer in a sheet, so the feed gets the whole page. */
+export function NewTopic({ name, staffId }: { name: string; staffId?: string }) {
+  const [open, setOpen] = useState(false);
+  const [s, act, pending] = useActionState(postAction, undefined as { error?: string; done?: boolean } | undefined);
+  useEffect(() => { if (s?.done) setOpen(false); }, [s]);
+  return (
+    <>
+      <button type="button" className="lt-add" onClick={() => setOpen(true)} aria-haspopup="dialog"><Plus size={18} aria-hidden /><span>New topic</span></button>
+      {open && createPortal(
+        <Sheet open onClose={() => setOpen(false)} title="New topic">
+          <form action={act} className="space-y-3">
+            <ErrorSummary message={s?.error} />
+            <label className="sr-only" htmlFor="bp-title">Topic</label>
+            <input id="bp-title" name="title" className="field" placeholder="Topic (optional)" autoComplete="off" />
+            <label className="sr-only" htmlFor="bp-body">Message</label>
+            <textarea id="bp-body" name="body" rows={5} autoFocus required className="field" placeholder={"What's happening?\n\n- for lists, # for headings"} />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="flex items-center gap-2 text-sm text-muted"><Avatar name={name} staffId={staffId} size={24} />
+                <select name="visibility" aria-label="Who can see it" className="field !min-h-10 w-auto !py-1 !text-sm" defaultValue="team"><option value="team">Whole team</option><option value="private">Only me</option></select></label>
+              <button className="btn" disabled={pending}>{pending ? "Posting…" : "Post"}</button>
+            </div>
+          </form>
+        </Sheet>, document.body)}
+    </>
+  );
+}
