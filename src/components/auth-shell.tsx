@@ -16,30 +16,12 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
   const other = portal ? { href: origins().manage + "/login", text: "Are you part of the OneSimpleSite team?", link: "Team sign-in" } : { href: origins().portal + "/login", text: "Are you a customer?", link: "Customer portal sign-in" };
   const foot = footer ?? (portal ? <>Need a hand? <a className="font-semibold text-ink underline" href="mailto:support@onesimplesite.co.uk">support@onesimplesite.co.uk</a></> : null);
 
-  if (!portal) {
-    return (
-      <div className="auth-wrap">
-        <main id="main" className="auth-card">
-          <Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={190} height={39} priority />
-          <div className="auth-head">
-            <h1>{title}</h1>
-            {intro && <p>{intro}</p>}
-          </div>
-          <div className="auth-body">{children}</div>
-          {foot && <div className="auth-foot">{foot}</div>}
-        </main>
-        <p className="auth-other">{other.text} <a href={other.href}>{other.link}</a></p>
-        <LegalLinks className="mt-3" />
-      </div>
-    );
-  }
-
   return (
     <div className="auth-split">
-      <CookieNotice />
-      <aside className="auth-hero" style={{ paddingTop: "max(1.4rem, env(safe-area-inset-top))" }}>
+      {portal && <CookieNotice />}
+      <aside className={`auth-hero ${portal ? "" : "auth-hero-photo"}`} style={{ paddingTop: "max(1.4rem, env(safe-area-inset-top))" }}>
         <Image src="/brand/wordmark-reversed-colour.svg" alt="OneSimpleSite" width={210} height={43} priority className="auth-hero-logo" />
-        {(
+        {portal && (
           <div className="auth-hero-copy">
             <p className="auth-hero-title">Your website, all in one place.</p>
             <ul className="auth-points">
@@ -50,7 +32,7 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
             </ul>
           </div>
         )}
-        <p className="auth-hero-url">onesimplesite.co.uk</p>
+        {portal && <p className="auth-hero-url">onesimplesite.co.uk</p>}
       </aside>
       <main id="main" className="auth-main">
         <div className="auth-card">

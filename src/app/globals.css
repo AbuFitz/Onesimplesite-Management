@@ -994,3 +994,8 @@ html[data-kb] .tb, body:has(.sheet-wrap) .tb { opacity: 0; transform: translateY
 .em-pick > summary span { font-size: 12.5px; color: var(--color-muted); } .em-pick > summary b { font-size: 16px; font-weight: 500; }
 .em-pick[open] { padding-bottom: 12px; }
 .em-pick nav a { min-height: 44px; display: flex !important; align-items: center; }
+
+/* Team sign-in: the office photo fills the panel; a dark wash behind the logo keeps it readable. */
+.auth-hero-photo { background: linear-gradient(180deg, rgba(12, 18, 8, .72) 0%, rgba(12, 18, 8, 0) 38%), url("/brand/team-office.jpg") center / cover no-repeat, #161d0b; }
+.auth-hero-photo::after { display: none; }
+@media (max-width: 1023px) { .auth-hero-photo { min-height: 150px; background-position: center 40%; } }
