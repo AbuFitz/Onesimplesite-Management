@@ -21,11 +21,11 @@ export const metadata = { title: "Project" };
 const kb = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
 const EXTRA = "image/png,image/jpeg,image/gif,image/webp,application/pdf,application/zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv,.docx,.xlsx,.pptx,.zip,.txt,.csv";
 
-export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
+export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; tab?: string }> }) {
   const ctx = await requireStaff();
   if (!can(ctx.role, "project.read_all") && !can(ctx.role, "project.read_assigned")) redirect("/denied");
   const { id } = await params;
-  const { error } = await searchParams;
+  const sp = await searchParams; const { error } = sp;
   const p = await getProject(ctx, id);
   if (!p) notFound();
   const [files, tickets, contract] = await Promise.all([
@@ -57,9 +57,9 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       <p className="mb-5 text-[13px] text-ink/65">{tpl.label}. {idx < 0 ? <strong className="text-ink">The project is at “{label(p.stage)}”, which isn't one of this type's usual steps. That's fine.</strong> : "Move to any stage you like, forwards, back or skipping steps."}</p>
 
       {(guide || p.stage === "held" || finished) && (
-        <section className="mb-5 rounded-xl border border-[#e4e4e7] bg-[#fafafa] p-5" aria-label="What to do now">
-          <p className="flex items-center gap-2 text-sm font-bold text-[#18181b]"><Sparkles size={16} aria-hidden /> What to do now · {label(p.stage)}</p>
-          <p className="mt-1 max-w-2xl text-[17px] font-semibold">{guide?.now ?? (p.stage === "held" ? "This project is paused. Move it back to a stage when the customer is ready." : "This project is finished. Reopen it if something comes up.")}</p>
+        <section className="nx-next go mb-5" aria-label="What to do now">
+          <p className="nx-eye flex items-center gap-2"><Sparkles size={15} aria-hidden /> What to do now · {label(p.stage)}</p>
+          <h2 className="!text-[clamp(20px,4.5vw,26px)]">{guide?.now ?? (p.stage === "held" ? "This project is paused. Move it back to a stage when the customer is ready." : "This project is finished. Reopen it if something comes up.")}</h2>
           {canWrite && (
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <form action={seedTasksAction}><input type="hidden" name="id" value={p.id} /><SubmitButton className="btn btn-quiet" pendingText="Adding…">Add the usual tasks for this stage</SubmitButton></form>
@@ -77,8 +77,18 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       )}
       {missing.length > 0 && <p className="mb-5 rounded-xl border border-[#f1d58a] bg-[#fff6dc] px-4 py-3 text-sm text-[#5c3b00]"><strong>Waiting on the customer:</strong> {missing.map((a) => a.label).join(", ")}</p>}
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_26rem]">
-        <div className="space-y-5">
+      {(() => {
+        const tab = ["work", "customer", "files", "details"].includes(String(sp.tab)) ? String(sp.tab) : "work";
+        const href = (t: string) => `/projects/${p.id}?tab=${t}`;
+        const waiting = p.assetRequests.filter((a) => !a.receivedAt).length;
+        const items: [string, string, string | null][] = [["work", "Work", `${openTasks.length} open`], ["customer", "Customer", waiting ? `${waiting} waiting` : null], ["files", "Files", files.length ? String(files.length) : null], ["details", "Details", tickets.length ? `${tickets.length} ticket${tickets.length === 1 ? "" : "s"}` : null]];
+        return (
+          <>
+            <nav className="ptabs" aria-label="Project sections">
+              {items.map(([id, label, note]) => <Link key={id} href={href(id)} replace scroll={false} aria-current={tab === id ? "page" : undefined}>{label}{note && <i>{note}</i>}</Link>)}
+            </nav>
+            <div className="space-y-5 max-w-4xl">
+              {tab === "work" && (<>
           <Panel title="Checklist" icon={ListChecks} tone="green" action={<span className="text-sm font-semibold text-ink/65">{doneTasks.length} of {p.tasks.length} done</span>}>
             {p.tasks.length === 0 ? <p className="text-[15px] text-ink/70">No tasks yet. Add the usual ones for this stage above, or write your own.</p> : (
               <ul className="divide-y divide-[var(--card-rule)]">{[...openTasks, ...doneTasks].map((t) => (
@@ -93,7 +103,8 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
               <label className="sr-only" htmlFor="tt">Task</label><input id="tt" name="title" className="field !min-h-10 min-w-48 flex-1" placeholder="Add your own task" required />
               <label className="sr-only" htmlFor="td">Due</label><input id="td" name="dueDate" type="date" className="field !min-h-10 w-auto" /><button className="btn btn-quiet">Add</button></form>}
           </Panel>
-
+              </>)}
+              {tab === "customer" && (<>
           <Panel title="What we need from the customer" icon={Package} tone="amber">
             {p.assetRequests.length === 0 ? <p className="text-[15px] text-ink/70">Nothing requested yet. Ask for the logo, photos or text they need to supply.</p> : (
               <ul className="divide-y divide-[var(--card-rule)]">{p.assetRequests.map((a) => (
@@ -105,7 +116,6 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
               <label className="flex min-h-10 items-center gap-2 text-sm"><input type="checkbox" name="required" defaultChecked className="size-4" /> Required</label><button className="btn btn-quiet">Request</button></form>}
             <p className="mt-2 text-[13px] text-ink/65">Never ask for passwords here.</p>
           </Panel>
-
           <Panel title="Updates" icon={Megaphone} tone="lilac">
             {canWrite && <form action={updateAction} className="mb-4 space-y-2 rounded-xl bg-[var(--color-soft)] p-3"><input type="hidden" name="id" value={p.id} />
               <label className="label" htmlFor="body">Write an update</label><textarea id="body" name="body" className="field" rows={3} required />
@@ -113,9 +123,8 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
               <button className="btn">Post update</button></form>}
             {p.updates.length === 0 ? <p className="text-[15px] text-ink/70">No updates yet.</p> : <ul className="space-y-3">{p.updates.map((u) => <li key={u.id} className="rounded-xl border border-[var(--card-rule)] p-3"><p className="mb-1 flex flex-wrap items-center gap-2 text-xs text-ink/65">{fmtDateTime(u.createdAt)}<Status label={u.clientVisible ? "customer can see" : "team only"} kind={u.clientVisible ? "warn" : "neutral"} /></p><p className="whitespace-pre-wrap text-[15px]">{u.body}</p></li>)}</ul>}
           </Panel>
-        </div>
-
-        <aside className="space-y-5">
+              </>)}
+              {tab === "files" && (<>
           <Panel title="Files" icon={FilesIcon} tone="blue">
             {canWrite && (
               <form action={uploadProjectFilesAction} className="mb-4 space-y-3 rounded-xl border border-[#e4e4e7] bg-[#fafafa] p-3"><input type="hidden" name="id" value={p.id} />
@@ -142,7 +151,8 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
                 </div>))}</div>
             )}
           </Panel>
-
+              </>)}
+              {tab === "details" && (<>
           {canWrite && (
             <Panel title="Type of project" icon={Package} tone="neutral">
               <form action={projectTypeAction} className="space-y-2"><input type="hidden" name="id" value={p.id} />
@@ -155,8 +165,11 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           <Panel title="Tickets for this project" icon={Ticket} tone="rose" action={<Link className="text-sm font-semibold text-moss" href={`/tickets/new?business=${p.customerId}`}>New ticket</Link>}>
             {tickets.length === 0 ? <p className="text-[15px] text-ink/70">None. Anything a customer raises about this site shows here.</p> : <ul className="divide-y divide-[var(--card-rule)]">{tickets.map((t) => { const s = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const }; return <li key={t.id}><Link href={`/support/${t.id}`} className="flex items-center justify-between gap-2 py-2.5"><span className="min-w-0"><span className="block truncate font-semibold">{t.title}</span><span className="text-[13px] text-ink/65">{t.reference} · {timeAgo(t.updatedAt)}</span></span><Status label={s.label} kind={s.kind} /></Link></li>; })}</ul>}
           </Panel>
-        </aside>
-      </div>
+              </>)}
+            </div>
+          </>
+        );
+      })()}
     </>
   );
 }

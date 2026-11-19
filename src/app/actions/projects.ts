@@ -1,5 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
 import { requireStaff } from "@/modules/identity/session";
@@ -11,9 +12,12 @@ const why = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof
 async function run(fd: FormData, fn: (ctx: Awaited<ReturnType<typeof requireStaff>>) => Promise<unknown>) {
   const ctx = await requireStaff("project.write");
   const id = String(fd.get("id"));
-  try { await fn(ctx); } catch (e) { redirect(`/projects/${id}?error=${encodeURIComponent(why(e))}`); }
+  // Stay on the section you were in: the tab is read from the page the form was sent from.
+  let tab = ""; try { const t = new URL((await headers()).get("referer") ?? "").searchParams.get("tab"); if (t && /^[a-z]+$/.test(t)) tab = t; } catch { /* no referer */ }
+  const back = `/projects/${id}${tab ? `?tab=${tab}` : ""}`;
+  try { await fn(ctx); } catch (e) { redirect(`${back}${tab ? "&" : "?"}error=${encodeURIComponent(why(e))}`); }
   revalidatePath(`/projects/${id}`);
-  redirect(`/projects/${id}`);
+  redirect(back);
 }
 export async function seedTasksAction(fd: FormData) { return run(fd, (c) => seedStageTasks(c, String(fd.get("id")))); }
 export async function toggleTaskAction(fd: FormData) { return run(fd, (c) => setTaskDone(c, String(fd.get("taskId")), fd.get("done") === "1")); }

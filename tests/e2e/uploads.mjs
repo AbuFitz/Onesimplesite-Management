@@ -32,12 +32,14 @@ ok(await cl.locator("text=Picture saved").count() > 0, "customer saves a profile
 const mine = await cl.evaluate(async () => { const e = document.querySelector("[style*='/avatar/u/']"); return e ? (await fetch(e.getAttribute("style").match(/url\(([^)]+)\)/)[1].replace(/["']/g, ""))).status : 0; });
 ok(mine === 200, "their picture is served to them");
 const st = await login(M, "demo.owner@example.test");
-await st.goto(`${M}/projects/${PROJECT}`);
+await st.goto(`${M}/projects/${PROJECT}?tab=customer`);
 const txt = await st.locator("main").innerText();
 ok(txt.includes("family bakery since 1998"), "team sees what the customer wrote next to the request");
 ok(/received/i.test(txt), "request shows as received");
-ok(txt.includes("From you"), "team sees the uploaded files in a 'From you' folder");
-ok(txt.includes("sent: Logo"), "a to-do for the project owner is added to the project");
+await st.goto(`${M}/projects/${PROJECT}?tab=files`); const filesTxt = await st.locator("main").innerText();
+ok(filesTxt.includes("From you"), "team sees the uploaded files in a 'From you' folder");
+await st.goto(`${M}/projects/${PROJECT}?tab=work`); const workTxt = await st.locator("main").innerText();
+ok(workTxt.includes("sent: Logo"), "a to-do for the project owner is added to the project");
 await st.goto(`${M}/customers/${CUSTOMER}/details`); await st.setInputFiles("input[name=photo]", "/tmp/pixel.png"); await st.waitForSelector("button:has-text('Save logo')"); await st.click("button:has-text('Save logo')"); await st.waitForURL(/logo=1/);
 ok(await st.evaluate(async (id) => (await fetch("/api/logo/" + id)).status, CUSTOMER) === 200, "team uploads a company logo and it is served");
 await st.goto(`${M}/customers/${CUSTOMER}?tab=people`);
