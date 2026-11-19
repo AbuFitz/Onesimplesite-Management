@@ -1081,3 +1081,26 @@ body:has(.wcell.editing) .sb { display: none; }
 .wdg-swap { animation: swap-in .35s var(--ease) both; }
 @keyframes swap-in { from { opacity: .35; transform: translateY(4px); } }
 .wdg-quiet { display: grid; gap: 4px; padding: 26px 8px; text-align: center; } .wdg-quiet b { font-weight: 500; } .wdg-quiet span { font-size: 14px; color: var(--color-muted); }
+
+/* Loading shape and friendly errors. */
+.skel { display: grid; gap: 14px; padding-top: 6px; }
+.skel-h { width: 46%; height: 34px; border-radius: 12px; }
+.skel-sub { width: 68%; height: 16px; border-radius: 8px; }
+.skel-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 1024px) { .skel-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.skel-tiles i, .skel-card { border-radius: 26px; }
+.skel-tiles i { display: block; height: 110px; }
+.skel-card { display: grid; gap: 10px; padding: 18px; }
+.skel-card b { width: 40%; height: 20px; border-radius: 8px; } .skel-card span { height: 14px; border-radius: 7px; } .skel-card span:last-child { width: 70%; }
+.skel-h, .skel-sub, .skel-tiles i, .skel-card, .skel-card b, .skel-card span { background: linear-gradient(100deg, rgba(255, 255, 255, .45) 30%, rgba(255, 255, 255, .85) 50%, rgba(255, 255, 255, .45) 70%) 0 0 / 200% 100%; animation: skel 1.4s ease-in-out infinite; }
+.skel-card b, .skel-card span { background-color: rgba(20, 30, 12, .06); }
+@keyframes skel { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel * , .skel-h, .skel-sub, .skel-card { animation: none; } }
+.err-card { display: grid; justify-items: center; gap: 8px; width: min(28rem, calc(100% - 32px)); margin: 12vh auto 0; padding: 32px 24px; text-align: center; border-radius: 34px; background: rgba(255, 255, 255, .8); border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 1px 0 #fff inset, 0 24px 44px -26px rgba(18, 28, 12, .5); }
+.err-ico { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 4px; border-radius: 50%; font-size: 24px; color: var(--color-olive-950); background: var(--color-lime); box-shadow: 0 0 0 7px rgba(214, 232, 167, .4); }
+.err-card h1 { font-size: 26px; font-weight: 300; letter-spacing: -.03em; } .err-card p { color: var(--color-muted); font-size: 15px; line-height: 1.45; }
+.err-act { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+.err-act button, .err-act a { display: inline-flex; align-items: center; min-height: 46px; padding: 0 22px; border-radius: 999px; font-size: 15px; font-weight: 500; text-decoration: none; cursor: pointer; }
+.err-act button { color: #fff; background: linear-gradient(180deg, #2c3a15, #161d0b); }
+.err-act a { color: var(--color-ink); background: rgba(255, 255, 255, .9); border: 1px solid rgba(20, 30, 12, .12); }
+.err-card small { margin-top: 6px; font-size: 12px; color: var(--color-muted); }
