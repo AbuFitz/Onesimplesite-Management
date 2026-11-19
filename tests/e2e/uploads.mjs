@@ -21,7 +21,7 @@ await cl.click("details[open] button:has-text('Send to us')"); await cl.waitForU
 await cl.waitForSelector("text=We've got it"); ok(true, "customer sees a confirmation");
 ok(await cl.locator("text=Sent ✓").count() === sentBefore + 1, "that request is marked sent");
 await cl.setInputFiles("section[aria-labelledby=x] input[type=file]", "/tmp/pixel.png"); await cl.fill("#x-t", "Extra photo of the shop front");
-await cl.click("section[aria-labelledby=x] button:has-text('Send to us')"); await cl.waitForURL(/sent=1/);
+await cl.click("section[aria-labelledby=x] button:has-text('Send to us')"); await cl.waitForURL(/sent=1/); await cl.waitForLoadState("networkidle"); await cl.waitForTimeout(800);
 await cl.setInputFiles("section[aria-labelledby=x] input[type=file]", "/tmp/pixel.png");
 await cl.click("section[aria-labelledby=x] button[aria-haspopup=dialog]"); await cl.waitForSelector("dialog[open] img", { state: "attached" });
 ok(cl.context().pages().length === 1, "clicking a picture before sending opens it in a frame, not a new tab");
