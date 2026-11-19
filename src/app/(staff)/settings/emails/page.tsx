@@ -17,6 +17,19 @@ export default async function Emails({ searchParams }: { searchParams: Promise<{
     <>
       <RecordHeader title="Emails" meta="Preview and test every email we send" />
       <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
+        <details className="em-pick lg:hidden"><summary><span>Choose an email</span><b>{cur.label}</b></summary>
+        <nav aria-label="Emails" className="space-y-5 pt-3">
+          {(["Customer", "Team"] as const).map((aud) => (
+            <div key={aud}>
+              <p className="mb-1 text-xs font-medium text-muted">{aud === "Customer" ? "Customers receive" : "Our team receives"}</p>
+              <ul>{EMAILS.filter((x) => x.audience === aud).map((x) => (
+                <li key={x.id}><Link href={href(x.id)} aria-current={x.id === cur.id ? "page" : undefined} className={`block rounded-lg px-3 py-2 text-sm hover:bg-soft ${x.id === cur.id ? "bg-soft font-semibold" : ""}`}>{x.label}</Link></li>
+              ))}</ul>
+            </div>
+          ))}
+        </nav>
+        </details>
+        <div className="hidden lg:block">
         <nav aria-label="Emails" className="space-y-5">
           {(["Customer", "Team"] as const).map((aud) => (
             <div key={aud}>
@@ -27,6 +40,7 @@ export default async function Emails({ searchParams }: { searchParams: Promise<{
             </div>
           ))}
         </nav>
+        </div>
         <section aria-labelledby="em">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0"><h2 id="em">{cur.label}</h2><p className="text-sm text-muted">{cur.when}</p></div>

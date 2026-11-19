@@ -37,10 +37,10 @@ export default async function Security({ searchParams }: { searchParams: Promise
       <form action={save} className="max-w-3xl">
         <section className="card-section" aria-labelledby="oc">
           <h2 id="oc">Require two-step sign-in</h2>
-          <p className="mb-3 text-sm text-ink/70">Anyone required to use it is guided through setting up an authenticator app straight after their password, then asked for a code on each new device (trusted for 30 days). Roll it out in stages so nobody is surprised: start with your own email, then widen it. You can switch it off here at any time, and reset anyone from the Team page or a company's People tab if they lose their phone.</p>
-          <fieldset className="space-y-2"><legend className="sr-only">Who is asked for a code</legend>
+          <details className="how"><summary>How this works</summary><p>Anyone required to use it is guided through setting up an authenticator app straight after their password, then asked for a code on each new device (trusted for 30 days). Roll it out in stages so nobody is surprised: start with your own email, then widen it. You can switch it off here at any time, and reset anyone from the Team page or a company's People tab if they lose their phone.</p></details>
+          <fieldset className="opts"><legend className="sr-only">Who is asked for a code</legend>
             {CODE_MODES.map((m) => (
-              <label key={m} className="flex cursor-pointer gap-3 rounded-xl border border-[var(--card-line)] bg-white p-3 has-[:checked]:border-ink has-[:checked]:bg-[#eef7f2]"><input type="radio" name="codes" value={m} defaultChecked={sec.codes === m} className="mt-1 size-4 accent-[#0c6a49]" /><span><span className="block font-semibold">{MODES[m].label}</span><span className="text-sm text-ink/70">{MODES[m].about}</span></span></label>
+              <label key={m} className="opt"><input type="radio" name="codes" value={m} defaultChecked={sec.codes === m} /><span><b>{MODES[m].label}</b><small>{MODES[m].about}</small></span></label>
             ))}
           </fieldset>
           <div className="mt-4"><label className="label" htmlFor="testers">Emails to test with <span className="font-normal text-muted">(used by “Only the emails I list”, one per line)</span></label>
