@@ -56,7 +56,7 @@ export default async function PortalOverview() {
       <header className="pv-hello">
         <p>{todayLabel()}</p>
         <h1 id="hi">{greeting()}, {first}</h1>
-        <p className="pv-lead">{todo ? <>You have <b>{todo} {todo === 1 ? "thing" : "things"}</b> to look at.</> : "Everything is up to date. Nice."}</p>
+        <p className={`pv-chip ${todo ? "" : "ok"}`}><i aria-hidden />{todo ? `${todo} ${todo === 1 ? "thing" : "things"} to look at` : "All up to date"}</p>
       </header>
 
       <section className={`nx nx-${next.tone}`} aria-labelledby="nx-t">

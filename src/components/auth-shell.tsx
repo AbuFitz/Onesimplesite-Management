@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { origins } from "@/lib/env";
 import { LegalLinks } from "./legal-links";
 import { CookieNotice } from "./cookie-notice";
-import { FolderKanban, FileText, CreditCard, LifeBuoy } from "lucide-react";
 
 /**
  * One layout for every page reached from sign-in or an emailed link, in the OSS Commerce language (floating glass, olive and lime).
@@ -24,15 +23,8 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
         {portal && (
           <div className="auth-hero-copy">
             <p className="auth-hero-title">Your website, all in one place.</p>
-            <ul className="auth-points">
-              <li><FolderKanban size={18} aria-hidden /><span><b>Follow your project</b> from first plan to launch day</span></li>
-              <li><FileText size={18} aria-hidden /><span><b>Find every document</b> you have signed or been sent</span></li>
-              <li><CreditCard size={18} aria-hidden /><span><b>Pay securely online</b> and keep your receipts</span></li>
-              <li><LifeBuoy size={18} aria-hidden /><span><b>Get help</b> from a real person, fast</span></li>
-            </ul>
           </div>
         )}
-        {portal && <p className="auth-hero-url">onesimplesite.co.uk</p>}
       </aside>
       <main id="main" className="auth-main">
         <div className="auth-card">

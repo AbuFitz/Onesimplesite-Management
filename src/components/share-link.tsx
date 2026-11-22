@@ -1,21 +1,47 @@
 "use client";
-import { useState } from "react";
-import { Check, Copy, Mail, MessageCircle, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Check, Copy, Mail, MessageCircle, QrCode, Share2, X as XIcon } from "lucide-react";
+import QRCode from "qrcode";
+import { Sheet } from "./sheet";
 
-/** Copy, share sheet on phones, WhatsApp and email: the ways people actually pass a link on. */
-export function ShareLink({ url, from }: { url: string; from: string }) {
+const enc = encodeURIComponent;
+/** Every way people actually pass a link on: copy, the phone's share sheet, WhatsApp, X, LinkedIn, email, or a QR code to show in person. */
+function Channels({ url, text }: { url: string; text: string }) {
   const [done, setDone] = useState(false);
-  const text = `${from} recommends OneSimpleSite for your website. This link gets you a thank-you credit:`;
+  const [qr, setQr] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState(false);
+  useEffect(() => { if (showQr && !qr) void QRCode.toDataURL(url, { margin: 1, width: 420, color: { dark: "#161d0b", light: "#ffffff" } }).then(setQr); }, [showQr, qr, url]);
   const copy = async () => { try { await navigator.clipboard.writeText(url); setDone(true); setTimeout(() => setDone(false), 1800); } catch { /* the link is also shown to select by hand */ } };
+  const canShare = typeof navigator !== "undefined" && "share" in navigator;
   return (
-    <div>
-      <p className="break-all rounded-xl bg-white/70 px-4 py-3 font-mono text-[14px] select-all" aria-label="Your referral link">{url}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="btn btn-dark" onClick={copy}>{done ? <Check size={17} aria-hidden /> : <Copy size={17} aria-hidden />}{done ? "Copied" : "Copy link"}</button>
-        {typeof navigator !== "undefined" && "share" in navigator && <button type="button" className="btn btn-quiet" onClick={() => navigator.share({ title: "OneSimpleSite", text, url }).catch(() => {})}><Share2 size={17} aria-hidden />Share</button>}
-        <a className="btn btn-quiet" href={`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={17} aria-hidden />WhatsApp</a>
-        <a className="btn btn-quiet" href={`mailto:?subject=${encodeURIComponent("A website person I recommend")}&body=${encodeURIComponent(`${text}\n\n${url}`)}`}><Mail size={17} aria-hidden />Email</a>
+    <div className="shr">
+      <div className="shr-url"><span>{url}</span><button type="button" onClick={copy} aria-label={done ? "Copied" : "Copy link"}>{done ? <Check size={17} aria-hidden /> : <Copy size={17} aria-hidden />}</button></div>
+      <div className="shr-ch" role="group" aria-label="Share with">
+        <a href={`https://wa.me/?text=${enc(`${text} ${url}`)}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><MessageCircle size={20} aria-hidden /></a>
+        <a href={`https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}`} target="_blank" rel="noopener noreferrer" aria-label="X"><XIcon size={20} aria-hidden /></a>
+        <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><span className="shr-in" aria-hidden>in</span></a>
+        <a href={`mailto:?subject=${enc("A website person I recommend")}&body=${enc(`${text}\n\n${url}`)}`} aria-label="Email"><Mail size={20} aria-hidden /></a>
+        {canShare && <button type="button" aria-label="More ways to share" onClick={() => navigator.share({ title: "OneSimpleSite", text, url }).catch(() => {})}><Share2 size={20} aria-hidden /></button>}
+        <button type="button" aria-label="Show QR code" aria-pressed={showQr} className={showQr ? "on" : ""} onClick={() => setShowQr((v) => !v)}><QrCode size={20} aria-hidden /></button>
       </div>
+      {showQr && <div className="shr-qr">{qr ? <img src={qr} alt="QR code for your referral link" width={210} height={210} /> : <span className="skel" style={{ width: 210, height: 210 }} />}<p>Point a phone camera at it</p></div>}
     </div>
+  );
+}
+
+/** The share card, opened from a button: a bottom sheet on a phone, a centred card on a computer. */
+export function ShareLink({ url, from, reward }: { url: string; from: string; reward?: string }) {
+  const [open, setOpen] = useState(false);
+  const text = `${from} recommends OneSimpleSite for your website.`;
+  return (
+    <>
+      <div className="shr-inline"><Channels url={url} text={text} /></div>
+      <button type="button" className="btn btn-dark shr-open" onClick={() => setOpen(true)}><Share2 size={17} aria-hidden /> Invite someone</button>
+      {open && createPortal(
+        <Sheet open onClose={() => setOpen(false)} title="Invite someone">
+          <div className="shr-modal"><p className="shr-lead">{reward ?? "Send your link. We look after them."}</p><Channels url={url} text={text} /></div>
+        </Sheet>, document.body)}
+    </>
   );
 }

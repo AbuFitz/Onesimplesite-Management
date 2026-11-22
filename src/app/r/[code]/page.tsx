@@ -1,7 +1,8 @@
+import Image from "next/image";
+import { Gift } from "lucide-react";
 import { findByCode, getSettings } from "@/modules/referrals/service";
 import { referralLeadAction } from "@/app/actions/referral-public";
 import { ErrorSummary } from "@/components/ui";
-import { SignShell } from "@/components/public-shell";
 import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
@@ -16,16 +17,18 @@ export default async function ReferralLanding({ params, searchParams }: { params
   const w = set?.welcome.standard;
   const gift = w && w.months > 0 ? `${w.months} ${w.months === 1 ? "month" : "months"} ${w.label}` : null;
   return (
-    <SignShell>
-      <div className="done-card mx-auto max-w-xl !text-left">
+    <main className="ref-page">
+      <i className="ref-blob" aria-hidden />
+      <div className="ref-frame">
+        <Image className="logo" src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={164} height={34} priority />
         {!hit || !on ? (
-          <><h1 className="text-2xl font-light tracking-tight">This link isn&apos;t valid any more</h1><p className="mt-2 text-ink-2">You can still reach us at hello@onesimplesite.co.uk.</p></>
+          <><h1 className="text-3xl">This link isn&apos;t valid any more</h1><p className="mt-2 text-ink-2">hello@onesimplesite.co.uk will help.</p></>
         ) : sp.sent ? (
-          <><h1 className="text-2xl font-light tracking-tight">Thank you</h1><p className="mt-2 text-ink-2">We&apos;ll be in touch within a working day.</p></>
+          <><h1 className="text-4xl">Thank you</h1><p className="mt-2 text-ink-2">We&apos;ll be in touch within a working day.</p></>
         ) : (
           <>
-            <h1 className="text-[28px] font-light tracking-tight">{hit.name} recommended us</h1>
-            <p className="mt-2 text-ink-2">Tell us a little about your business and we&apos;ll get in touch. {gift ? `As a thank-you, you get ${gift} with your new website.` : "We'll look after you."}</p>
+            <h1 className="text-[34px] leading-[1.05] tracking-tight">{hit.name} recommended us</h1>
+            {gift && <p className="ref-gift"><Gift size={16} aria-hidden /> You get {gift}</p>}
             <ErrorSummary message={sp.error} />
             <form action={referralLeadAction} className="mt-6 space-y-4">
               <input type="hidden" name="code" value={hit.code} />
@@ -35,11 +38,10 @@ export default async function ReferralLanding({ params, searchParams }: { params
               <div><label className="label" htmlFor="rl-e">Email</label><input id="rl-e" name="email" type="email" className="field" required autoComplete="email" /></div>
               <div><label className="label" htmlFor="rl-p">Phone <span className="font-normal text-muted">(optional)</span></label><input id="rl-p" name="phone" type="tel" className="field" autoComplete="tel" /></div>
               <SubmitButton pendingText="Sending…">Get in touch</SubmitButton>
-              <p className="hint">We only use these details to reply to you.</p>
             </form>
           </>
         )}
       </div>
-    </SignShell>
+    </main>
   );
 }

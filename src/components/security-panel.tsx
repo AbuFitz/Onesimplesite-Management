@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { KeyRound, Smartphone, Trash2 } from "lucide-react";
+import { KeyRound, Smartphone, Trash2, ShieldCheck, ShieldAlert, ChevronRight, Copy, Download } from "lucide-react";
+import { Sheet } from "./sheet";
 import QRCode from "qrcode";
 import { authClient } from "@/lib/auth-client";
 import { useConfirm } from "./confirm";
@@ -23,6 +24,8 @@ export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"
   const [code, setCode] = useState("");
   const [phoneQr, setPhoneQr] = useState("");
   const [fromPhone, setFromPhone] = useState(false);
+  const [view, setView] = useState<"pk" | "au" | null>(null);
+  const [showCodes, setShowCodes] = useState(false);
 
   const load = useCallback(async () => { const r = await c.$fetch<Pk[]>("/passkey/list-user-passkeys", { method: "GET" }); setKeys(r.error ? [] : (r.data ?? [])); }, [c]);
   useEffect(() => { setSupported(!!window.PublicKeyCredential); void load(); }, [load]);
@@ -56,7 +59,7 @@ export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"
   async function confirmTotp() {
     setBusy(true);
     const r = await c.twoFactor.verifyTotp({ code: code.replace(/\s+/g, "") });
-    if (r.error) say("bad", "That code didn't match. Try the next one in your app."); else { setTotpOn(true); say("ok", "Authenticator app is on. Keep your backup codes somewhere safe."); }
+    if (r.error) say("bad", "That code didn't match. Try the next one in your app."); else { setTotpOn(true); setShowCodes(true); say("ok", "Authenticator app is on."); }
     setBusy(false); setCode("");
   }
   async function stopTotp() {
@@ -66,60 +69,83 @@ export function SecurityPanel({ ns, hasAuthenticator }: { ns: "staff" | "portal"
     setBusy(false); setPw("");
   }
 
+  const nKeys = keys?.length ?? 0;
+  const protectedNow = nKeys > 0 || totpOn;
+  const codesText = (totp?.backup ?? []).join("\n");
+  const downloadCodes = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([`OneSimpleSite backup codes\nEach works once.\n\n${codesText}\n`], { type: "text/plain" })); a.download = "backup-codes.txt"; a.click(); };
+  const closeAu = () => { setView(null); if (showCodes) { setShowCodes(false); setTotp(null); } };
+  const flash = msg && <p role={msg.kind === "bad" ? "alert" : "status"} className={`rounded-lg px-3 py-2 text-sm font-semibold ${msg.kind === "bad" ? "bg-[#fde6dc] text-[#7a2e12]" : "bg-[#e9f6ef] text-[#0a5a3d]"}`}>{msg.text}</p>;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {confirmNode}
-      {msg && <p role={msg.kind === "bad" ? "alert" : "status"} className={`rounded-lg px-3 py-2 text-sm font-semibold ${msg.kind === "bad" ? "bg-[#fde6dc] text-[#7a2e12]" : "bg-[#e9f6ef] text-[#0a5a3d]"}`}>{msg.text}</p>}
+      <div className={`sec-card ${protectedNow ? "ok" : ""}`}>
+        <span aria-hidden>{protectedNow ? <ShieldCheck size={26} /> : <ShieldAlert size={26} />}</span>
+        <div><b>{protectedNow ? "You have a second step" : "Add a second step"}</b><small>{protectedNow ? "A new device has to prove it's you." : "A passkey takes about ten seconds."}</small></div>
+      </div>
+      {!view && flash}
+      <ul className="set-rows">
+        <li><button type="button" className="set-row" onClick={() => { setMsg(null); setView("pk"); }}><span className="set-ico" style={{ background: "#4a6024" }} aria-hidden><KeyRound size={19} /></span><span className="set-txt"><b>Passkey</b><small>Face ID, fingerprint or your phone</small></span><em className="set-st">{keys === null ? "" : nKeys ? `${nKeys} saved` : "Not set up"}</em><ChevronRight size={18} className="set-chev" aria-hidden /></button></li>
+        <li><button type="button" className="set-row" onClick={() => { setMsg(null); setView("au"); }}><span className="set-ico" style={{ background: "#3b6ea5" }} aria-hidden><Smartphone size={19} /></span><span className="set-txt"><b>Authenticator app</b><small>A 6-digit code from an app</small></span><em className="set-st">{totpOn ? "On" : "Off"}</em><ChevronRight size={18} className="set-chev" aria-hidden /></button></li>
+      </ul>
 
-      <section aria-labelledby="pk">
-        <h3 id="pk" className="flex items-center gap-2 text-lg font-bold"><KeyRound size={18} aria-hidden /> Passkeys</h3>
-        <p className="mt-1 text-sm text-muted">Sign in with Face ID, a fingerprint or your phone instead of typing a password. The safest option, and it can't be phished.</p>
-        {keys === null ? <p className="mt-3 text-sm text-muted">Loading…</p> : keys.length === 0 ? <p className="mt-3 text-sm text-muted">No passkeys yet.</p> : (
-          <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-white">{keys.map((k) => (
-            <li key={k.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm"><span><strong>{k.name || "Passkey"}</strong><span className="block text-muted">Added {when(k.createdAt)}{k.backedUp ? " · synced across your devices" : ""}</span></span>
-              <button type="button" onClick={() => removeKey(k.id)} aria-label={`Remove ${k.name || "passkey"}`} className="grid size-10 place-items-center rounded-lg hover:bg-bone"><Trash2 size={16} aria-hidden /></button></li>))}</ul>
-        )}
-        {fromPhone && supported && <p role="status" className="mt-3 rounded-lg bg-[#e9f6ef] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">You're on your phone. Tap “Add a passkey” and use Face ID or your fingerprint. It will be saved to this phone.</p>}
-        {phoneQr && !fromPhone && (
-          <div className="mt-4 hidden items-center gap-5 rounded-2xl border border-line bg-white p-4 md:flex">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={phoneQr} alt="QR code that opens this page on your phone" width={132} height={132} className="size-[132px] shrink-0 rounded-xl border border-line" />
-            <div className="min-w-0">
-              <p className="font-bold">Set one up on your phone</p>
-              <p className="mt-1 text-sm text-muted">Point your phone's camera at this code and sign in. Then tap <strong>Add a passkey</strong> to use Face ID or your fingerprint to sign in from now on.</p>
-              <p className="mt-2 text-[13px] text-muted">Adding one here on this computer? Choose <strong>Use a phone or tablet</strong> when your browser asks, and it shows its own code to scan.</p>
+      <Sheet open={view === "pk"} onClose={() => setView(null)} title="Passkey">
+        <div className="space-y-4">
+          <p className="text-sm text-muted">Sign in with Face ID or a fingerprint. Nothing to type, and it can&apos;t be phished.</p>
+          {flash}
+          {keys !== null && keys.length > 0 && (
+            <ul className="divide-y divide-line rounded-2xl border border-line bg-white">{keys.map((k) => (
+              <li key={k.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm"><span><strong>{k.name || "Passkey"}</strong><span className="block text-muted">Added {when(k.createdAt)}{k.backedUp ? " · synced" : ""}</span></span>
+                <button type="button" onClick={() => removeKey(k.id)} aria-label={`Remove ${k.name || "passkey"}`} className="grid size-10 place-items-center rounded-lg hover:bg-bone"><Trash2 size={16} aria-hidden /></button></li>))}</ul>
+          )}
+          {fromPhone && supported && <p role="status" className="rounded-lg bg-[#e9f6ef] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">You&apos;re on your phone. Tap Add a passkey.</p>}
+          {supported ? (
+            <div className="space-y-3">
+              <div><label className="label" htmlFor="pk-n">Name</label><input id="pk-n" className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. My iPhone" maxLength={40} /></div>
+              <button type="button" onClick={addKey} disabled={busy} className="btn w-full justify-center">{busy ? "Waiting for your device…" : "Add a passkey"}</button>
             </div>
-          </div>
-        )}
-        {supported ? (
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <div><label className="label" htmlFor="pk-n">Name it <span className="font-normal text-muted">(so you can tell them apart)</span></label><input id="pk-n" className="field !min-h-11 w-60" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. My iPhone" maxLength={40} /></div>
-            <button type="button" onClick={addKey} disabled={busy} className="btn">{busy ? "Waiting for your device…" : "Add a passkey"}</button>
-          </div>
-        ) : <p className="mt-3 text-sm text-muted">This browser can't create passkeys. Try your phone or a newer browser.</p>}
-      </section>
+          ) : <p className="text-sm text-muted">This browser can&apos;t create passkeys. Try your phone.</p>}
+          {phoneQr && !fromPhone && (
+            <div className="hidden items-center gap-4 rounded-2xl bg-white/70 p-3 md:flex">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={phoneQr} alt="QR code that opens this page on your phone" width={104} height={104} className="size-[104px] shrink-0 rounded-xl" />
+              <p className="text-sm text-muted"><b className="text-ink">Use your phone instead.</b> Scan, sign in, then tap Add a passkey.</p>
+            </div>
+          )}
+        </div>
+      </Sheet>
 
-      <section aria-labelledby="au">
-        <h3 id="au" className="flex items-center gap-2 text-lg font-bold"><Smartphone size={18} aria-hidden /> Authenticator app</h3>
-        <p className="mt-1 text-sm text-muted">Use an app like 1Password, Google Authenticator or Authy for a 6-digit code when you sign in on a new device. {totpOn ? "It's on." : ""}</p>
-        {!totp && !totpOn && (
-          <div className="mt-3 flex flex-wrap items-end gap-3"><div><label className="label" htmlFor="au-p">Your password</label><input id="au-p" type="password" className="field !min-h-11 w-60" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></div><button type="button" onClick={startTotp} disabled={busy || !pw} className="btn btn-quiet">Set up</button></div>
-        )}
-        {totp && !totpOn && (
-          <div className="mt-3 space-y-3 rounded-xl border border-line bg-white p-4 text-sm">
-            <p><strong>1.</strong> Scan this with your app (or type the key).</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={totp.qr} alt="QR code to scan with your authenticator app" width={200} height={200} className="rounded-lg border border-line" />
-            <p className="break-all font-mono text-xs">Key: {totp.secret}</p>
-            <p><strong>2.</strong> Enter the 6-digit code your app shows.</p>
-            <div className="flex flex-wrap items-end gap-3"><input aria-label="6-digit code" className="field !min-h-11 w-40 tracking-[0.3em]" inputMode="numeric" maxLength={7} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" /><button type="button" onClick={confirmTotp} disabled={busy || code.replace(/\D/g, "").length < 6} className="btn">Turn on</button></div>
-            {totp.backup.length > 0 && <div><p><strong>Backup codes</strong> (each works once, if you lose your phone). Save them now, they won't be shown again:</p><p className="mt-1 grid grid-cols-2 gap-1 font-mono text-xs sm:grid-cols-5">{totp.backup.map((b) => <span key={b}>{b}</span>)}</p></div>}
-          </div>
-        )}
-        {totpOn && (
-          <div className="mt-3 flex flex-wrap items-end gap-3"><div><label className="label" htmlFor="au-p2">Your password</label><input id="au-p2" type="password" className="field !min-h-11 w-60" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></div><button type="button" onClick={stopTotp} disabled={busy || !pw} className="btn btn-quiet">Turn off</button></div>
-        )}
-      </section>
+      <Sheet open={view === "au"} onClose={closeAu} title="Authenticator app">
+        <div className="space-y-4">
+          {flash}
+          {showCodes && totp ? (
+            <>
+              <p className="text-sm text-muted">Save these backup codes. Each works once if you lose your phone. They won&apos;t be shown again.</p>
+              <p className="grid grid-cols-2 gap-2 rounded-2xl bg-white p-4 font-mono text-[15px]">{totp.backup.map((b) => <span key={b}>{b}</span>)}</p>
+              <div className="flex gap-2"><button type="button" className="btn btn-quiet flex-1 justify-center" onClick={() => navigator.clipboard.writeText(codesText).then(() => say("ok", "Copied."))}><Copy size={16} aria-hidden /> Copy</button><button type="button" className="btn btn-quiet flex-1 justify-center" onClick={downloadCodes}><Download size={16} aria-hidden /> Download</button></div>
+              <button type="button" className="btn w-full justify-center" onClick={closeAu}>I&apos;ve saved them</button>
+            </>
+          ) : totp && !totpOn ? (
+            <>
+              <p className="text-sm text-muted">Scan this in your app, then type the code it shows.</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={totp.qr} alt="QR code to scan with your authenticator app" width={190} height={190} className="mx-auto rounded-2xl bg-white p-2" />
+              <p className="break-all text-center font-mono text-xs text-muted">{totp.secret}</p>
+              <div className="flex gap-2"><input aria-label="6-digit code" className="field tracking-[0.3em]" inputMode="numeric" maxLength={7} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" placeholder="123456" /><button type="button" onClick={confirmTotp} disabled={busy || code.replace(/\D/g, "").length < 6} className="btn">Turn on</button></div>
+            </>
+          ) : totpOn ? (
+            <>
+              <p className="text-sm text-muted">It&apos;s on. To turn it off, confirm your password.</p>
+              <div className="flex gap-2"><input id="au-p2" type="password" aria-label="Your password" className="field" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" placeholder="Your password" /><button type="button" onClick={stopTotp} disabled={busy || !pw} className="btn btn-quiet">Turn off</button></div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted">Works with 1Password, Google Authenticator and Authy. Confirm your password to start.</p>
+              <div className="flex gap-2"><input id="au-p" type="password" aria-label="Your password" className="field" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" placeholder="Your password" /><button type="button" onClick={startTotp} disabled={busy || !pw} className="btn">Continue</button></div>
+            </>
+          )}
+        </div>
+      </Sheet>
     </div>
   );
 }

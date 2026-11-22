@@ -12,7 +12,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   const sp = await searchParams;
   const portal = (await headers()).get("host") === new URL(origins().portal).host;
   return (
-    <AuthShell title={portal ? "Welcome back" : "Sign in"} intro={portal ? "Sign in to see your projects, documents and payments. Your invitation email has your details." : undefined}>
+    <AuthShell title={portal ? "Welcome back" : "Sign in"}>
       {sp.added && <p role="status" className="mb-4 rounded-lg bg-[#e9f6ef] px-4 py-3 text-sm font-semibold text-[#0a5a3d]">Done. Sign in with the password you already use.</p>}
       <ErrorSummary message={sp.error} />
       <LoginForm staff={!portal} next={safeNext(sp.next) ?? undefined} />

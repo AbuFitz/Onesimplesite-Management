@@ -10,9 +10,9 @@ import { can, ROLE_INFO } from "@/modules/identity/permissions";
 import { Rail, type NavGroup } from "@/components/nav";
 import { TeamDock } from "@/components/mobile-dock";
 import { cookies } from "next/headers";
-import { SmartBubble } from "@/components/smart-bubble";
 import { CommandPalette } from "@/components/command-palette";
 import { NewMenu, UserMenu } from "@/components/menus";
+import { NotificationBell } from "@/components/notification-bell";
 import { after } from "next/server";
 import { maybeRunReminders } from "@/modules/support/reminders";
 import { supportCounts } from "@/modules/support/service";
@@ -54,6 +54,7 @@ export default async function StaffLayout({ children, modal }: { children: React
             <CommandPalette actions={create} />
             <div className="ml-auto flex items-center gap-2">
               <div className="hidden lg:block"><NewMenu links={create} /></div>
+              <NotificationBell />
               <UserMenu staffId={ctx.staffId} name={ctx.name} role={ROLE_INFO[ctx.role].label.replace(" (recommended)", "")}>
                 <form action={signOutStaff}><button role="menuitem" className="pop-item w-full text-left">Sign out</button></form>
               </UserMenu>
@@ -68,7 +69,6 @@ export default async function StaffLayout({ children, modal }: { children: React
         </div>
       </div>
       {modal}
-      <SmartBubble />
       <TeamDock groups={groups} actions={create} />
     </div>
   );

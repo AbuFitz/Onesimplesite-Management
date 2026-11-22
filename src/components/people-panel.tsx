@@ -5,6 +5,7 @@ import { ACCESS_LEVELS, levelLabel } from "@/modules/portal/access";
 import type { Person } from "@/modules/people/service";
 import { timeAgo } from "./ui";
 import { SubmitButton } from "./submit-button";
+import { SheetButton } from "./sheet-button";
 
 type Req = { id: string; name: string; email: string; position: string | null; role: string; billing: boolean; reason: string | null; requestedByName: string; createdAt: Date };
 
@@ -56,8 +57,10 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
       )}
 
       <section aria-label="People">
-        <h2 className="mb-1 text-lg">People</h2>
-        <p className="mb-4 text-sm text-muted">Everyone at this company. Add them here, then invite the ones who need the client portal and choose what they can do.</p>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-lg">People <span className="font-normal text-muted">· {people.length}</span></h2>
+          {canEdit && <SheetButton label="Add a person" title="Add a person"><AddPersonForm customerId={customerId} action={addPersonAction} positions={POSITIONS} /></SheetButton>}
+        </div>
         {people.length === 0 ? <p className="text-sm text-muted">Nobody added yet.</p> : (
           <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
             {people.map((p) => { const st = STATE[p.access]; return (
@@ -76,9 +79,8 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                   </div>
                 </div>
                 {canEdit && (
-                  <details className="mt-3">
-                    <summary className="min-h-9 cursor-pointer text-sm font-semibold">Manage</summary>
-                    <div className="mt-3 space-y-5 rounded-xl bg-bone/60 p-4 text-sm">
+                  <div className="mt-2"><SheetButton label="Manage" title={p.name} className="evt-b" icon={false}>
+                    <div className="space-y-5 text-sm">
                       {(p.access === "none" || p.access === "invited") && p.email && (
                         <form action={invitePersonAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`i-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><SubmitButton>{p.access === "invited" ? "Send the invitation again" : "Invite to the client portal"}</SubmitButton></form>
                       )}
@@ -107,20 +109,13 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                       <details className="border-t border-line pt-3"><summary className="cursor-pointer text-[#7a2e12]">They've left the company</summary>
                         <form action={removePersonAction} className="mt-2 space-y-2"><Hidden customerId={customerId} contactId={p.id} /><p>This removes {p.name} from the list and ends any portal access straight away. Tickets they raised stay, without their name.</p><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Remove {p.name.split(" ")[0]}</button></form></details>
                     </div>
-                  </details>
+                  </SheetButton></div>
                 )}
               </li>); })}
           </ul>
         )}
       </section>
 
-      {canEdit && (
-        <section aria-label="Add a person" className="max-w-3xl rounded-2xl border border-line bg-white p-4">
-          <h2 className="text-lg">Add a person</h2>
-          <p className="text-sm text-muted">Add them, and tick the box if they should get a portal login straight away. You can also invite them later.</p>
-          <div className="mt-3"><AddPersonForm customerId={customerId} action={addPersonAction} positions={POSITIONS} /></div>
-        </section>
-      )}
       <datalist id="positions">{POSITIONS.map((p) => <option key={p} value={p} />)}</datalist>
     </div>
   );
