@@ -42,7 +42,7 @@ export default async function ReferralCustomers({ searchParams }: { searchParams
                 <p className="text-[13.5px] text-muted">{r.reward} each{r.ownDeal ? " · their own deal" : ""} · {r.leads} {r.leads === 1 ? "lead" : "leads"} · {r.won} won{r.owedMinor > 0 ? ` · ${money(r.owedMinor)} owed` : ""}</p></div>
               <SheetButton label="Manage" title={r.name} className="evt-b" icon={false}>
                 <div className="space-y-4">
-                  {url && <div className="rounded-2xl bg-[#f3f7e9] p-3"><p className="text-sm text-muted">Their referral link</p><p className="mt-0.5 break-all font-mono text-[13px] select-all">{url}</p><div className="mt-2"><CopyButton text={url} /></div></div>}
+                  {url && <div className="rounded-2xl bg-[#f4f5ee] p-3"><p className="text-sm text-muted">Their referral link</p><p className="mt-0.5 break-all font-mono text-[13px] select-all">{url}</p><div className="mt-2"><CopyButton text={url} /></div></div>}
                   {owner ? <DealForm workspaceId={ctx.workspaceId} customerId={r.id} back={here} /> : <p className="text-sm text-muted">Only owners can change a customer&apos;s deal.</p>}
                 </div>
               </SheetButton>

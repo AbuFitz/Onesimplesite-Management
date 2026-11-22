@@ -35,7 +35,7 @@ export async function ReferralCard({ workspaceId, customerId, canWrite, back }: 
           </SheetButton>
         </div>
       )}
-      <div className="mb-4 rounded-2xl bg-[#f3f7e9] p-3"><p className="text-sm text-muted">Their referral link</p><p className="mt-0.5 break-all font-mono text-[13px] select-all">{portalLink(`/r/${code}`)}</p><div className="mt-2"><CopyButton text={portalLink(`/r/${code}`)} /></div></div>
+      <div className="mb-4 rounded-2xl bg-[#f4f5ee] p-3"><p className="text-sm text-muted">Their referral link</p><p className="mt-0.5 break-all font-mono text-[13px] select-all">{portalLink(`/r/${code}`)}</p><div className="mt-2"><CopyButton text={portalLink(`/r/${code}`)} /></div></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <p className="text-sm text-muted">Recommended by</p>
