@@ -28,6 +28,8 @@ export const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "
   { id: "signing_notice", label: "Signed notice to us", audience: "Team", when: "Sent to hello@ when a customer signs.", sender: "noreply" },
   { id: "ticket_notice", label: "New ticket for us", audience: "Team", when: "When a customer raises a ticket or replies to one.", sender: "noreply" },
   { id: "staff_invitation", label: "Team invitation", audience: "Team", when: "When you add someone to the team.", sender: "noreply" },
+  { id: "referral_notice", label: "New referral for us", audience: "Team", when: "When someone fills in a customer's referral link.", sender: "noreply" },
+  { id: "announcement", label: "New version rollout notice", audience: "Customer", when: "Only when you press Send in the box below. One email to each person, same wording for team and customers.", sender: "noreply" },
   { id: "backup_reminder", label: "Backup reminder", audience: "Team", when: "Weekly, if no backup has been taken.", sender: "noreply" },
 ];
 
@@ -65,6 +67,8 @@ export function sampleEmail(id: TemplateName) {
     case "ticket_reply": return renderEmail(id, { to, name: "Alex Sample", staffName: "Abukar Sharif", ref: "OSS-TK-2026-0001", title: "The contact form isn't sending", message: "Thanks Alex. I've found the problem and fixed it. Could you send a test message and let me know it arrives?", link: PORTAL });
     case "ticket_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", ref: "OSS-TK-2026-0001", title: "The contact form isn't sending", business: "Sample Café Ltd", person: "Alex Sample", priority: "high", excerpt: "Since yesterday nothing arrives when someone fills in the contact form.", link: MANAGE });
     case "staff_invitation": return renderEmail(id, { to: "new.person@onesimplesite.co.uk", name: "New Person", inviter: "Jamie", roleLabel: "Team member", link: MANAGE, expires: "9 November 2026" });
+    case "referral_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", referrer: "Sample Café Ltd", business: "Harbour Bakery", person: "Sam Taylor", email: "sam@example.com", link: "https://manage.onesimplesite.co.uk/customers" });
+    case "announcement": return renderEmail(id, { to, name: "Alex", audience: "customer", link: PORTAL });
     case "backup_reminder": return renderEmail(id, { to: "hello@onesimplesite.co.uk", lastBackup: "26 October 2026", link: "https://manage.onesimplesite.co.uk/backup" });
     default: return renderEmail("password_changed", { to, name: "Alex", when: "" });
   }

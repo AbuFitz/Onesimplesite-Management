@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Home, Users, FolderKanban, FileText, Ticket, CalendarDays, MessagesSquare, ScrollText, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard, Plus, LayoutGrid, UserRound, type LucideIcon } from "lucide-react";
+import { Home, Users, FolderKanban, FileText, Ticket, CalendarDays, MessagesSquare, ScrollText, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard, Gift, Plus, LayoutGrid, UserRound, type LucideIcon } from "lucide-react";
 import { Sheet } from "./sheet";
 
 export type DockItem = { href: string; label: string; Icon: LucideIcon; badge?: number };
@@ -74,7 +74,7 @@ export function TabBar({ tabs, more, actions = [], moreLabel = "More", hideFrom 
   );
 }
 
-const TEAM_ICONS: Record<string, LucideIcon> = { payments: CreditCard, today: Home, customers: Users, pipeline: Ticket, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy, testing: FlaskConical };
+const TEAM_ICONS: Record<string, LucideIcon> = { payments: CreditCard, today: Home, customers: Users, pipeline: Ticket, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy, testing: FlaskConical, referrals: Gift };
 const TEAM_TABS = ["/", "/tickets", "/customers"];
 export function TeamDock({ groups, actions }: { groups: { items: { href: string; label: string; icon: string; badge?: number }[] }[]; actions: DockAction[] }) {
   const items: DockItem[] = groups.flatMap((g) => g.items).map((i) => ({ href: i.href, label: i.label, Icon: TEAM_ICONS[i.icon] ?? Home, badge: i.badge }));
@@ -83,7 +83,7 @@ export function TeamDock({ groups, actions }: { groups: { items: { href: string;
   return <TabBar tabs={tabs} more={items.filter((i) => !TEAM_TABS.includes(i.href))} actions={actions} />;
 }
 
-const PORTAL: Record<string, [string, LucideIcon]> = { "/overview": ["Home", Home], "/projects": ["Projects", FolderKanban], "/documents": ["Documents", FileText], "/billing": ["Billing", CreditCard], "/people": ["People", Users], "/help": ["Help", LifeBuoy], "/account": ["Settings", UserRound] };
+const PORTAL: Record<string, [string, LucideIcon]> = { "/overview": ["Home", Home], "/projects": ["Projects", FolderKanban], "/documents": ["Documents", FileText], "/billing": ["Billing", CreditCard], "/people": ["People", Users], "/help": ["Help", LifeBuoy], "/referrals": ["Refer a friend", Gift], "/account": ["Settings", UserRound] };
 export function PortalDock({ show = [], badges = {} }: { show?: readonly string[]; badges?: Record<string, number> }) {
   const all: DockItem[] = Object.entries(PORTAL).filter(([h]) => !["/billing", "/people"].includes(h) || show.includes(h)).map(([href, [label, Icon]]) => ({ href, label, Icon, badge: badges[href] }));
   // Four places that matter most to a customer: where things stand, what to pay or read, and how to ask. The rest sit under More.

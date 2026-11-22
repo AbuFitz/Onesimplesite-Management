@@ -989,3 +989,50 @@ model CompanyLogo {
   type        String
   updatedAt   DateTime @updatedAt
 }
+
+// ───────── Referrals (see docs/REFERRALS.md) ─────────
+model ReferralLink {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  customerId  String   @db.Uuid
+  code        String
+  createdAt   DateTime @default(now())
+
+  @@unique([code])
+  @@unique([workspaceId, customerId])
+}
+
+model Referral {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  referrerId  String    @db.Uuid
+  refereeId   String    @db.Uuid
+  via         String    @default("team") // link | team
+  status      String    @default("pending") // pending | review | qualified | rejected | reversed
+  flag        String? // why it needs a look
+  note        String?
+  qualifiedAt DateTime?
+  decidedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, refereeId])
+  @@index([workspaceId, referrerId])
+  @@index([workspaceId, status])
+}
+
+// Append-only: balances are the sum of entries. A mistake is fixed with a new entry, never an edit.
+model RewardEntry {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  customerId  String   @db.Uuid
+  referralId  String?  @db.Uuid
+  kind        String // earned | welcome | used | reversed
+  amountMinor Int
+  note        String?
+  actorLabel  String?
+  createdAt   DateTime @default(now())
+
+  @@unique([referralId, customerId, kind])
+  @@index([workspaceId, customerId])
+}

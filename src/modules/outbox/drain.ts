@@ -60,6 +60,8 @@ async function handle(topic: string, key: string, p: Record<string, unknown>) {
   switch (topic) {
     case "email.proposal": return send("proposal", p as EmailData["proposal"], "legal", String(p.to));
     case "email.contract_request": return send("contract_request", p as EmailData["contract_request"], "legal", String(p.to));
+    case "email.referral_notice": return send("referral_notice", p as EmailData["referral_notice"], "noreply", internalNoticeTo());
+    case "email.announcement": return send("announcement", p as EmailData["announcement"], "noreply", String(p.to));
     case "email.backup_reminder": return send("backup_reminder", p as EmailData["backup_reminder"], "noreply", internalNoticeTo());
     case "email.staff_invitation": return send("staff_invitation", p as EmailData["staff_invitation"], "noreply", String(p.to));
     case "email.invitation": return send("invitation", p as EmailData["invitation"], "noreply", String(p.to));

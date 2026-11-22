@@ -3,11 +3,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose, PanelLeftOpen, CalendarDays, Users, Home, FolderKanban, MessagesSquare, FileText, TicketCheck, ScrollText, Menu, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, CalendarDays, Users, Home, FolderKanban, MessagesSquare, FileText, TicketCheck, ScrollText, Menu, UserCog, DatabaseBackup, Settings2, KeyRound, LifeBuoy, FlaskConical, CreditCard, Gift } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: string; badge?: number };
 export type NavGroup = { label?: string; items: NavItem[] };
-const icons = { payments: CreditCard, today: Home, customers: Users, pipeline: TicketCheck, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy, testing: FlaskConical } as const;
+const icons = { payments: CreditCard, today: Home, customers: Users, pipeline: TicketCheck, proposals: FileText, contracts: ScrollText, projects: FolderKanban, calendar: CalendarDays, notes: MessagesSquare, team: UserCog, backup: DatabaseBackup, settings: Settings2, vault: KeyRound, support: LifeBuoy, testing: FlaskConical, referrals: Gift } as const;
 const active = (p: string, href: string) => (href === "/" ? p === "/" : p === href || p.startsWith(href + "/"));
 
 /** The dark olive rail (desktop). Collapses to icons with tooltips; the choice is remembered in a cookie so the page renders right first time. */

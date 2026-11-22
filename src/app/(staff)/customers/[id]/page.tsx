@@ -13,6 +13,7 @@ import { listPeople, pendingRequests } from "@/modules/people/service";
 import { staffBilling, plainStatus, KIND_LABEL, chargeOf, isMonthly, isScheduled, scheduledLabel } from "@/modules/billing/service";
 import { STATUS_LABEL, CATEGORY_LABEL } from "@/modules/support/options";
 import { LiveRefresh } from "@/components/live-refresh";
+import { ReferralCard } from "@/components/referral-card";
 import { RecordHeader, Status, Empty, ErrorSummary, Section, Stat, Tabs, money, fmtDateTime, timeAgo } from "@/components/ui";
 
 export const metadata = { title: "Company" };
@@ -104,6 +105,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
 
       {tab === "overview" && (
         <>
+          <ReferralCard workspaceId={ctx.workspaceId} customerId={c.id} canWrite={can(ctx.role, "customer.write")} back={`/customers/${c.id}`} />
           <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4">
             <Stat label="Tickets" value={c.proposals.length} href={href("agreements")} />
             <Stat label="Signed agreements" value={c.contracts.filter((k) => k.status === "completed" && !k.cancelledAt).length} href={href("agreements")} />

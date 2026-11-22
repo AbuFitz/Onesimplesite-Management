@@ -221,6 +221,8 @@ export async function markPaidManually(ctx: StaffCtx, id: string, via: "bank" | 
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.paid_manually", targetType: "billing_intent", targetId: id, customerId: b.customerId, detail: { via, amountMinor: b.amountMinor } });
     await payEmails(tx, b, "paid", {}, "", { key: "manual", method: via === "bank" ? "bank" : "other" });
   });
+  // A paid deposit can complete a referral. This must never get in the way of recording the payment.
+  await import("@/modules/referrals/service").then((m) => m.qualifyIfDue(ctx.workspaceId, b.customerId)).catch((e) => console.error("referral check failed", String(e).slice(0, 200)));
 }
 
 export async function cancelCharge(ctx: StaffCtx, id: string) {
@@ -314,6 +316,7 @@ export async function applyStripeEvent(type: string, o: Obj, workspaceId: string
     await db.billingIntent.update({ where: { id: b.id }, data: { status: monthly ? "active" : "paid", paidAt: new Date(), paidVia: "stripe", stripeSubscriptionId: stripeSubId(o) ?? null, stripePaymentIntent: (o.payment_intent as string) ?? null, ...(trialEndsAt ? { trialEndsAt } : {}) } });
     if (b.ticketId) await db.ticket.update({ where: { id: b.ticketId }, data: { chargeStatus: "paid" } });
     await record(b, monthly ? "billing.plan_started" : "billing.paid", monthly ? "plan_started" : "paid", who, "", trialEndsAt ? undefined : { key: `cs:${o.id}`, method: "card", stripeRef: (o.payment_intent as string) ?? null }, trialEndsAt);
+    if (!monthly) await import("@/modules/referrals/service").then((m) => m.qualifyIfDue(workspaceId, b.customerId)).catch((e) => console.error("referral check failed", String(e).slice(0, 200)));
     return;
   }
   const sub = type.startsWith("customer.subscription.") ? o.id : type.startsWith("invoice.") ? stripeSubId(o) : undefined;

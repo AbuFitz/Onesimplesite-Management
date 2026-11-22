@@ -14,6 +14,8 @@ export type EmailData = {
   password_changed: { to: string; name: string; when: string };
   security_notice: { to: string; name: string; headline: string; detail: string; when: string };
   backup_reminder: { to: string; lastBackup: string; link: string };
+  referral_notice: { to: string; referrer: string; business: string; person: string; email: string; link: string };
+  announcement: { to: string; name: string; audience: "team" | "customer"; link: string };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
   payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string; receiptRef?: string; receiptId?: string };
   plan_started: { to: string; name: string; ref: string; amount: string; link: string; freeUntil?: string; receiptRef?: string; receiptId?: string };
@@ -358,6 +360,31 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
       </Layout>
     ),
     text: `Your password was changed\n\nHello ${d.name},\n\nYour OneSimpleSite password was changed on ${d.when}.\n\nIf this was you, there is nothing to do. If it was not, reply to this email straight away and we will lock the account.\n\nOneSimpleSite`,
+  }),
+  referral_notice: (d) => ({
+    subject: `New referral: ${d.business} (from ${d.referrer})`,
+    node: (
+      <Layout preview={`${d.referrer} recommended ${d.business}`}>
+        <H>A customer recommended someone</H>
+        <P>{d.referrer} passed us a lead through their referral link.</P>
+        <Facts rows={[["Company", d.business], ["Contact", `${d.person} (${d.email})`], ["Recommended by", d.referrer]]} />
+        <Action href={d.link}>Open the company</Action>
+      </Layout>
+    ),
+    text: `A customer recommended someone\n\n${d.referrer} passed us a lead through their referral link.\n\nCompany: ${d.business}\nContact: ${d.person} (${d.email})\n\nOpen the company: ${d.link}\n\nOneSimpleSite`,
+  }),
+  announcement: (d) => ({
+    subject: "OneSimpleSite is getting an update",
+    node: (
+      <Layout preview="Same sign-in, a fresh new look">
+        <H>A new version is on its way</H>
+        <P>Hello {d.name}, we are rolling out a new version of OneSimpleSite {d.audience === "team" ? "Manage" : "for customers"} over the next few hours. It will update by itself, there is nothing to install.</P>
+        <P>Your sign-in does not change: same email, same password. You may be asked to set up two-step sign-in (an authenticator app or a passkey) the next time you sign in. It takes about a minute and keeps your account safe.</P>
+        <Action href={d.link}>Sign in</Action>
+        <P>If anything looks wrong, reply to this email and we will sort it.</P>
+      </Layout>
+    ),
+    text: `A new version is on its way\n\nHello ${d.name},\n\nWe are rolling out a new version of OneSimpleSite ${d.audience === "team" ? "Manage" : "for customers"} over the next few hours. It will update by itself, there is nothing to install.\n\nYour sign-in does not change: same email, same password. You may be asked to set up two-step sign-in (an authenticator app or a passkey) the next time you sign in. It takes about a minute and keeps your account safe.\n\nSign in: ${d.link}\n\nIf anything looks wrong, reply to this email and we will sort it.\n\nOneSimpleSite`,
   }),
   backup_reminder: (d) => ({
     subject: "Weekly backup due: OneSimpleSite Manage",
