@@ -12,7 +12,7 @@ import { Widget, SeeAll, Kpi } from "@/components/widgets/widget";
 import { RangeProvider, RangeSwitch, ByRange } from "@/components/widgets/ranged";
 import { Series, Funnel, Delta } from "@/components/widgets/spark";
 import { WidgetGrid, type GridWidget } from "@/components/widgets/grid";
-import { Dial, DialPanel } from "@/components/widgets/dial";
+import { DetailStats, DetailList } from "@/components/widgets/detail";
 import { LiveRefresh } from "@/components/live-refresh";
 import { Status, fmtDateTime, fmtDate, timeAgo } from "@/components/ui";
 
@@ -47,18 +47,19 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
     const t = trendSet[1];   // the small tiles show the 30 day trend; the bigger widgets each pick their own range
     const per = "last 30 days";
     const byDays = { 7: trendSet[0], 30: trendSet[1], 90: trendSet[2] } as const;
+    const stageName: Record<string, string> = { new: "New enquiries", qualified: "Quote in progress", proposal_sent: "Quote sent", contract_pending: "Waiting to sign", won: "Won" };
+    const replyItems = d.needsReply.slice(0, 5).map((tk) => ({ key: tk.id, href: `/support/${tk.id}`, title: tk.title, sub: `${tk.customer.displayName} · ${timeAgo(tk.lastCustomerAt ?? tk.createdAt)}` }));
+    const dNeeds = <><DetailStats stats={[{ label: "Needs us", value: d.tickets.open, tone: d.tickets.open ? "warn" : "good" }, { label: "Waiting on customer", value: d.tickets.waiting }, { label: "Done", value: d.tickets.done }]} /><DetailList title="Customers waiting on a reply" items={replyItems} empty="Nobody is waiting on us." /></>;
+    const dSign = <><DetailStats stats={[{ label: "Waiting to sign", value: d.awaiting }, { label: "Signed (30 days)", value: t.signed.total }]} /><DetailList title="Where the pipeline is" items={Object.entries(stageName).map(([k, l]) => ({ key: k, title: l, end: <b className="num">{d.pipeline[k] ?? 0}</b> }))} /></>;
+    const dCollect = <><DetailStats stats={[{ label: "To collect", value: gbp(d.money.dueMinor), tone: d.money.dueMinor ? "warn" : "good" }, { label: "Unpaid", value: d.money.dueCount }, { label: "Failed", value: d.money.pastDue, tone: d.money.pastDue ? "bad" : undefined }]} /><p className="dr-note">{d.money.pastDue ? "Failed payments need a nudge first: the customer's card was declined." : "Everything due is waiting for the customer to pay."}</p></>;
+    const dPlans = <><DetailStats stats={[{ label: "Per month", value: gbpShort(Math.round(d.money.monthlyMinor / 100)), tone: "good" }, { label: "Active plans", value: d.money.plans }]} /><p className="dr-note">Plans count once they are paying. Free months aren&apos;t included.</p></>;
     widgets.push(
-      { id: "k-needs", title: "Needs us", size: "s", node: <Kpi label="Needs us" tone="blue" value={d.tickets.open} href="/tickets" note={d.tickets.replied ? `${d.tickets.replied} customer ${d.tickets.replied === 1 ? "reply" : "replies"}` : "All answered"} spark={t.tickets.series.map((p) => p.value)} sparkLabel={`Tickets per period, ${per}`} /> },
-      { id: "k-sign", title: "Waiting to sign", size: "s", node: <Kpi label="Waiting to sign" tone="amber" value={d.awaiting} href="/agreements?show=awaiting" note={`${d.pipeline.contract_pending ?? 0} in the pipeline`} spark={t.signed.series.map((p) => p.value)} sparkLabel={`Agreements signed, ${per}`} /> },
-      { id: "k-collect", title: "To collect", size: "s", node: <Kpi label="To collect" tone="rose" value={gbp(d.money.dueMinor)} href={d.money.pastDue && !d.money.dueCount ? "/payments?show=failed" : "/payments?show=due"} note={d.money.pastDue ? `${d.money.pastDue} failed · ${d.money.dueCount} due` : `${d.money.dueCount} unpaid`} /> },
-      { id: "k-plans", title: "Monthly plans", size: "s", node: <Kpi label="Monthly plans" tone="violet" value={gbpShort(Math.round(d.money.monthlyMinor / 100))} href="/payments?show=plans" note={`${d.money.plans} active ${d.money.plans === 1 ? "plan" : "plans"}`} /> },
-      { id: "w-status", title: "Ticket status", size: "m", node: (() => { const all = Math.max(1, d.tickets.open + d.tickets.waiting + d.tickets.done); return (
-        <DialPanel title="Ticket status" icon={Ticket} href="/tickets?tab=all">
-          <Dial value={d.tickets.open / all} label="Needs us" count={d.tickets.open} accent="#d6e8a7" />
-          <Dial value={d.tickets.waiting / all} label="Waiting" count={d.tickets.waiting} accent="#a0b2c8" />
-        </DialPanel>); })() },
+      { id: "k-needs", title: "Needs us", size: "s", node: <Kpi label="Needs us" tone="blue" detail={dNeeds} linkLabel="Open tickets" value={d.tickets.open} href="/tickets" note={d.tickets.replied ? `${d.tickets.replied} customer ${d.tickets.replied === 1 ? "reply" : "replies"}` : "All answered"} spark={t.tickets.series.map((p) => p.value)} sparkLabel={`Tickets per period, ${per}`} /> },
+      { id: "k-sign", title: "Waiting to sign", size: "s", node: <Kpi label="Waiting to sign" tone="amber" detail={dSign} linkLabel="Open agreements" value={d.awaiting} href="/agreements?show=awaiting" note={`${d.pipeline.contract_pending ?? 0} in the pipeline`} spark={t.signed.series.map((p) => p.value)} sparkLabel={`Agreements signed, ${per}`} /> },
+      { id: "k-collect", title: "To collect", size: "s", node: <Kpi label="To collect" tone="rose" detail={dCollect} linkLabel="Open payments" value={gbp(d.money.dueMinor)} href={d.money.pastDue && !d.money.dueCount ? "/payments?show=failed" : "/payments?show=due"} note={d.money.pastDue ? `${d.money.pastDue} failed · ${d.money.dueCount} due` : `${d.money.dueCount} unpaid`} /> },
+      { id: "k-plans", title: "Monthly plans", size: "s", node: <Kpi label="Monthly plans" tone="violet" detail={dPlans} linkLabel="Open plans" value={gbpShort(Math.round(d.money.monthlyMinor / 100))} href="/payments?show=plans" note={`${d.money.plans} active ${d.money.plans === 1 ? "plan" : "plans"}`} /> },
       { id: "w-tickets", title: "Tickets right now", size: "m", node: (
-        <Widget title="Tickets right now" icon={Ticket} action={<SeeAll href="/tickets?tab=all">See them</SeeAll>} empty={d.tickets.open + d.tickets.waiting + d.tickets.done === 0 ? { title: "No tickets yet", hint: "They appear here when a customer asks for help." } : null}>
+        <Widget title="Tickets right now" icon={Ticket} drill={{ href: "/tickets?tab=all", label: "Open tickets", detail: dNeeds }} action={<SeeAll href="/tickets?tab=all">See them</SeeAll>} empty={d.tickets.open + d.tickets.waiting + d.tickets.done === 0 ? { title: "No tickets yet", hint: "They appear here when a customer asks for help." } : null}>
           <Donut slices={[{ label: "Needs us", value: d.tickets.open, color: CHART.green }, { label: "Waiting on customer", value: d.tickets.waiting, color: CHART.amber }, { label: "Done", value: d.tickets.done, color: CHART.teal }]} centre={<div><p className="font-[family-name:var(--font-display)] text-3xl font-medium leading-none">{d.tickets.open + d.tickets.waiting}</p><p className="text-xs text-muted">open</p></div>} />
         </Widget>) },
       { id: "w-new-tickets", title: "New tickets", size: "m", node: (
@@ -86,11 +87,11 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
           </div>
         </Widget>) },
       { id: "w-pipeline", title: "Sales pipeline", size: "m", node: (
-        <Widget title="Sales pipeline" icon={PenLine} action={<SeeAll href="/agreements">All agreements</SeeAll>} foot={<>New enquiries in the {per}: <b className="num">{t.enquiries.total}</b> <Delta now={t.enquiries.total} prev={t.enquiries.prev} /></>}>
+        <Widget title="Sales pipeline" icon={PenLine} drill={{ href: "/agreements", label: "Open agreements", detail: dSign }} action={<SeeAll href="/agreements">All agreements</SeeAll>} foot={<>New enquiries in the {per}: <b className="num">{t.enquiries.total}</b> <Delta now={t.enquiries.total} prev={t.enquiries.prev} /></>}>
           <Funnel stages={([["new", "New enquiries", CHART.blue, "draft"], ["qualified", "Quote in progress", CHART.lilac, "draft"], ["proposal_sent", "Quote sent", CHART.amber, "awaiting"], ["contract_pending", "Waiting to sign", CHART.rose, "awaiting"], ["won", "Signed", CHART.teal, "signed"]] as const).map(([k, label, color, show]) => ({ label, color, value: d.pipeline[k] ?? 0, href: `/agreements?show=${show}` }))} />
         </Widget>) },
       { id: "w-reply", title: "Needs your reply", size: "m", node: (
-        <Widget title="Needs your reply" icon={Repeat} action={<SeeAll href="/tickets">All tickets</SeeAll>} empty={d.needsReply.length === 0 ? { title: "You're all caught up", hint: "Nothing is waiting on us." } : null}>
+        <Widget title="Needs your reply" icon={Repeat} drill={{ href: "/tickets", label: "Open tickets", detail: dNeeds }} action={<SeeAll href="/tickets">All tickets</SeeAll>} empty={d.needsReply.length === 0 ? { title: "You're all caught up", hint: "Nothing is waiting on us." } : null}>
           <ul className="wlist">{d.needsReply.slice(0, 5).map((tk) => (
             <li key={tk.id}><Link href={`/support/${tk.id}`}><span className="wl-t"><b>{tk.title}</b><span>{tk.customer.displayName} · {timeAgo(tk.lastCustomerAt ?? tk.createdAt)}</span></span><Status label={(STATUS_LABEL[tk.status] ?? { label: tk.status }).label} kind={tk.status === "customer_replied" ? "warn" : "neutral"} /></Link></li>
           ))}</ul>

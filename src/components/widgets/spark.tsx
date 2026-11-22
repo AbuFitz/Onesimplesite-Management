@@ -1,22 +1,20 @@
 import type { ReactNode } from "react";
 
 /** Dependency-free SVG chart shapes for widgets: light, server-rendered, and never colour-only (every chart has a text summary). */
-const pts = (data: number[], w: number, h: number, pad = 3) => {
+const pts = (data: number[], w: number, h: number, pad = 3, padX = 0) => {
   const max = Math.max(...data, 1), min = Math.min(...data, 0), span = max - min || 1;
-  return data.map((v, i) => [data.length === 1 ? w / 2 : (i / (data.length - 1)) * w, h - pad - ((v - min) / span) * (h - pad * 2)] as const);
+  return data.map((v, i) => [data.length === 1 ? w / 2 : padX + (i / (data.length - 1)) * (w - padX * 2), h - pad - ((v - min) / span) * (h - pad * 2)] as const);
 };
 const line = (p: readonly (readonly [number, number])[]) => p.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
 
 /** A small trend line with a soft area under it and a dot on the latest value. */
 export function Spark({ data, color = "#4a6024", height = 44, label }: { data: number[]; color?: string; height?: number; label: string }) {
-  const w = 120, p = pts(data.length ? data : [0], w, height), id = `sp${color.replace(/\W/g, "")}${data.length}`;
-  const last = p[p.length - 1];
+  const w = 120, p = pts(data.length ? data : [0], w, height, 4, 5), id = `sp${color.replace(/\W/g, "")}${data.length}`;
   return (
     <svg className="spark" viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" role="img" aria-label={`${label}: ${data.length ? `${data[0]} to ${data[data.length - 1]}` : "no data"}`} style={{ height }}>
       <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={color} stopOpacity=".28" /><stop offset="1" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-      {p.length > 1 && <path d={`${line(p)} L${w} ${height} L0 ${height} Z`} fill={`url(#${id})`} />}
+      {p.length > 1 && <path d={`${line(p)} L${p[p.length - 1][0]} ${height} L${p[0][0]} ${height} Z`} fill={`url(#${id})`} />}
       <path d={line(p)} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-      <circle cx={last[0]} cy={last[1]} r="2.6" fill="#fff" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -46,7 +44,7 @@ export function Series({ data, color = "#4a6024", height = 150, format = (n: num
           </div>
         ))}
       </div>
-      <figcaption>{data.map((d, i) => { const step = data.length > 8 ? 3 : 1; return <span key={d.label + i}>{i % step === 0 ? d.label : ""}</span>; })}</figcaption>
+      <figcaption className="ends"><span>{data[0]?.label}</span>{data.length > 4 && <span>{data[Math.floor(data.length / 2)]?.label}</span>}<span>{data[data.length - 1]?.label}</span></figcaption>
     </figure>
   );
 }
@@ -66,7 +64,7 @@ export function Funnel({ stages }: { stages: { label: string; value: number; col
 /** "Up 12%" style change against the previous period. `goodWhen` says which direction is good, so a fall in unpaid money shows green. */
 export function Delta({ now, prev, goodWhen = "up", label }: { now: number; prev: number; goodWhen?: "up" | "down"; label?: ReactNode }) {
   if (!prev && !now) return <span className="delta flat">No change{label ? <> · {label}</> : null}</span>;
-  if (!prev) return <span className={`delta ${goodWhen === "up" ? "up" : "down"}`}>Up from none{label ? <> · {label}</> : null}</span>;
+  if (!prev) return <span className={`delta ${goodWhen === "up" ? "up" : "down"}`}><span aria-hidden>▲</span> New{label ? <> · {label}</> : null}</span>;
   const pct = Math.round(((now - prev) / prev) * 100);
   if (pct === 0) return <span className="delta flat">No change{label ? <> · {label}</> : null}</span>;
   const good = (pct > 0) === (goodWhen === "up");

@@ -25,7 +25,7 @@ const staff = await login(await browser.newContext({ viewport: { width: 1280, he
 // 0. My account: first-time profile banner, job title, signature with live preview
 await resetProfile();
 await staff.goto(`${M}/`);
-ok((await staff.locator("a[href='/account']").first().innerText()).includes("Finish setting up your profile"), "new members see the finish-your-profile banner");
+ok((await staff.locator("a[href='/account/profile']").first().innerText()).includes("Finish setting up your profile"), "new members see the finish-your-profile banner");
 await staff.click("a:has-text('Finish setting up your profile')"); await staff.waitForURL(/\/account/);
 await staff.fill("#pf-title", "Director"); await staff.click("button:has-text('Write one for me')");
 ok((await staff.locator("main").innerText()).includes("Director"), "signature preview updates live");

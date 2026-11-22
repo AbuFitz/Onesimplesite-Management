@@ -60,7 +60,7 @@ export default async function StaffLayout({ children, modal }: { children: React
             </div>
           </div>
           {profileTodo.length > 0 && (
-            <Link href="/account" className="mx-4 mb-2 flex items-center justify-center gap-2 rounded-2xl bg-lime px-4 py-2.5 text-center text-sm text-olive-950 lg:mx-6">
+            <Link href="/account/profile" className="mx-4 mb-2 flex items-center justify-center gap-2 rounded-2xl bg-lime px-4 py-2.5 text-center text-sm text-olive-950 lg:mx-6">
               <span>Finish setting up your profile: add your {profileTodo.join(" and ")}.</span><ArrowRight size={15} aria-hidden />
             </Link>
           )}
