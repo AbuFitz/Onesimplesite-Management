@@ -97,7 +97,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
     const kd = kind(e.type), cancelled = e.status === "cancelled", past = e.endsAt < now && !cancelled, who = e.customerId ? custName.get(e.customerId) : undefined;
     const allDay = e.endsAt.getTime() - e.startsAt.getTime() >= 23 * 3600e3;
     return (
-      <li className={`flex gap-3 rounded-xl border border-[var(--card-line)] bg-white p-3 ${past ? "opacity-80" : ""}`}>
+      <li className={`flex gap-3 rounded-2xl border border-[var(--card-line)] bg-white p-3.5 shadow-[0_8px_18px_-16px_rgba(30,44,14,.5)] ${past ? "opacity-80" : ""}`}>
         <span className={`w-1 shrink-0 rounded-full ${cancelled ? "bg-[#d4d4d8]" : kd.bar}`} aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 text-[13px] font-semibold text-muted"><Clock size={13} aria-hidden />{allDay ? "All day" : `${timeOf(e.startsAt)} – ${timeOf(e.endsAt)}`}<span className={`rounded-md px-1.5 py-0.5 text-[11.5px] ${kd.chip}`}>{kd.label}</span>{cancelled && <span className="rounded-md bg-[#fdecea] px-1.5 py-0.5 text-[11.5px] text-[#a12a1f]">Cancelled</span>}</p>
@@ -218,11 +218,11 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         </div>
 
         <aside className="hidden space-y-4 lg:block">
-          <section className="rounded-xl border border-[var(--card-line)] bg-white p-4">
+          <section className="rounded-3xl border border-[var(--card-line)] bg-white p-4">
             <div className="mb-3 flex items-center justify-between"><h2 className="text-base font-bold">{isToday ? "Today" : fmt(selected, { weekday: "long" })}<span className="ml-2 text-sm font-medium text-muted">{fmt(selected, { day: "numeric", month: "long" })}</span></h2>{canWrite && <Link href={q({ add: true })} replace scroll={false} aria-label="Add an event on this day" className="btn btn-quiet !min-h-8 !w-8 !px-0"><Plus size={16} aria-hidden /></Link>}</div>
             {dayEvents.length === 0 && dayMarks.length === 0 ? <p className="text-sm text-muted">Free.</p> : <ul className="space-y-2">{dayMarks.map((x) => <MarkRow key={x.kind + x.id} x={x} />)}{dayEvents.map((e) => <EventCard key={e.id} e={e} />)}</ul>}
           </section>
-          <section className="rounded-xl border border-[var(--card-line)] bg-white p-4">
+          <section className="rounded-3xl border border-[var(--card-line)] bg-white p-4">
             <h2 className="mb-2 text-base font-bold">Coming up</h2>
             {coming.length === 0 ? <p className="text-sm text-muted">Nothing yet.</p> : <ul className="divide-y divide-[var(--card-rule)]">{coming.map((x) => <li key={x.id}><Link href={x.href} className="flex items-center gap-2.5 py-2.5"><i className={`size-2 shrink-0 rounded-full ${x.dot}`} aria-hidden /><span className="min-w-0 flex-1 truncate font-semibold">{x.label}</span><span className="shrink-0 text-sm text-muted">{x.when}</span></Link></li>)}</ul>}
           </section>

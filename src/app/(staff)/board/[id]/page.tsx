@@ -21,9 +21,9 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
   const manage = post.ownerId === ctx.staffId || ctx.role === "owner";
   const write = can(ctx.role, "notes.write");
   return (
-    <div className="mx-auto max-w-3xl">
-      <Link href="/board" className="mb-4 inline-flex min-h-9 items-center text-sm text-muted hover:text-ink">‹ Team Board</Link>
-      <article className="rounded-xl border border-[var(--card-line)] bg-white p-5 sm:p-8">
+    <div className="bt">
+      <Link href="/board" className="bt-back">‹ Board</Link>
+      <article className="bt-card">
         <header className="mb-5 flex flex-wrap items-center gap-3">
           <Avatar name={author.displayName} size={40} staffId={author.id} />
           <div className="min-w-0 flex-1"><p className="font-semibold">{author.displayName}{author.jobTitle && <span className="font-normal text-muted"> · {author.jobTitle}</span>}</p><p className="text-sm text-muted">Posted {timeAgo(post.createdAt)}</p></div>
@@ -42,23 +42,26 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
         )}
       </article>
 
-      <section className="mt-8" aria-labelledby="cm-h">
-        <h2 id="cm-h" className="mb-4 text-base">{comments.length === 0 ? "Comments" : `${comments.length} comment${comments.length > 1 ? "s" : ""}`}</h2>
-        <ul className="mb-5 space-y-4">
-          {comments.map((c) => (
-            <li key={c.id} className="flex items-start gap-3">
-              <Avatar name={c.author.displayName} size={32} staffId={c.author.id} />
-              <div className="min-w-0 flex-1 rounded-2xl bg-soft px-4 py-3">
-                <p className="text-sm"><span className="font-semibold">{c.author.displayName}</span> <span className="text-muted">· {timeAgo(c.createdAt)}</span></p>
-                <p className="mt-1 whitespace-pre-wrap break-words text-[15px]">{c.body}</p>
-                {(c.authorId === ctx.staffId || ctx.role === "owner") && (
-                  <ConfirmForm action={deleteCommentAction} message="Delete this comment?" className="mt-1"><input type="hidden" name="id" value={post.id} /><input type="hidden" name="commentId" value={c.id} /><button className="text-xs text-muted underline hover:text-danger">Delete</button></ConfirmForm>
-                )}
-              </div>
-            </li>
-          ))}
+      <section className="bt-replies" aria-labelledby="cm-h">
+        <h2 id="cm-h" className="bt-h">{comments.length === 0 ? "Replies" : `${comments.length} ${comments.length > 1 ? "replies" : "reply"}`}</h2>
+        <ul className="bt-list">
+          {comments.map((c, i) => {
+            const same = i > 0 && comments[i - 1].authorId === c.authorId && +c.createdAt - +comments[i - 1].createdAt < 10 * 60e3;
+            return (
+              <li key={c.id} className={`bt-r ${same ? "cont" : ""}`}>
+                <span className="bt-av">{same ? null : <Avatar name={c.author.displayName} size={36} staffId={c.author.id} />}</span>
+                <div className="bt-body">
+                  {!same && <p className="bt-who"><b>{c.author.displayName}</b><time>{timeAgo(c.createdAt)}</time></p>}
+                  <p className="bt-txt">{c.body}</p>
+                  {(c.authorId === ctx.staffId || ctx.role === "owner") && (
+                    <ConfirmForm action={deleteCommentAction} message="Delete this reply?" className="bt-del"><input type="hidden" name="id" value={post.id} /><input type="hidden" name="commentId" value={c.id} /><button>Delete</button></ConfirmForm>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
-        {write && <CommentForm id={post.id} name={ctx.name} staffId={ctx.staffId} />}
+        {write && <div className="bt-compose"><CommentForm id={post.id} name={ctx.name} staffId={ctx.staffId} /></div>}
       </section>
     </div>
   );

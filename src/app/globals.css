@@ -1633,3 +1633,18 @@ html:has(.ref-page), body:has(.ref-page) { background: #0f1a08; }
 .pub-social a { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: rgba(20, 30, 12, .07); color: var(--color-ink); transition: transform .25s var(--spring), background .2s; }
 .pub-social a:hover { transform: translateY(-2px); background: rgba(20, 30, 12, .12); }
 .ref-frame .pub-links { color: var(--color-ink-2); }
+
+/* ---- Board topic: a thread ---- */
+.bt { max-width: 46rem; margin: 0 auto; display: grid; gap: 14px; }
+.bt-back { justify-self: start; min-height: 40px; display: inline-flex; align-items: center; font-size: 14px; font-weight: 550; color: var(--color-muted); }
+.bt-card, .bt-replies { padding: 22px 24px; border-radius: 30px; background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(255, 255, 255, .74)); border: 1px solid rgba(255, 255, 255, .95); box-shadow: 0 1px 0 #fff inset, 0 18px 36px -26px rgba(30, 44, 14, .45); }
+.bt-h { font-size: 15px; font-weight: 600; color: var(--color-muted); margin-bottom: 10px; }
+.bt-list { display: grid; gap: 2px; }
+.bt-r { display: flex; gap: 12px; padding: 8px 4px; border-radius: 16px; } .bt-r:hover { background: rgba(20, 30, 12, .035); }
+.bt-av { flex: none; width: 36px; } .bt-body { min-width: 0; flex: 1; }
+.bt-who { display: flex; align-items: baseline; gap: 8px; } .bt-who b { font-weight: 600; } .bt-who time { font-size: 12.5px; color: var(--color-muted); }
+.bt-txt { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15.5px; line-height: 1.45; }
+.bt-del { margin-top: 2px; } .bt-del button { font-size: 12.5px; color: var(--color-muted); cursor: pointer; opacity: 0; transition: opacity .15s; } .bt-r:hover .bt-del button, .bt-del button:focus-visible { opacity: 1; }
+@media (hover: none) { .bt-del button { opacity: .7; } }
+.bt-compose { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(20, 30, 12, .07); }
+@media (max-width: 639px) { .bt-card, .bt-replies { padding: 16px 14px; border-radius: 24px; } }

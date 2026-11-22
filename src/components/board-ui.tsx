@@ -51,7 +51,7 @@ export function CommentForm({ id, name, staffId }: { id: string; name: string; s
       <div className="min-w-0 flex-1 space-y-2">
         <ErrorSummary message={s?.error} />
         <label className="sr-only" htmlFor="cm-body">Write a comment</label>
-        <textarea id="cm-body" name="body" rows={2} className="field" placeholder="Write a comment…" value={text} onChange={(e) => setText(e.target.value)} />
+        <textarea id="cm-body" name="body" rows={2} className="field" placeholder="Reply…" value={text} onChange={(e) => setText(e.target.value)} />
         <button className="btn" disabled={pending || !text.trim()}>{pending ? "Posting…" : "Comment"}</button>
       </div>
     </form>
