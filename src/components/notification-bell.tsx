@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
 import { Bell, BellOff, Building2, CreditCard, FolderKanban, Gift, MessageCircle, ScrollText, ShieldCheck, Ticket, Users, type LucideIcon } from "lucide-react";
 import { Sheet } from "./sheet";
 
@@ -79,7 +80,7 @@ export function NotificationBell() {
         <Bell size={20} aria-hidden />{unread > 0 && <b key={unread}>{unread > 9 ? "9+" : unread}</b>}
       </button>
       {open && !phone && <div className="nt-pop" role="dialog" aria-label="Notifications">{list}</div>}
-      {open && phone && <Sheet open onClose={() => setOpen(false)} title="Notifications">{list}</Sheet>}
+      {open && phone && createPortal(<Sheet open onClose={() => setOpen(false)} title="Notifications">{list}</Sheet>, document.body)}
     </div>
   );
 }

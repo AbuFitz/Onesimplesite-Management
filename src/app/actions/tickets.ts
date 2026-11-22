@@ -33,7 +33,7 @@ export async function createTicketStaffAction(_: unknown, fd: FormData): Promise
       const p = await createProposal(ctx, cu.id, opp.id, { title, scope: g("details") || `${work.label}. ${work.hint}`, terms: "", lines: [{ description: "Website design and build", quantity: 1, unitMinor: 0, recurring: false }], requirements: { projectType: ({ simple: "new_site", shop: "shop", booking: "new_site", redesign: "revamp", onepage: "new_site", care: "care", other: "custom" } as Record<string, string>)[work.id] ?? "new_site" } });
       to = `/proposals/${p.id}`;
     } else if (type === "change_request" || type === "support") {
-      const t = await staffCreateTicket(ctx, { customerId: cu.id, contactId, category: type, kind: type === "change_request" ? "request" : g("kind") || "issue", title: g("title"), body: g("details"), priority: g("priority") || "normal", assigneeId: g("assigneeId") });
+      const t = await staffCreateTicket(ctx, { customerId: cu.id, contactId, category: type, kind: type === "change_request" ? "request" : g("kind") || "issue", title: g("title") || g("details").split(/\r?\n/)[0].slice(0, 80).trim(), body: g("details"), priority: g("priority") || "normal", assigneeId: g("assigneeId") });
       if (type === "change_request" && g("cost") === "charge") await quoteChange(ctx, t.id, { price: g("price") || "0", note: g("costNote") });
       if (type === "change_request" && g("cost") === "included") await quoteChange(ctx, t.id, { price: 0 });
       flushEmails();

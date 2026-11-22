@@ -83,9 +83,29 @@ export default async function ProposalPage({ params, searchParams }: { params: P
         plans={plans} reqFields={REQUIREMENT_FIELDS as unknown as [string, string][]} projectTypes={Object.entries(PROJECT_TYPES).map(([id, v]) => ({ id, label: v.label }))} canSend={can(ctx.role, "proposal.send")} />
     </form>
   ) : (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="rv">
       <Link href={`/proposals/${p.id}?step=1`} className="inline-flex min-h-10 items-center text-sm font-semibold text-moss">‹ Back to editing</Link>
-      <h2 className="sr-only">Step 5: Check and send</h2><p className="mb-1 text-[15px] text-muted">{STEPS[4].help}</p>
+      <h2 className="sr-only">Step 5: Check and send</h2>
+      <section className="rv-hero" aria-label="Send this agreement">
+        <p className="rv-eye">{ready ? "Ready to send" : `${checks.filter(([, ok]) => !ok).length} to sort first`}</p>
+        <h3 className="rv-title">{p.title}</h3>
+        <p className="rv-for">For {p.customer.displayName}</p>
+        <dl className="rv-pay">
+          <div><dt>Website</dt><dd>{money(fee)}{depPct > 0 && <small>{money(dep)} on signing, {money(fee - dep)} before launch</small>}</dd></div>
+          <div><dt>Care plan</dt><dd>{cur.recurringMinor > 0 ? (pr?.freeMonths ? `${money(cur.recurringMinor)} / month` : `${money(cur.recurringMinor)} / month`) : "None"}{pr?.freeMonths ? <small>{pr.freeMonths} free {pr.freeMonths === 1 ? "month" : "months"}{pr.endsAfter ? ", then ends" : ""}</small> : null}</dd></div>
+        </dl>
+        <ul className="rv-checks">{checks.map(([label, ok, href]) => <li key={label} className={ok ? "ok" : "no"}>{ok ? "✓" : "!"} {label}{!ok && <> · <Link href={href}>fix</Link></>}</li>)}</ul>
+        {can(ctx.role, "proposal.send") && (
+          <form action={sendAgreementAction} id="send" className="rv-send"><input type="hidden" name="id" value={p.id} />
+            <div><label className="label" htmlFor="sn">Who signs</label><input id="sn" name="name" className="field" defaultValue={primary?.name} required placeholder="Their name" /></div>
+            <div><label className="label" htmlFor="to">Their email</label><input id="to" name="email" type="email" className="field" defaultValue={primary?.email ?? ""} required placeholder="Check it carefully" /></div>
+            <button className="btn rv-primary" disabled={!ready}>Send for signature</button>
+          </form>
+        )}
+        <p className="rv-note">They get one email with one page showing the agreement and our terms. Signing is their acceptance. Once sent it is frozen: a change means a new version.</p>
+        <div className="rv-links"><Link className="btn btn-quiet" href={`/proposals/${p.id}/preview`}>Preview what they will see</Link><a className="rv-pdf" href={`/proposals/${p.id}/preview/pdf`} target="_blank" rel="noreferrer">PDF preview</a></div>
+      </section>
+      <div className="rv-cards">
       {summaryCard(1, "The job", <><p className="font-semibold">{p.title}</p><p className="text-sm text-muted">{cur.scope}</p></>)}
       {summaryCard(2, "Price", <>{priceLines}<ul className="mt-1 text-sm text-muted">{cur.lines.map((l) => <li key={l.id}>{l.description}: {money(l.unitMinor * l.quantity)}{l.recurring ? " a month" : ""}</li>)}</ul></>)}
       {summaryCard(3, "Payment and offer", <ul className="space-y-1 text-[15px]">
@@ -93,21 +113,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
         <li>{pr ? <>Offer “{pr.label}”: {[pr.discountMinor > 0 ? `${money(pr.discountMinor)} off the website fee` : "", pr.freeMonths > 0 ? (pr.endsAfter ? `${pr.freeMonths} free month${pr.freeMonths === 1 ? "" : "s"} of care that simply end` : `${pr.freeMonths} free month${pr.freeMonths === 1 ? "" : "s"} on the care plan`) : ""].filter(Boolean).join(" and ")}.</> : "No offer."}</li>
       </ul>)}
       {summaryCard(4, "Details", <p className="text-[15px]">{filledReqs > 0 ? `${filledReqs} detail${filledReqs === 1 ? "" : "s"} filled in.` : "None added. You can still send it."}{cur.validUntil ? ` Open until ${fmtDateTime(cur.validUntil)}.` : " Open for 30 days once sent."}</p>)}
-      <section className="sum-card">
-        <h3 className="mb-1 text-base font-bold">See it as they will</h3>
-        <p className="mb-3 text-sm text-muted">Nothing is sent when you preview.</p>
-        <div className="flex flex-wrap items-center gap-3"><Link className="btn" href={`/proposals/${p.id}/preview`}>Preview what they will see</Link><a className="text-sm underline" href={`/proposals/${p.id}/preview/pdf`} target="_blank" rel="noreferrer">PDF preview</a></div>
-      </section>
-      {can(ctx.role, "proposal.send") && (
-        <form action={sendAgreementAction} id="send" className="send-box space-y-3"><input type="hidden" name="id" value={p.id} />
-          <h3 className="text-base font-bold">Send for signature</h3>
-          <ul className="text-sm">{checks.map(([label, ok, href]) => <li key={label} className="py-0.5"><Status label={ok ? "ready" : "needed"} kind={ok ? "good" : "warn"} /> {label}{!ok && <> · <Link className="underline" href={href}>fix</Link></>}</li>)}</ul>
-          <label className="label" htmlFor="sn">Who signs? Their name</label><input id="sn" name="name" className="field" defaultValue={primary?.name} required />
-          <label className="label" htmlFor="to">Their email (check it carefully)</label><input id="to" name="email" type="email" className="field" defaultValue={primary?.email ?? ""} required />
-          <p className="hint">They get one email with one page showing the agreement and our terms. Signing it is their acceptance. Once sent it is frozen: a change means a new version.</p>
-          <button className="btn" disabled={!ready}>Send for signature</button>
-          {!ready && <p className="text-sm font-semibold text-[#7a2e12]">Fix the "needed" items above first. Then you can send.</p>}</form>
-      )}
+      </div>
     </div>
   );
   return (

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * A bottom sheet: it rises from the bottom over a blurred backdrop, follows your finger when you drag the grabber down, and closes when you
@@ -18,8 +19,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
     document.body.style.overflow = "hidden";
     return () => { document.removeEventListener("keydown", esc); document.body.style.overflow = ""; prev?.focus?.(); };
   }, [open, onClose]);
-  if (!open) return null;
-  return (
+  if (!open || typeof document === "undefined") return null;
+  // Always drawn in the page body: inside a blurred or transformed bar, a "fixed" panel would be pinned to that bar instead of the screen.
+  return createPortal(
     <div className="sheet-wrap" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} className="sheet" style={{ transform: dy ? `translateY(${dy}px)` : undefined, transition: drag.current ? "none" : undefined }}>
         <div className="sheet-grab" aria-hidden
@@ -30,6 +32,6 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         <h2 className="sheet-title">{title}</h2>
         {children}
       </div>
-    </div>
+    </div>, document.body
   );
 }

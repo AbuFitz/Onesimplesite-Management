@@ -355,3 +355,17 @@ export async function effectiveReward(workspaceId: string, customerId: string) {
   const type = d.type ?? s.customerType, value = d.value ?? s.customerValue;
   return { type, value, text: rewardText(type, value), short: type === "percent" ? `${value}%` : rewardText(type, value), months: d.months ?? s.welcome.standard.months, label: s.welcome.standard.label, settings: s };
 }
+
+/** Every customer account with where it stands on referrals: link, deal, how its referrals have gone, and what is owed. */
+export async function listCustomerAccounts(workspaceId: string) {
+  const customers = await db.customer.findMany({ where: { workspaceId, archivedAt: null }, orderBy: { displayName: "asc" }, take: 400, select: { id: true, displayName: true, reference: true } });
+  const ids = customers.map((c) => c.id);
+  const [links, refs, owed, st] = await Promise.all([
+    db.referralLink.findMany({ where: { workspaceId, customerId: { in: ids } } }),
+    db.referral.groupBy({ by: ["referrerId", "status"], where: { workspaceId, referrerId: { in: ids } }, _count: true }),
+    db.rewardEntry.groupBy({ by: ["payeeId"], where: { workspaceId, payeeType: "customer", payeeId: { in: ids } }, _sum: { amountMinor: true } }),
+    getSettings(workspaceId),
+  ]);
+  const lk = new Map(links.map((l) => [l.customerId, l])), ow = new Map(owed.map((o) => [o.payeeId, o._sum.amountMinor ?? 0]));
+  return { settings: st, rows: customers.map((c) => { const l = lk.get(c.id); const mine = refs.filter((r) => r.referrerId === c.id); const type = (l?.rewardType as RewardType | null) ?? st.customerType, value = l?.rewardValue ?? st.customerValue; return { id: c.id, name: c.displayName, ref: c.reference, code: l?.code ?? null, ownDeal: !!(l?.rewardType || l?.welcomeMonths !== null && l?.welcomeMonths !== undefined), reward: rewardText(type, value), leads: mine.reduce((n, r) => n + r._count, 0), won: mine.filter((r) => r.status === "qualified").reduce((n, r) => n + r._count, 0), owedMinor: ow.get(c.id) ?? 0 }; }) };
+}
