@@ -1,64 +1,31 @@
 import Link from "next/link";
-import { Building2, KeyRound, LifeBuoy, ShieldCheck, FileText } from "lucide-react";
-import { ChangePasswordForm } from "@/components/password-forms";
+import { LifeBuoy } from "lucide-react";
 import { requireClient } from "@/modules/identity/session";
-import { levelLabel } from "@/modules/portal/access";
 import { Avatar } from "@/components/ui";
-import { MyDetailsForm } from "@/components/my-details-form";
-import { db } from "@/lib/db";
-import { SecurityPanel } from "@/components/security-panel";
+import { AccountRows } from "@/components/account-nav";
 import { PhotoUpload } from "@/components/photo-upload";
 import { removeClientPhotoAction } from "@/app/actions/photo";
+import { db } from "@/lib/db";
+import { portalItems } from "./items";
 
 export const metadata = { title: "Settings" };
-
 export default async function Account({ searchParams }: { searchParams: Promise<{ error?: string; photo?: string }> }) {
   const c = await requireClient();
   const sp = await searchParams;
-  const hasTotp = !!(await db.twoFactor.count({ where: { userId: c.userId, verified: true } }));
-  const me = c.email ? await db.contact.findFirst({ where: { customerId: { in: c.memberships.map((m) => m.customerId) }, email: { equals: c.email, mode: "insensitive" } }, select: { phone: true, position: true } }) : null;
+  const t = await db.twoFactor.count({ where: { userId: c.userId, verified: true } });
   return (
-    <div className="space-y-4">
-      <section className="tile bg-lilac !p-7 sm:!p-10">
-        <div className="flex flex-wrap items-center gap-4"><Avatar name={c.name ?? "You"} size={64} staffId={c.userId} base="/avatar/u" /><div><h1 className="text-3xl sm:text-5xl">{c.name ?? "Your settings"}</h1><p className="mt-1 text-lg font-medium">{c.email}</p></div></div>
+    <div className="set-hub">
+      <h1 className="sr-only">Settings</h1>
+      <section className="acc-me">
+        <Avatar name={c.name ?? "You"} size={88} staffId={c.userId} base="/avatar/u" />
+        <div className="min-w-0"><p className="acc-name">{c.name ?? "You"}</p><p className="acc-sub">{c.memberships.map((m) => m.customer.displayName).join(", ")}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2"><PhotoUpload client /><form action={removeClientPhotoAction}><button className="btn btn-quiet">Remove</button></form></div>
+          {sp.photo === "1" && <p role="status" className="mt-2 text-sm font-semibold text-moss">Picture saved.</p>}
+          {sp.error && <p role="alert" className="mt-2 text-sm font-semibold text-[#7a2e12]">{sp.error}</p>}
+        </div>
       </section>
-
-      <section className="tile bg-white" aria-labelledby="ph"><h2 id="ph" className="text-2xl">Your picture</h2>
-        <p className="mt-1 text-sm text-muted">Optional. Your team at OneSimpleSite and the people in your company will see it next to your name. It's yours across every company you belong to.</p>
-        {sp.photo === "1" && <p role="status" className="mt-2 text-sm font-semibold text-moss">Picture saved.</p>}
-        {sp.error && <p role="alert" className="mt-2 text-sm font-semibold text-[#7a2e12]">{sp.error}</p>}
-        <div className="mt-3 flex flex-wrap items-center gap-3"><PhotoUpload client /><form action={removeClientPhotoAction}><button className="btn btn-quiet">Remove picture</button></form></div>
-      </section>
-
-      <section className="tile bg-white" aria-labelledby="det"><h2 id="det" className="text-2xl">Your details</h2>
-        <p className="mb-4 mt-1 text-sm text-muted">Keep these right so we know who we're talking to.</p>
-        <MyDetailsForm name={c.name ?? ""} email={c.email ?? ""} phone={me?.phone ?? ""} position={me?.position ?? ""} />
-      </section>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="tile bg-white" aria-labelledby="biz"><h2 id="biz" className="flex items-center gap-2 text-2xl"><Building2 size={22} aria-hidden /> Your companies</h2>
-          <ul className="mt-3 divide-y divide-line">{c.memberships.map((m) => (
-            <li key={m.customerId} className="flex items-center justify-between gap-3 py-3"><span className="font-semibold">{m.customer.displayName}</span>
-              <span className="rounded-full bg-bone px-3 py-1 text-sm font-bold">{levelLabel(m.role)}{m.billing && m.role !== "admin" ? " + billing" : ""}</span></li>
-          ))}</ul>
-          <p className="mt-3 text-sm text-muted">Your access level decides what you can do. The company owner can ask us to change it.</p>
-        </section>
-
-        <section className="tile bg-butter" aria-labelledby="help"><h2 id="help" className="flex items-center gap-2 text-2xl"><LifeBuoy size={22} aria-hidden /> Need something changed?</h2>
-          <p className="mt-2">Different email, a colleague who has left, or more access? Tell us and we'll sort it.</p>
-          <Link href="/help/new" className="btn btn-dark mt-4">Raise a ticket</Link>
-        </section>
-      </div>
-
-      <section className="tile bg-white" aria-labelledby="sec"><h2 id="sec" className="text-2xl">Sign-in security</h2><p className="mb-4 mt-1 text-sm text-muted">Optional extras that make your account safer.</p><SecurityPanel ns="portal" hasAuthenticator={hasTotp} /></section>
-
-      <section className="tile bg-white" aria-labelledby="pw"><h2 id="pw" className="flex items-center gap-2 text-2xl"><KeyRound size={22} aria-hidden /> Change your password</h2>
-        <div className="mt-4 max-w-md"><ChangePasswordForm /></div>
-      </section>
-
-      <section className="tile bg-white" aria-labelledby="priv"><h2 id="priv" className="flex items-center gap-2 text-2xl"><ShieldCheck size={22} aria-hidden /> Privacy and legal</h2>
-        <ul className="mt-3 grid gap-2 sm:grid-cols-3">{[["/legal/privacy", "Privacy notice"], ["/legal/cookies", "Cookie notice"], ["/legal/terms", "Terms of use"]].map(([h, l]) => <li key={h}><Link href={h} className="flex min-h-12 items-center gap-2 rounded-xl border border-line px-4 font-semibold hover:bg-bone"><FileText size={17} aria-hidden />{l}</Link></li>)}</ul>
-      </section>
+      <div className="mt-4"><AccountRows items={portalItems({ twoStep: t > 0, companies: c.memberships.length })} /></div>
+      <Link href="/help/new" className="set-me mt-4"><span className="set-ico" style={{ background: "#c2410c" }} aria-hidden><LifeBuoy size={19} /></span><span className="set-txt"><b>Need something changed?</b><small>A new email, a colleague who left, more access</small></span></Link>
     </div>
   );
 }

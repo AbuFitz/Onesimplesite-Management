@@ -1150,3 +1150,12 @@ body:has(.wcell.editing) .sb { display: none; }
 .sl a { min-height: 34px; display: grid; place-items: center; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--color-muted); transition: background .25s var(--ease), color .2s; }
 .sl a[aria-current="true"] { background: #fff; color: var(--color-ink); box-shadow: 0 1px 0 #fff inset, 0 6px 14px -8px rgba(20, 30, 12, .45); }
 @media (max-width: 640px) { .cal-bar { gap: 8px; } .cal-title { min-width: 7.5rem; font-size: 1rem; } .cal-ctl { width: 100%; justify-content: space-between; } }
+
+/* My account: a profile header and a short list, each row its own page. */
+.acc-me { display: flex; align-items: center; gap: 18px; margin: 4px 0 6px; }
+.acc-name { font-size: clamp(24px, 5vw, 32px); font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+.acc-sub { margin-top: 3px; font-size: 14.5px; color: var(--color-muted); }
+.acc-note { margin: 10px 0 18px; font-size: 14px; color: var(--color-muted); max-width: 40rem; }
+.acc-page { max-width: 42rem; padding-top: 4px; }
+.acc-page > h1 { margin-bottom: 14px; font-size: clamp(24px, 5vw, 32px); }
+.acc-page > section + section, .acc-page > div + div { margin-top: 18px; }

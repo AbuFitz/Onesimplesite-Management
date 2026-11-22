@@ -22,7 +22,7 @@ export function SmartBubble() {
   const load = useCallback(async () => {
     try { const r = await fetch("/api/suggestions", { cache: "no-store" }); if (r.ok) setItems((await r.json()).suggestions); } catch { /* offline: keep what we have */ }
   }, []);
-  useEffect(() => { setLater(read()); load(); const t = setInterval(load, 3 * 60_000); const f = () => document.visibilityState === "visible" && load(); document.addEventListener("visibilitychange", f); return () => { clearInterval(t); document.removeEventListener("visibilitychange", f); }; }, [load]);
+  useEffect(() => { setLater(read()); load(); const t = setInterval(() => { if (document.visibilityState === "visible") load(); }, 5 * 60_000); const f = () => document.visibilityState === "visible" && load(); document.addEventListener("visibilitychange", f); return () => { clearInterval(t); document.removeEventListener("visibilitychange", f); }; }, [load]);
 
   const visible = items.filter((i) => later[i.id] !== today());
   const top = visible[0];

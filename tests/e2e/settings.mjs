@@ -16,7 +16,7 @@ async function run(name, viewport) {
     ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), `${name}: ${path} has no horizontal overflow`);
     if (shots) await pg.screenshot({ path: `${shots}/${name}${path.replaceAll("/", "-")}.png` });
   }
-  await pg.goto(`${M}/account`); await pg.waitForLoadState("networkidle"); await pg.waitForTimeout(800);
+  await pg.goto(`${M}/account/security`); await pg.waitForLoadState("networkidle"); await pg.waitForTimeout(800);
   if (shots) await pg.screenshot({ path: `${shots}/${name}-account.png`, fullPage: true });
   const qr = await pg.locator("img[alt*='QR code that opens this page']").isVisible();
   ok(name === "desktop" ? qr : !qr, `${name}: passkey QR is ${name === "desktop" ? "shown on a computer" : "hidden on a phone"}`);

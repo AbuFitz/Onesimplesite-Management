@@ -27,12 +27,12 @@ try {
   const cdp = await ctx.newCDPSession(pg); await cdp.send("WebAuthn.enable");
   await cdp.send("WebAuthn.addVirtualAuthenticator", { options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
   await signIn(pg, M, "demo.owner@example.test"); await pg.waitForURL(away);
-  await pg.goto(`${M}/account`); await pg.waitForSelector("text=Add a passkey");
+  await pg.goto(`${M}/account/security`); await pg.waitForSelector("text=Add a passkey");
   await pg.fill("#pk-n", "E2E laptop"); await pg.click("button:has-text('Add a passkey')"); await pg.waitForSelector("text=Passkey added");
   ok(true, "team member adds a passkey");
   await ctx.clearCookies(); await pg.goto(`${M}/login`); await pg.click("button:has-text('Sign in with a passkey')"); await pg.waitForURL(away, { timeout: 15000 });
   ok(true, "signing in with the passkey works, no password typed");
-  await pg.goto(`${M}/account`); await pg.click("button[aria-label^='Remove E2E laptop']"); await pg.click(".cfm-yes"); await pg.waitForSelector("text=No passkeys yet");
+  await pg.goto(`${M}/account/security`); await pg.click("button[aria-label^='Remove E2E laptop']"); await pg.click(".cfm-yes"); await pg.waitForSelector("text=No passkeys yet");
   await ctx.close();
 
   // 3. Required for customers: guided setup straight after the password.

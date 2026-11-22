@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
 import { EMAILS } from "@/modules/settings/email-samples";
@@ -17,6 +18,7 @@ export const metadata = { title: "Testing" };
 const CARDS = [["4242 4242 4242 4242", "Payment works"], ["4000 0000 0000 9995", "Card is declined (not enough money)"], ["4000 0025 0000 3155", "Asks for extra bank approval"]];
 
 export default async function Testing({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; reset?: string; queue?: string }> }) {
+  if (process.env.APP_ENV === "production") notFound(); // the test tools are for the dev site only
   const ctx = await requireStaff("settings.write");
   const sp = await searchParams;
   const problems = await recentProblems(ctx.workspaceId);

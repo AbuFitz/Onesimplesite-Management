@@ -33,7 +33,7 @@ export default async function StaffLayout({ children, modal }: { children: React
     { label: "Company", items: [
       ...(can(ctx.role, "settings.write") ? [{ href: "/settings", label: "Settings", icon: "settings" }] : []),
     ] },
-    ...(can(ctx.role, "settings.write") ? [{ label: "Testing", items: [{ href: "/testing", label: "Testing", icon: "testing" }] }] : []),
+    ...(can(ctx.role, "settings.write") && process.env.APP_ENV !== "production" ? [{ label: "Testing", items: [{ href: "/testing", label: "Testing", icon: "testing" }] }] : []),
   ].filter((g) => g.items.length) as NavGroup[];
   const profileTodo = profileMissing(await getMyProfile(ctx));
   const create = [
