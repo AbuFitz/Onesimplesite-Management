@@ -8,6 +8,7 @@ export function AutoGetForm({ children, className }: { children: ReactNode; clas
   const [pending, start] = useTransition();
   // A filter used to submit like a plain web form: the whole page reloaded and any open panel closed. Now it just updates the address and the list, in place.
   const go = (e: FormEvent<HTMLFormElement>) => {
+    if (e.target !== e.currentTarget) return; // a form inside a popup that sits under this one (React bubbles submits out of portals)
     e.preventDefault();
     const fd = new FormData(e.currentTarget), p = new URLSearchParams();
     for (const [k, v] of fd.entries()) if (typeof v === "string" && v !== "") p.set(k, v);
@@ -15,7 +16,7 @@ export function AutoGetForm({ children, className }: { children: ReactNode; clas
     start(() => router.replace(qs ? `${path}?${qs}` : path, { scroll: false }));
   };
   return (
-    <form role="search" className={className} data-pending={pending || undefined} onSubmit={go} onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.tagName === "SELECT" || t.type === "checkbox") e.currentTarget.requestSubmit(); }}>
+    <form role="search" className={className} data-pending={pending || undefined} onSubmit={go} onChange={(e) => { if (e.target instanceof HTMLElement && e.target.closest("[role=dialog]")) return; const t = e.target as unknown as HTMLInputElement; if (t.tagName === "SELECT" || t.type === "checkbox") e.currentTarget.requestSubmit(); }}>
       {children}
     </form>
   );
