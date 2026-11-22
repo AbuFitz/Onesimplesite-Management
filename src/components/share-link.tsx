@@ -1,17 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Copy, Mail, MessageCircle, QrCode, Share2, X as XIcon } from "lucide-react";
-import QRCode from "qrcode";
+import { StyledQr } from "./styled-qr";
 import { Sheet } from "./sheet";
 
 const enc = encodeURIComponent;
 /** Every way people actually pass a link on: copy, the phone's share sheet, WhatsApp, X, LinkedIn, email, or a QR code to show in person. */
 function Channels({ url, text }: { url: string; text: string }) {
   const [done, setDone] = useState(false);
-  const [qr, setQr] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
-  useEffect(() => { if (showQr && !qr) void QRCode.toDataURL(url, { margin: 1, width: 420, color: { dark: "#161d0b", light: "#ffffff" } }).then(setQr); }, [showQr, qr, url]);
   const copy = async () => { try { await navigator.clipboard.writeText(url); setDone(true); setTimeout(() => setDone(false), 1800); } catch { /* the link is also shown to select by hand */ } };
   const canShare = typeof navigator !== "undefined" && "share" in navigator;
   return (
@@ -25,7 +23,7 @@ function Channels({ url, text }: { url: string; text: string }) {
         {canShare && <button type="button" aria-label="More ways to share" onClick={() => navigator.share({ title: "OneSimpleSite", text, url }).catch(() => {})}><Share2 size={20} aria-hidden /></button>}
         <button type="button" aria-label="Show QR code" aria-pressed={showQr} className={showQr ? "on" : ""} onClick={() => setShowQr((v) => !v)}><QrCode size={20} aria-hidden /></button>
       </div>
-      {showQr && <div className="shr-qr">{qr ? <img src={qr} alt="QR code for your referral link" width={210} height={210} /> : <span className="skel" style={{ width: 210, height: 210 }} />}<p>Point a phone camera at it</p></div>}
+      {showQr && <div className="shr-qr"><StyledQr url={url} size={216} /></div>}
     </div>
   );
 }

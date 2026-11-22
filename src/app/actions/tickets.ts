@@ -14,7 +14,7 @@ import { flushEmails } from "@/lib/flush-email";
 const why = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join(" ") : "Something went wrong and nothing was saved.");
 
 /** One form for every kind of ticket. What it asks depends on the type, and what it does afterwards does too. */
-export async function createTicketStaffAction(_: unknown, fd: FormData): Promise<{ error?: string }> {
+export async function createTicketStaffAction(_: unknown, fd: FormData): Promise<{ error?: string; ok?: true; id?: string; title?: string }> {
   const ctx = await requireStaff("customer.write");
   const g = (k: string) => String(fd.get(k) ?? "").trim();
   const customerId = g("customerId"), type = g("type");
@@ -38,6 +38,8 @@ export async function createTicketStaffAction(_: unknown, fd: FormData): Promise
       if (type === "change_request" && g("cost") === "included") await quoteChange(ctx, t.id, { price: 0 });
       flushEmails();
       to = `/support/${t.id}`;
+      // Made from a popup: stay where you were. The form closes itself and says it is done.
+      if (g("inModal") === "1") return { ok: true, id: t.id, title: g("title") };
     } else throw new DomainError("validation", "Choose what kind of ticket this is.");
   } catch (e) { return { error: why(e) }; }
   redirect(to);

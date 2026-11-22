@@ -13,6 +13,7 @@ import { cookies } from "next/headers";
 import { CommandPalette } from "@/components/command-palette";
 import { NewMenu, UserMenu } from "@/components/menus";
 import { NotificationBell } from "@/components/notification-bell";
+import { Toaster } from "@/components/toaster";
 import { after } from "next/server";
 import { maybeRunReminders } from "@/modules/support/reminders";
 import { supportCounts } from "@/modules/support/service";
@@ -69,6 +70,7 @@ export default async function StaffLayout({ children, modal }: { children: React
         </div>
       </div>
       {modal}
+      <Toaster />
       <TeamDock groups={groups} actions={create} />
     </div>
   );

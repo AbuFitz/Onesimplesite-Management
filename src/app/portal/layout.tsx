@@ -30,7 +30,7 @@ export default async function PortalLayout({ children }: { children: React.React
             <Link href="/overview" aria-label="Client portal home" className="pt-logo"><Image src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={164} height={34} priority className="h-[24px] w-auto sm:h-[30px]" /></Link>
             <span className="pt-co">{company}</span>
             <div className="pt-act">
-              {canRefer && <ReferCta amount={amount} />}
+              {canRefer && <ReferCta amount={amount} gift={rs && rs.welcome.standard.months > 0 ? `${rs.welcome.standard.months} ${rs.welcome.standard.months === 1 ? "month" : "months"} ${rs.welcome.standard.label}` : undefined} />}
               <NotificationBell />
               <UserMenu staffId={c.userId} avatarBase="/avatar/u" name={c.name} role={company} accountLabel="Settings">
                 <form action={signOutPortal}><button role="menuitem" className="pop-item w-full text-left">Sign out</button></form>

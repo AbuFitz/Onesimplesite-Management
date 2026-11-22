@@ -1,5 +1,8 @@
 "use client";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useModalClose } from "./modal-context";
+import { toast } from "./toaster";
 import { Globe, Wrench, LifeBuoy } from "lucide-react";
 import { createTicketStaffAction } from "@/app/actions/tickets";
 import { TICKET_KINDS } from "@/modules/support/options";
@@ -15,7 +18,10 @@ const TYPES = [
 
 type P = { id: string; name: string; position: string | null };
 export function TicketCreateForm({ customer, people, team, me, initialType }: { customer: { id: string; name: string }; people: P[]; team: { id: string; name: string }[]; me: string; initialType?: string }) {
-  const [s, act] = useActionState(createTicketStaffAction, undefined as { error?: string } | undefined);
+  const [s, act] = useActionState(createTicketStaffAction, undefined as { error?: string; ok?: true; id?: string; title?: string } | undefined);
+  const closeModal = useModalClose();
+  const router = useRouter();
+  useEffect(() => { if (s?.ok && s.id && closeModal) { toast({ text: "Ticket created", href: `/support/${s.id}`, label: "Open" }); closeModal(); window.setTimeout(() => router.refresh(), 350); } }, [s]); // eslint-disable-line react-hooks/exhaustive-deps
   const [type, setType] = useState<string>(TYPES.some((t) => t.id === initialType) ? initialType! : "");
   const [cost, setCost] = useState("later");
   const [who, setWho] = useState(people[0]?.id ?? "new");
@@ -40,7 +46,7 @@ export function TicketCreateForm({ customer, people, team, me, initialType }: { 
       steps={[
         { id: "kind", title: "Kind", ready: !!type, hint: "What kind of ticket is it?", node: (
           <fieldset>
-            <input type="hidden" name="customerId" value={customer.id} /><input type="hidden" name="type" value={type} />
+            <input type="hidden" name="customerId" value={customer.id} />{closeModal && <input type="hidden" name="inModal" value="1" />}<input type="hidden" name="type" value={type} />
             <div className="grid gap-3 sm:grid-cols-2">
               {TYPES.map(({ id, label, hint, Icon }) => (
                 <button type="button" key={id} aria-pressed={type === id} onClick={() => setType(id)} className={`tc-type ${type === id ? "on" : ""}`}>

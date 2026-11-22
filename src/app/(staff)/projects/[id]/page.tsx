@@ -2,7 +2,7 @@ import { ImageLink } from "@/components/lightbox";
 import { StageBar } from "@/components/stage-bar";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Check, ListChecks, Files as FilesIcon, Ticket, Package, Megaphone, Sparkles, ArrowRight, Folder, Download, Eye, EyeOff, Trash2, Paperclip, CircleDot, Circle } from "lucide-react";
+import { Check, ListChecks, Files as FilesIcon, Ticket, Package, Megaphone, Sparkles, MoreHorizontal, ArrowRight, Folder, Download, Eye, EyeOff, Trash2, Paperclip, CircleDot, Circle } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
@@ -49,32 +49,43 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   return (
     <>
       <LiveRefresh seconds={30} />
-      <RecordHeader back={{ href: "/projects", label: "Projects" }} title={p.name} status={<Status label={label(p.stage)} kind={p.stage === "launched" || p.stage === "completed" ? "good" : p.stage === "held" || p.stage === "cancelled" ? "bad" : "neutral"} />}
-        meta={<><Link className="underline" href={`/customers/${p.customerId}`}>{p.customer.displayName}</Link>{p.dueDate ? ` · due ${fmtDate(p.dueDate)}` : ""}{contract ? <> · <Link className="underline" href={`/contracts/${contract.id}`}>{contract.reference}</Link></> : null}</>} />
       <ErrorSummary message={error} />
-
-      <StageBar stages={tpl.stages.map((st, i) => ({ key: st, label: label(st), state: (idx > i) || p.stage === "completed" ? "done" : idx === i ? "cur" : "todo" }))} />
-      <p className="mb-5 text-[13px] text-ink/65">{tpl.label}. {idx < 0 ? <strong className="text-ink">The project is at “{label(p.stage)}”, which isn't one of this type's usual steps. That's fine.</strong> : "Move to any stage you like, forwards, back or skipping steps."}</p>
-
-      {(guide || p.stage === "held" || finished) && (
-        <section className="nx-next go mb-5" aria-label="What to do now">
-          <p className="nx-eye flex items-center gap-2"><Sparkles size={15} aria-hidden /> What to do now · {label(p.stage)}</p>
-          <h2 className="!text-[clamp(20px,4.5vw,26px)]">{guide?.now ?? (p.stage === "held" ? "This project is paused. Move it back to a stage when the customer is ready." : "This project is finished. Reopen it if something comes up.")}</h2>
-          {canWrite && (
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <form action={seedTasksAction}><input type="hidden" name="id" value={p.id} /><SubmitButton className="btn btn-quiet" pendingText="Adding…">Add the usual tasks for this stage</SubmitButton></form>
-              <form action={transitionAction} className="flex flex-wrap items-center gap-2"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} />
-                <label className="sr-only" htmlFor="stage-sel">Move to</label>
-                <select id="stage-sel" name="stage" className="field !min-h-10 w-auto" defaultValue={next ?? others[0]}>
-                  <optgroup label="This project's stages">{tpl.stages.filter((st) => st !== p.stage).map((st) => <option key={st} value={st}>{label(st)}</option>)}</optgroup>
-                  <optgroup label="Other">{others.map((st) => <option key={st} value={st}>{label(st)}</option>)}</optgroup>
-                </select>
-                {finished && <><label className="sr-only" htmlFor="why">Why reopen</label><input id="why" name="reason" className="field !min-h-10 w-56" placeholder="Why are you reopening it?" required /></>}
-                <button className="btn">Move to this stage <ArrowRight size={15} aria-hidden /></button></form>
-            </div>
-          )}
-        </section>
-      )}
+      <section className="pj-head" aria-label="Project">
+        <p className="pj-meta">
+          <Link href="/projects" className="pj-back">‹ Projects</Link>
+          <Status label={label(p.stage)} kind={p.stage === "launched" || p.stage === "completed" ? "good" : p.stage === "held" || p.stage === "cancelled" ? "bad" : "neutral"} />
+          <Link href={`/customers/${p.customerId}`}>{p.customer.displayName}</Link>
+          {p.dueDate && <span>due {fmtDate(p.dueDate)}</span>}
+          {contract && <Link href={`/contracts/${contract.id}`}>{contract.reference}</Link>}
+        </p>
+        <h1 className="pj-title">{p.name}</h1>
+        <StageBar stages={tpl.stages.map((st, i) => ({ key: st, label: label(st), state: (idx > i) || p.stage === "completed" ? "done" : idx === i ? "cur" : "todo" }))} />
+        {idx < 0 && <p className="pj-off">At “{label(p.stage)}”, which isn&apos;t one of this type&apos;s usual steps. That&apos;s fine.</p>}
+        {(guide || p.stage === "held" || finished) && (
+          <div className="pj-next" aria-label="What to do now">
+            <p className="pj-now"><Sparkles size={16} aria-hidden /><span>{guide?.now ?? (p.stage === "held" ? "Paused. Move it back to a stage when the customer is ready." : "Finished. Reopen it if something comes up.")}</span></p>
+            {canWrite && (
+              <div className="pj-do">
+                <form action={transitionAction} className="pj-go"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} /><input type="hidden" name="stage" value={next ?? others[0]} />
+                  {finished && <><label className="sr-only" htmlFor="why">Why reopen</label><input id="why" name="reason" className="field !min-h-10 w-48" placeholder="Why reopen it?" required /></>}
+                  <button className="btn">{finished ? "Reopen" : `Move to ${label(next ?? others[0])}`} <ArrowRight size={15} aria-hidden /></button></form>
+                <details className="pj-more"><summary aria-label="More ways to move this project"><MoreHorizontal size={18} aria-hidden /></summary>
+                  <div className="pj-menu">
+                    <form action={seedTasksAction}><input type="hidden" name="id" value={p.id} /><SubmitButton className="pj-item" pendingText="Adding…">Add the usual tasks for this stage</SubmitButton></form>
+                    <form action={transitionAction} className="pj-jump"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} />
+                      <label htmlFor="stage-sel">Go to another stage</label>
+                      <select id="stage-sel" name="stage" className="field !min-h-10" defaultValue={next ?? others[0]}>
+                        <optgroup label="This project's stages">{tpl.stages.filter((st) => st !== p.stage).map((st) => <option key={st} value={st}>{label(st)}</option>)}</optgroup>
+                        <optgroup label="Other">{others.map((st) => <option key={st} value={st}>{label(st)}</option>)}</optgroup>
+                      </select>
+                      {finished && <input name="reason" className="field !min-h-10" placeholder="Why reopen it?" required />}
+                      <button className="btn btn-quiet">Move</button></form>
+                  </div></details>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
       {missing.length > 0 && <p className="mb-5 rounded-xl border border-[#f1d58a] bg-[#fff6dc] px-4 py-3 text-sm text-[#5c3b00]"><strong>Waiting on the customer:</strong> {missing.map((a) => a.label).join(", ")}</p>}
 
       {(() => {
