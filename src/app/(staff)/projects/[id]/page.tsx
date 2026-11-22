@@ -1,5 +1,7 @@
 import { ImageLink } from "@/components/lightbox";
-import { StageBar } from "@/components/stage-bar";
+import { Journey } from "@/components/journey";
+import { Ring, CHART } from "@/components/charts";
+import { describe } from "@/modules/activity/describe";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Check, ListChecks, Files as FilesIcon, Ticket, Package, Megaphone, Sparkles, MoreHorizontal, ArrowRight, Folder, Download, Eye, EyeOff, Trash2, Paperclip, CircleDot, Circle } from "lucide-react";
@@ -11,6 +13,7 @@ import { projectFileList } from "@/modules/files/service";
 import { STATUS_LABEL } from "@/modules/support/options";
 import { transitionAction, updateAction, assetAction, taskAction } from "@/app/actions/work";
 import { projectTypeAction, seedTasksAction, toggleTaskAction, receiveAssetAction, removeAssetAction, uploadProjectFilesAction, shareFileAction, deleteFileAction } from "@/app/actions/projects";
+import { Timeline } from "@/components/timeline";
 import { RecordHeader, Status, ErrorSummary, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
 import { Panel } from "@/components/panel";
 import { FilePicker } from "@/components/file-picker";
@@ -28,6 +31,10 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const sp = await searchParams; const { error } = sp;
   const p = await getProject(ctx, id);
   if (!p) notFound();
+  const [events, contact] = await Promise.all([
+    db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, targetType: "project", targetId: p.id }, orderBy: { createdAt: "asc" }, take: 200 }),
+    db.contact.findFirst({ where: { customerId: p.customerId }, orderBy: [{ isPrimary: "desc" }], select: { name: true, email: true, phone: true, position: true } }),
+  ]);
   const [files, tickets, contract] = await Promise.all([
     projectFileList(p.id, true),
     db.ticket.findMany({ where: { projectId: p.id, workspaceId: ctx.workspaceId }, orderBy: { updatedAt: "desc" }, take: 8, select: { id: true, title: true, reference: true, status: true, category: true, updatedAt: true } }),
@@ -42,6 +49,14 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const label = (s: string) => STAGE_GUIDE[s]?.label ?? NAME[s] ?? s.replaceAll("_", " ");
   const others = ["design", "development", "qa", "client_review", "ready_to_launch", "launched", "planned", "awaiting_assets", "completed", "held", "cancelled"].filter((s) => s !== p.stage && !tpl.stages.includes(s as never));
   const finished = p.stage === "completed" || p.stage === "cancelled";
+  // When each stage was reached (from the project's own history), how long it has been in this one, and how far along it is overall.
+  const entered = new Map<string, Date>([[tpl.stages[0], p.createdAt]]);
+  for (const e of events) if (e.action === "project.stage") { const to = (e.detail as { to?: string } | null)?.to; if (to) entered.set(to, e.createdAt); }
+  const short = (d?: Date) => (d ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Europe/London" }).format(d) : undefined);
+  const daysIn = Math.max(0, Math.floor((Date.now() - +(entered.get(p.stage) ?? p.createdAt)) / 864e5));
+  const stagePct = p.stage === "completed" ? 1 : idx >= 0 && tpl.stages.length > 1 ? idx / (tpl.stages.length - 1) : 0;
+  const taskPct = p.tasks.length ? p.tasks.filter((t) => t.doneAt).length / p.tasks.length : null;
+  const overall = Math.round((taskPct === null ? stagePct : stagePct * 0.6 + taskPct * 0.4) * 100);
   const openTasks = p.tasks.filter((t) => !t.doneAt), doneTasks = p.tasks.filter((t) => t.doneAt);
   const missing = p.assetRequests.filter((a) => !a.receivedAt);
   const folders = [...new Set(files.map((f) => f.folder ?? ""))].sort((a, b) => (a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)));
@@ -58,8 +73,8 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           {p.dueDate && <span>due {fmtDate(p.dueDate)}</span>}
           {contract && <Link href={`/contracts/${contract.id}`}>{contract.reference}</Link>}
         </p>
-        <h1 className="pj-title">{p.name}</h1>
-        <StageBar stages={tpl.stages.map((st, i) => ({ key: st, label: label(st), state: (idx > i) || p.stage === "completed" ? "done" : idx === i ? "cur" : "todo" }))} />
+        <div className="pj-top"><h1 className="pj-title">{p.name}</h1><div className="pj-ring" title="Stage progress and tasks done, combined"><Ring value={overall / 100} size={72} thickness={9} color={p.stage === "completed" || p.stage === "launched" ? CHART.teal : CHART.green} label="" /></div></div>
+        <Journey steps={tpl.stages.map((st, i) => ({ key: st, label: label(st), state: (idx > i) || p.stage === "completed" ? "done" : idx === i ? "cur" : "todo", date: short(entered.get(st)) }))} />
         {idx < 0 && <p className="pj-off">At “{label(p.stage)}”, which isn&apos;t one of this type&apos;s usual steps. That&apos;s fine.</p>}
         {(guide || p.stage === "held" || finished) && (
           <div className="pj-next" aria-label="What to do now">
@@ -86,19 +101,64 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           </div>
         )}
       </section>
-      {missing.length > 0 && <p className="mb-5 rounded-xl border border-[#f1d58a] bg-[#fff6dc] px-4 py-3 text-sm text-[#5c3b00]"><strong>Waiting on the customer:</strong> {missing.map((a) => a.label).join(", ")}</p>}
+      <div className="pj-stats">
+        <Link href={`/projects/${p.id}?tab=work`} replace scroll={false}><span>Stage</span><b className="num">{idx >= 0 ? idx + 1 : "·"}<small>/{tpl.stages.length}</small></b><em>{daysIn === 0 ? "Started today" : `${daysIn} ${daysIn === 1 ? "day" : "days"} in ${label(p.stage)}`}</em></Link>
+        <Link href={`/projects/${p.id}?tab=work`} replace scroll={false}><span>Tasks</span><b className="num">{doneTasks.length}<small>/{p.tasks.length}</small></b><em><i className="pj-bar" style={{ "--p": `${p.tasks.length ? Math.round((doneTasks.length / p.tasks.length) * 100) : 0}%` } as React.CSSProperties} /></em></Link>
+        <Link href={`/projects/${p.id}?tab=customer`} replace scroll={false} className={missing.length ? "warn" : ""}><span>Waiting on customer</span><b className="num">{missing.length}</b><em>{missing.length ? "things we asked for" : "nothing outstanding"}</em></Link>
+        <Link href={`/projects/${p.id}?tab=files`} replace scroll={false}><span>Files</span><b className="num">{files.length}</b><em>{files.filter((f) => !f.internal).length} shared</em></Link>
+      </div>
 
       {(() => {
-        const tab = ["work", "customer", "files", "details"].includes(String(sp.tab)) ? String(sp.tab) : "work";
+        const tab = ["overview", "work", "customer", "files", "activity"].includes(String(sp.tab)) ? String(sp.tab) : "overview";
         const href = (t: string) => `/projects/${p.id}?tab=${t}`;
         const waiting = p.assetRequests.filter((a) => !a.receivedAt).length;
-        const items: [string, string, string | null][] = [["work", "Work", `${openTasks.length} open`], ["customer", "Customer", waiting ? `${waiting} waiting` : null], ["files", "Files", files.length ? String(files.length) : null], ["details", "Details", tickets.length ? `${tickets.length} ticket${tickets.length === 1 ? "" : "s"}` : null]];
+        const items: [string, string, string | null][] = [["overview", "Overview", null], ["work", "Tasks", openTasks.length ? `${openTasks.length} open` : null], ["customer", "Customer", waiting ? `${waiting} waiting` : null], ["files", "Files", files.length ? String(files.length) : null], ["activity", "Activity", null]];
         return (
           <>
             <nav className="ptabs" aria-label="Project sections">
               {items.map(([id, label, note]) => <Link key={id} href={href(id)} replace scroll={false} aria-current={tab === id ? "page" : undefined}>{label}{note && <i>{note}</i>}</Link>)}
             </nav>
-            <div className="space-y-5 max-w-4xl">
+            <div className="space-y-5 max-w-5xl">
+              {tab === "overview" && (
+                <div className="pj-grid">
+                  <div className="space-y-5 min-w-0">
+                    <Panel title="Up next" icon={ListChecks} tone="green" action={<Link className="text-sm font-semibold text-moss" href={href("work")} replace scroll={false}>All tasks</Link>}>
+                      {openTasks.length === 0 ? (
+                        <div className="pj-empty"><p>{p.tasks.length ? "Every task is done." : "No tasks yet."}</p>{canWrite && <form action={seedTasksAction}><input type="hidden" name="id" value={p.id} /><SubmitButton className="btn btn-quiet" pendingText="Adding…">Add the usual tasks for {label(p.stage)}</SubmitButton></form>}</div>
+                      ) : (
+                        <ul className="divide-y divide-[var(--card-rule)]">{openTasks.slice(0, 5).map((t) => (
+                          <li key={t.id} className="flex items-center justify-between gap-3 py-2">
+                            <form action={toggleTaskAction} className="flex min-w-0 items-center gap-3"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="taskId" value={t.id} /><input type="hidden" name="done" value="1" />
+                              <button disabled={!canWrite} aria-label={`Mark “${t.title}” done`} className="grid size-6 shrink-0 place-items-center rounded-md border-2 border-[#8995b0] bg-white" />
+                              <span className="min-w-0 break-words text-[15px] font-medium">{t.title}</span></form>
+                            <span className="shrink-0 text-sm text-ink/65">{fmtDate(t.dueDate)}</span>
+                          </li>))}</ul>
+                      )}
+                    </Panel>
+                    <Panel title="Waiting on the customer" icon={Package} tone="amber" action={<Link className="text-sm font-semibold text-moss" href={href("customer")} replace scroll={false}>{canWrite ? "Ask for something" : "Open"}</Link>}>
+                      {missing.length === 0 ? <p className="text-[15px] text-ink/70">Nothing outstanding.</p> : <ul className="divide-y divide-[var(--card-rule)]">{missing.map((a) => <li key={a.id} className="flex items-center justify-between gap-3 py-2.5"><span className="text-[15px] font-medium">{a.label}{a.required ? "" : " (optional)"}</span><Status label="requested" kind="warn" /></li>)}</ul>}
+                    </Panel>
+                    <Panel title="Latest update" icon={Megaphone} tone="lilac" action={<Link className="text-sm font-semibold text-moss" href={href("customer")} replace scroll={false}>All updates</Link>}>
+                      {p.updates.length === 0 ? <p className="text-[15px] text-ink/70">No updates yet.</p> : <div><p className="whitespace-pre-wrap break-words text-[15px]">{p.updates[0].body}</p><p className="mt-1.5 text-[13px] text-ink/60">{timeAgo(p.updates[0].createdAt)}{p.updates[0].clientVisible ? " · shown to the customer" : " · team only"}</p></div>}
+                    </Panel>
+                  </div>
+                  <aside className="space-y-5 min-w-0">
+                    <Panel title="At a glance" icon={CircleDot} tone="neutral">
+                      <dl className="pj-facts">
+                        <div><dt>Customer</dt><dd><Link href={`/customers/${p.customerId}`}>{p.customer.displayName}</Link></dd></div>
+                        {contact && <div><dt>Contact</dt><dd>{contact.name}{contact.email && <a href={`mailto:${contact.email}`}>{contact.email}</a>}{contact.phone && <a href={`tel:${contact.phone}`}>{contact.phone}</a>}</dd></div>}
+                        {contract && <div><dt>Agreement</dt><dd><Link href={`/contracts/${contract.id}`}>{contract.reference}</Link></dd></div>}
+                        <div><dt>Due</dt><dd>{p.dueDate ? fmtDate(p.dueDate) : "Not set"}</dd></div>
+                        <div><dt>Type</dt><dd>{tpl.label}</dd></div>
+                        <div><dt>Tickets</dt><dd>{tickets.filter((t) => !["resolved", "closed"].includes(t.status)).length} open · <Link href={href("customer")} replace scroll={false}>see all</Link></dd></div>
+                      </dl>
+                    </Panel>
+                    <Panel title="Recent activity" icon={ListChecks} tone="neutral" action={<Link className="text-sm font-semibold text-moss" href={href("activity")} replace scroll={false}>History</Link>}>
+                      {events.length === 0 ? <p className="text-[15px] text-ink/70">Nothing yet.</p> : <ul className="pj-recent">{[...events].reverse().slice(0, 5).map((e) => <li key={e.id}><span>{describe(e.action).text}</span><em>{timeAgo(e.createdAt)}</em></li>)}</ul>}
+                    </Panel>
+                  </aside>
+                </div>
+              )}
               {tab === "work" && (<>
           <Panel title="Checklist" icon={ListChecks} tone="green" action={<span className="text-sm font-semibold text-ink/65">{doneTasks.length} of {p.tasks.length} done</span>}>
             {p.tasks.length === 0 ? <p className="text-[15px] text-ink/70">No tasks yet. Add the usual ones for this stage above, or write your own.</p> : (
@@ -134,6 +194,9 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
               <button className="btn">Post update</button></form>}
             {p.updates.length === 0 ? <p className="text-[15px] text-ink/70">No updates yet.</p> : <ul className="space-y-3">{p.updates.map((u) => <li key={u.id} className="rounded-xl border border-[var(--card-rule)] p-3"><p className="mb-1 flex flex-wrap items-center gap-2 text-xs text-ink/65">{fmtDateTime(u.createdAt)}<Status label={u.clientVisible ? "customer can see" : "team only"} kind={u.clientVisible ? "warn" : "neutral"} /></p><p className="whitespace-pre-wrap text-[15px]">{u.body}</p></li>)}</ul>}
           </Panel>
+          <Panel title="Tickets for this project" icon={Ticket} tone="rose" action={<Link className="text-sm font-semibold text-moss" href={`/tickets/new?business=${p.customerId}`}>New ticket</Link>}>
+            {tickets.length === 0 ? <p className="text-[15px] text-ink/70">None. Anything a customer raises about this site shows here.</p> : <ul className="divide-y divide-[var(--card-rule)]">{tickets.map((t) => { const s = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const }; return <li key={t.id}><Link href={`/support/${t.id}`} className="flex items-center justify-between gap-2 py-2.5"><span className="min-w-0"><span className="block truncate font-semibold">{t.title}</span><span className="text-[13px] text-ink/65">{t.reference} · {timeAgo(t.updatedAt)}</span></span><Status label={s.label} kind={s.kind} /></Link></li>; })}</ul>}
+          </Panel>
               </>)}
               {tab === "files" && (<>
           <Panel title="Files" icon={FilesIcon} tone="blue">
@@ -163,7 +226,8 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
             )}
           </Panel>
               </>)}
-              {tab === "details" && (<>
+              {tab === "activity" && (<>
+          <Panel title="History" icon={ListChecks} tone="neutral"><Timeline events={[...events].reverse().map((e) => ({ id: e.id, action: e.action, actorLabel: e.actorLabel, createdAt: e.createdAt }))} empty="Nothing has happened on this project yet." /></Panel>
           {canWrite && (
             <Panel title="Type of project" icon={Package} tone="neutral">
               <form action={projectTypeAction} className="space-y-2"><input type="hidden" name="id" value={p.id} />
@@ -173,9 +237,6 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
                 <button className="btn btn-quiet !min-h-11 sm:!min-h-9">Save type</button></form>
             </Panel>
           )}
-          <Panel title="Tickets for this project" icon={Ticket} tone="rose" action={<Link className="text-sm font-semibold text-moss" href={`/tickets/new?business=${p.customerId}`}>New ticket</Link>}>
-            {tickets.length === 0 ? <p className="text-[15px] text-ink/70">None. Anything a customer raises about this site shows here.</p> : <ul className="divide-y divide-[var(--card-rule)]">{tickets.map((t) => { const s = STATUS_LABEL[t.status] ?? { label: t.status, kind: "neutral" as const }; return <li key={t.id}><Link href={`/support/${t.id}`} className="flex items-center justify-between gap-2 py-2.5"><span className="min-w-0"><span className="block truncate font-semibold">{t.title}</span><span className="text-[13px] text-ink/65">{t.reference} · {timeAgo(t.updatedAt)}</span></span><Status label={s.label} kind={s.kind} /></Link></li>; })}</ul>}
-          </Panel>
               </>)}
             </div>
           </>
