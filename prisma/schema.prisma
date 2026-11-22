@@ -996,6 +996,9 @@ model ReferralLink {
   workspaceId String   @db.Uuid
   customerId  String   @db.Uuid
   code        String
+  rewardType    String? // this company's own deal: fixed | percent (empty = the workspace default)
+  rewardValue   Int? // pence if fixed, whole percent of the website fee if percent
+  welcomeMonths Int? // free months their referrals get (empty = the workspace default)
   createdAt   DateTime @default(now())
 
   @@unique([code])
@@ -1054,8 +1057,10 @@ model Partner {
   commissionValue Int       @default(5000) // pence if fixed, whole percent if percent
   notes           String?
   active          Boolean   @default(true)
+  staffId         String?   @db.Uuid // set for a team member's own link
   createdAt       DateTime  @default(now())
 
   @@unique([code])
+  @@unique([workspaceId, staffId])
   @@index([workspaceId, active])
 }

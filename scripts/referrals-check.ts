@@ -22,7 +22,7 @@ async function main() {
   const partners: string[] = [];
   const deposit = (customerId: string) => db.billingIntent.create({ data: { workspaceId: ws, customerId, kind: "deposit", amountMinor: 50000, status: "paid", paidAt: new Date() } });
   try {
-    await R.saveSettings(ctx, { enabled: true, trigger: "final", cash: 50, cap: 10, stdMonths: 1, stdLabel: "free hosting", ecoMonths: 1, ecoLabel: "free care plan" });
+    await R.saveSettings(ctx, { enabled: true, trigger: "final", rewardType: "fixed", reward: 50, team: 0, cap: 10, stdMonths: 1, stdLabel: "free hosting", ecoMonths: 1, ecoLabel: "free care plan" });
     const A = await co(`Ref A ${stamp}`, `a${stamp}@alpha-${stamp}.example`);
     const B = await co(`Ref B ${stamp}`, `b${stamp}@beta-${stamp}.example`);
 
@@ -74,6 +74,32 @@ async function main() {
     ok(!!(await R.findByCode(fixed.code)) && (await R.findByCode(fixed.code))?.kind === "partner", "a partner's code finds the partner");
     await R.setPartnerActive(ctx, fixed.id, false);
     ok((await R.findByCode(fixed.code)) === null, "a paused partner's link stops working");
+
+    // A company's own deal beats the default. A percentage needs a signed order; a fixed amount does not.
+    await R.setCompanyDeal(ctx, A, { type: "percent", value: 10, months: 2 });
+    const F = await co(`Ref F ${stamp}`, `f${stamp}@foxtrot-${stamp}.example`); await R.attachReferrer(ctx, F, { customerId: A });
+    await balance(F); await R.qualifyIfDue(ws, F);
+    ok((await db.referral.findFirstOrThrow({ where: { refereeId: F } })).status === "review", "a percentage deal with no signed order to work from goes for a look");
+    await R.setCompanyDeal(ctx, A, { type: "fixed", value: 80, months: 2 });
+    const G = await co(`Ref G ${stamp}`, `g${stamp}@golf-${stamp}.example`); const before = await R.owedTo(ws, A); await R.attachReferrer(ctx, G, { customerId: A });
+    await balance(G); await R.qualifyIfDue(ws, G);
+    ok((await R.owedTo(ws, A)) === before + 8000, "a company on its own fixed deal is owed that amount, not the default");
+    ok((await db.referral.findFirstOrThrow({ where: { refereeId: G } })).freeMonths === 2, "and the people they send get that company's own free months");
+    const deal = await R.getCompanyDeal(ws, A); ok(deal.type === "fixed" && deal.value === 8000 && deal.months === 2, "the deal is stored and readable");
+    await R.setCompanyDeal(ctx, A, { type: "", value: null, months: null });
+    ok((await R.effectiveReward(ws, A)).text === "£50", "clearing the deal goes back to the default");
+    await R.setCompanyDeal(ctx, A, { type: "percent", value: 99, months: null }).then(() => ok(false, "99% refused"), () => ok(true, "a silly percentage is refused"));
+
+    // Team members get their own link; the reward follows the team setting.
+    await R.saveSettings(ctx, { enabled: true, trigger: "final", rewardType: "fixed", reward: 50, team: 25, cap: 10, stdMonths: 1, stdLabel: "free hosting", ecoMonths: 1, ecoLabel: "free care plan" });
+    const tp = await R.ensureStaffLink(ctx); partners.push(tp.id);
+    ok(tp.kind === "team" && tp.commissionValue === 2500, "a team member's link carries the team reward");
+    ok((await R.ensureStaffLink(ctx)).id === tp.id, "and stays the same link");
+    ok((await R.findByCode(tp.code))?.kind === "partner", "the link works like any partner link");
+    const H = await co(`Ref H ${stamp}`, `h${stamp}@hotel-${stamp}.example`); await R.attachReferrer(ctx, H, { partnerId: tp.id });
+    await balance(H); await R.qualifyIfDue(ws, H);
+    ok((await R.owedTo(ws, tp.id)) === 2500, "a team member is credited their reward when the website is paid");
+    ok((await R.myTeamReferrals(ctx)).list.some((x) => x.status === "won"), "and sees it as won on their own page");
 
     // The public link: one lead, same answer every time, throttled, honeypot ignored.
     const code = await R.ensureLink(ws, A);

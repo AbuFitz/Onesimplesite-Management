@@ -1454,13 +1454,13 @@ dialog.rec-dlg.cm-dlg { width: min(40rem, 94vw); height: auto; max-height: min(4
 .tkc-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; } .tkc-foot p { font-size: 13px; color: var(--color-muted); }
 
 /* ---- Popup frame: a real header bar with room around its buttons ---- */
-dialog.rec-dlg { width: min(68rem, calc(100vw - 32px)); height: min(52rem, calc(100dvh - 32px)); }
+dialog.rec-dlg:not(.cfm-dlg):not(.fl-dlg):not(.cm-dlg) { width: min(68rem, calc(100vw - 32px)); height: min(52rem, calc(100dvh - 32px)); }
 .rec-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 8px 26px; min-height: 60px; }
 .rec-kind { font-size: 14px; font-weight: 550; color: var(--color-muted); letter-spacing: .01em; }
 .rec-act { display: flex; align-items: center; gap: 8px; }
 .rec-act .iconbtn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .85); box-shadow: 0 1px 0 #fff inset, 0 6px 14px -10px rgba(20, 30, 12, .5); text-decoration: none; color: var(--color-ink); transition: transform .25s var(--spring); }
 .rec-act .iconbtn:active { transform: scale(.9); }
-@media (max-width: 639px) { dialog.rec-dlg { width: calc(100vw - 16px); height: calc(100dvh - 16px - env(safe-area-inset-top)); } .rec-head { padding: 12px 12px 6px 20px; } }
+@media (max-width: 639px) { dialog.rec-dlg:not(.cfm-dlg):not(.fl-dlg):not(.cm-dlg) { width: calc(100vw - 16px); height: calc(100dvh - 16px - env(safe-area-inset-top)); } .rec-head { padding: 12px 12px 6px 20px; } }
 
 /* ---- Ticket chat ---- */
 .tk-chat { display: flex; flex-direction: column; border-radius: 30px; background: rgba(255, 255, 255, .55); border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 1px 0 #fff inset, 0 20px 40px -30px rgba(30, 44, 14, .45); height: clamp(26rem, calc(100dvh - 17rem), 44rem); overflow: hidden; }
@@ -1560,3 +1560,12 @@ dialog.rec-dlg { width: min(68rem, calc(100vw - 32px)); height: min(52rem, calc(
 .tl2-ev { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0; font-size: 13.5px; color: var(--color-muted); } .tl2-ev time { font-size: 12.5px; opacity: .8; }
 .tkc { background: #fff; } .tkc.note { background: #fff7de; }
 @media (max-width: 639px) { .tl2 { padding-left: 22px; } .tl2-dot { left: -22px; } .tl2-dot.ev { left: -17px; } .tl2-card { padding: 12px 13px 13px; border-radius: 20px; } }
+/* While a filter is loading, the form and list stay put (dimmed a touch) instead of the page reloading. */
+form[data-pending] { opacity: .85; transition: opacity .2s; }
+
+/* Referral rules sheet */
+.rl { display: grid; gap: 18px; } .rl section { display: grid; gap: 8px; padding: 14px 14px 16px; border-radius: 22px; background: rgba(255, 255, 255, .7); }
+.rl h3 { font-size: 15px; font-weight: 600; } .rl p { font-size: 13.5px; color: var(--color-muted); line-height: 1.4; }
+.rl-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rl-row { display: grid; grid-template-columns: 7.5rem 4.5rem auto minmax(0, 1fr); gap: 8px; align-items: center; font-size: 14.5px; } .rl-row em { font-style: normal; color: var(--color-muted); font-size: 13.5px; }
+@media (max-width: 639px) { .rl-row { grid-template-columns: 1fr 4.5rem; } .rl-row em { display: none; } .rl-row input:last-child { grid-column: 1 / -1; } .rl-two { grid-template-columns: 1fr; } }

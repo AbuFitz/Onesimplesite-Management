@@ -1,5 +1,6 @@
 "use client";
 import { useFormStatus } from "react-dom";
+import { useModalClose } from "./modal-context";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil } from "lucide-react";
 
@@ -46,6 +47,7 @@ export function Wizard({ steps, action, review, actions, error, errorMessage, in
   const [resumed, setResumed] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submitted = useRef(false);
+  const closeModal = useModalClose();
   const key = draftKey ? `oss-draft:${draftKey}` : null;
   const cur = all[Math.min(i, all.length - 1)];
   const curId = cur.id;
@@ -174,7 +176,7 @@ export function Wizard({ steps, action, review, actions, error, errorMessage, in
       {(key || later) && (
         <p className="wz-meta">
           {key && saved && <span className="wz-saved"><Check size={13} aria-hidden /> Draft saved on this device</span>}
-          {later && <a href={later.href}>{later.label ?? "Finish later"}</a>}
+          {later && (closeModal ? <button type="button" className="underline" onClick={closeModal}>{later.label ?? "Finish later"}</button> : <a href={later.href}>{later.label ?? "Finish later"}</a>)}
         </p>
       )}
     </form>

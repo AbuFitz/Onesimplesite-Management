@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { Gift } from "lucide-react";
 import { db } from "@/lib/db";
-import { owedTo, ensureLink } from "@/modules/referrals/service";
+import { owedTo, ensureLink, getCompanyDeal, effectiveReward, rewardText } from "@/modules/referrals/service";
+import { SheetButton } from "./sheet-button";
 import { portalLink } from "@/lib/env";
 import { CopyButton } from "./copy-button";
-import { attachReferrerAction, markPaidAction } from "@/app/actions/referrals";
+import { attachReferrerAction, markPaidAction, setCompanyDealAction } from "@/app/actions/referrals";
 import { money } from "./ui";
 
 /** On a company: who recommended them, who they have recommended, and any cash we owe them. */
 export async function ReferralCard({ workspaceId, customerId, canWrite, back }: { workspaceId: string; customerId: string; canWrite: boolean; back: string }) {
+  const [deal, eff] = await Promise.all([getCompanyDeal(workspaceId, customerId), effectiveReward(workspaceId, customerId)]);
   const [from, gave, owed, code] = await Promise.all([
     db.referral.findUnique({ where: { workspaceId_refereeId: { workspaceId, refereeId: customerId } } }),
     db.referral.findMany({ where: { workspaceId, referrerId: customerId }, orderBy: { createdAt: "desc" }, take: 20 }),
@@ -24,6 +26,23 @@ export async function ReferralCard({ workspaceId, customerId, canWrite, back }: 
   return (
     <section className="mb-8 rounded-2xl border border-[var(--card-line)] bg-white p-4" aria-label="Referrals">
       <p className="mb-2 flex items-center gap-2 font-semibold"><Gift size={17} aria-hidden />Referrals {owed > 0 && <span className="pill pill-good">{money(owed)} owed</span>}</p>
+      {canWrite && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--card-rule)] p-3">
+          <p className="text-sm"><span className="text-muted">Reward for each referral: </span><b>{eff.type === "percent" ? eff.text : `${eff.text} cash`}</b>{eff.months > 0 && <span className="text-muted"> · they get {eff.months} {eff.months === 1 ? "month" : "months"} {eff.label}</span>}<span className="ml-2 rounded-full bg-bone px-2 py-0.5 text-xs">{deal.type || deal.months !== null ? "Their own deal" : "Default"}</span></p>
+          <SheetButton label="Change deal" title="Reward for this company" className="evt-b" icon={false}>
+            <form action={setCompanyDealAction} className="rl"><input type="hidden" name="id" value={customerId} /><input type="hidden" name="back" value={back} />
+              <section><h3>What they earn for each referral</h3>
+                <div className="rchips"><label className="rchip"><input type="radio" name="type" value="" defaultChecked={!deal.type} /><span>Use the default</span></label><label className="rchip"><input type="radio" name="type" value="fixed" defaultChecked={deal.type === "fixed"} /><span>A set amount (£)</span></label><label className="rchip"><input type="radio" name="type" value="percent" defaultChecked={deal.type === "percent"} /><span>A percentage of the website fee (%)</span></label></div>
+                <label className="label" htmlFor="cd-v">Amount in £, or percent</label><input id="cd-v" name="value" type="number" min="0" step="1" className="field" defaultValue={deal.type === "percent" ? (deal.value ?? "") : deal.value !== null ? deal.value / 100 : ""} placeholder="Leave empty for the default" />
+                <p>Default is {rewardText(eff.settings.customerType, eff.settings.customerValue)}.</p></section>
+              <section><h3>What the people they send get</h3>
+                <label className="label" htmlFor="cd-m">Free months</label><input id="cd-m" name="months" type="number" min="0" max="12" className="field" defaultValue={deal.months ?? ""} placeholder={`Default is ${eff.settings.welcome.standard.months}`} />
+                <p>Leave empty to use the default.</p></section>
+              <button className="btn w-full justify-center">Save deal</button>
+            </form>
+          </SheetButton>
+        </div>
+      )}
       <div className="mb-4 rounded-2xl bg-[#f3f7e9] p-3"><p className="text-sm text-muted">Their referral link</p><p className="mt-0.5 break-all font-mono text-[13px] select-all">{portalLink(`/r/${code}`)}</p><div className="mt-2"><CopyButton text={portalLink(`/r/${code}`)} /></div></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

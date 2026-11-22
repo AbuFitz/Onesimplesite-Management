@@ -6,8 +6,11 @@ import type { StaffCtx } from "@/modules/identity/session";
 
 /** See docs/REFERRALS.md for why each rule exists. Referrers (customers and partners) are paid cash; the new company gets free months on their plan. */
 export type Welcome = { months: number; label: string };
-export type ReferralSettings = { enabled: boolean; trigger: "deposit" | "final"; customerCashMinor: number; yearlyCap: number; welcome: { standard: Welcome; ecommerce: Welcome } };
-export const DEFAULTS: ReferralSettings = { enabled: true, trigger: "final", customerCashMinor: 5000, yearlyCap: 10, welcome: { standard: { months: 1, label: "free hosting" }, ecommerce: { months: 1, label: "free care plan" } } };
+export type RewardType = "fixed" | "percent";
+export type ReferralSettings = { enabled: boolean; trigger: "deposit" | "final"; customerCashMinor: number; customerType: RewardType; customerValue: number; teamRewardMinor: number; yearlyCap: number; welcome: { standard: Welcome; ecommerce: Welcome } };
+/** "£50" or "10% of the website fee". One place, so every page says the same thing. */
+export const rewardText = (type: RewardType, value: number) => (type === "percent" ? `${value}% of the website fee` : value % 100 === 0 ? `£${value / 100}` : `£${(value / 100).toFixed(2)}`);
+export const DEFAULTS: ReferralSettings = { enabled: true, trigger: "final", customerCashMinor: 5000, customerType: "fixed", customerValue: 5000, teamRewardMinor: 0, yearlyCap: 10, welcome: { standard: { months: 1, label: "free hosting" }, ecommerce: { months: 1, label: "free care plan" } } };
 /** Which paid charge completes a referral. "final" means the website is fully paid for. */
 export const TRIGGER_KINDS: Record<ReferralSettings["trigger"], string[]> = { deposit: ["deposit", "one_off"], final: ["balance", "one_off"] };
 const FREE_MAIL = new Set(["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "hotmail.co.uk", "live.com", "yahoo.com", "yahoo.co.uk", "icloud.com", "me.com", "btinternet.com", "sky.com", "proton.me", "protonmail.com", "aol.com"]);
@@ -21,13 +24,14 @@ export async function getSettings(workspaceId: string): Promise<ReferralSettings
   const w = await db.workspace.findUnique({ where: { id: workspaceId }, select: { settings: true } });
   const r = ((w?.settings as { referrals?: Partial<ReferralSettings> } | null)?.referrals ?? {}) as Partial<ReferralSettings>;
   const wl = (x: Partial<Welcome> | undefined, d: Welcome): Welcome => ({ months: Number.isInteger(x?.months) ? Math.max(0, Math.min(12, x!.months!)) : d.months, label: (x?.label ?? d.label).slice(0, 40) });
-  return { enabled: r.enabled ?? DEFAULTS.enabled, trigger: r.trigger === "deposit" ? "deposit" : "final", customerCashMinor: r.customerCashMinor ?? DEFAULTS.customerCashMinor, yearlyCap: r.yearlyCap ?? DEFAULTS.yearlyCap, welcome: { standard: wl(r.welcome?.standard, DEFAULTS.welcome.standard), ecommerce: wl(r.welcome?.ecommerce, DEFAULTS.welcome.ecommerce) } };
+  const ctype: RewardType = r.customerType === "percent" ? "percent" : "fixed";
+  return { enabled: r.enabled ?? DEFAULTS.enabled, trigger: r.trigger === "deposit" ? "deposit" : "final", customerCashMinor: r.customerCashMinor ?? DEFAULTS.customerCashMinor, customerType: ctype, customerValue: r.customerValue ?? (ctype === "fixed" ? (r.customerCashMinor ?? DEFAULTS.customerCashMinor) : 10), teamRewardMinor: r.teamRewardMinor ?? 0, yearlyCap: r.yearlyCap ?? DEFAULTS.yearlyCap, welcome: { standard: wl(r.welcome?.standard, DEFAULTS.welcome.standard), ecommerce: wl(r.welcome?.ecommerce, DEFAULTS.welcome.ecommerce) } };
 }
 
-export async function saveSettings(ctx: StaffCtx, raw: { enabled: boolean; trigger: string; cash: number; cap: number; stdMonths: number; stdLabel: string; ecoMonths: number; ecoLabel: string }) {
+export async function saveSettings(ctx: StaffCtx, raw: { enabled: boolean; trigger: string; rewardType: string; reward: number; team: number; cap: number; stdMonths: number; stdLabel: string; ecoMonths: number; ecoLabel: string }) {
   if (!can(ctx.role, "settings.write")) throw forbidden();
   const n = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(Number.isFinite(v) ? v : lo)));
-  const s: ReferralSettings = { enabled: !!raw.enabled, trigger: raw.trigger === "deposit" ? "deposit" : "final", customerCashMinor: n(raw.cash * 100, 0, 200000), yearlyCap: n(raw.cap, 1, 200),
+  const s: ReferralSettings = { enabled: !!raw.enabled, trigger: raw.trigger === "deposit" ? "deposit" : "final", customerType: raw.rewardType === "percent" ? "percent" : "fixed", customerValue: raw.rewardType === "percent" ? n(raw.reward, 0, 50) : n(raw.reward * 100, 0, 200000), customerCashMinor: raw.rewardType === "percent" ? DEFAULTS.customerCashMinor : n(raw.reward * 100, 0, 200000), teamRewardMinor: n(raw.team * 100, 0, 200000), yearlyCap: n(raw.cap, 1, 200),
     welcome: { standard: { months: n(raw.stdMonths, 0, 12), label: raw.stdLabel.trim().slice(0, 40) || "free hosting" }, ecommerce: { months: n(raw.ecoMonths, 0, 12), label: raw.ecoLabel.trim().slice(0, 40) || "free care plan" } } };
   const w = await db.workspace.findUniqueOrThrow({ where: { id: ctx.workspaceId }, select: { settings: true } });
   await db.workspace.update({ where: { id: ctx.workspaceId }, data: { settings: { ...((w.settings as object) ?? {}), referrals: s } } });
@@ -134,6 +138,7 @@ export async function qualifyIfDue(workspaceId: string, customerId: string) {
     if (rewarded >= s.yearlyCap) flag = `Over the limit of ${s.yearlyCap} rewarded referrals a year.`;
   }
   if (!flag && r.partnerId) { const p = await db.partner.findUnique({ where: { id: r.partnerId } }); if (p?.commissionType === "percent" && (await orderValue(workspaceId, r.refereeId)) === null) flag = "No signed order to work the commission from."; }
+  if (!flag && r.referrerId) { const l = await db.referralLink.findUnique({ where: { workspaceId_customerId: { workspaceId, customerId: r.referrerId } } }); if ((l?.rewardType ?? s.customerType) === "percent" && (await orderValue(workspaceId, r.refereeId)) === null) flag = "No signed order to work the percentage from."; }
   if (flag) { await db.referral.update({ where: { id: r.id }, data: { status: "review", flag } }); return; }
   await award(null, r.id, s);
 }
@@ -146,10 +151,17 @@ async function award(actor: { userId: string; label: string } | null, referralId
     const ree = await tx.customer.findUnique({ where: { id: r.refereeId }, select: { displayName: true } });
     let payee: { id: string; type: "customer" | "partner" } | null = null, amount = 0;
     if (r.partnerId) { const p = await tx.partner.findUnique({ where: { id: r.partnerId } }); if (p) { payee = { id: p.id, type: "partner" }; amount = p.commissionType === "percent" ? Math.round(((order ?? 0) * p.commissionValue) / 100) : p.commissionValue; } }
-    else if (r.referrerId) { payee = { id: r.referrerId, type: "customer" }; amount = s.customerCashMinor; }
+    else if (r.referrerId) {
+      payee = { id: r.referrerId, type: "customer" };
+      const deal = await tx.referralLink.findUnique({ where: { workspaceId_customerId: { workspaceId: r.workspaceId, customerId: r.referrerId } } });
+      const type = (deal?.rewardType as RewardType | null) ?? s.customerType, value = deal?.rewardValue ?? s.customerValue;
+      amount = type === "percent" ? Math.round(((order ?? 0) * value) / 100) : value;
+    }
     if (payee && amount > 0) await tx.rewardEntry.upsert({ where: { referralId_payeeId_kind: { referralId, payeeId: payee.id, kind: "earned" } }, create: { workspaceId: r.workspaceId, payeeId: payee.id, payeeType: payee.type, referralId, kind: "earned", amountMinor: amount, note: `${ree?.displayName ?? "A company"} became a customer`, actorLabel: actor?.label ?? "automatic" }, update: {} });
     // The new company's incentive: free months at the start of their monthly plan, if it has not started yet.
-    const w = s.welcome[await siteKind(r.workspaceId, r.refereeId)];
+    const w0 = s.welcome[await siteKind(r.workspaceId, r.refereeId)];
+    const own = r.referrerId ? await tx.referralLink.findUnique({ where: { workspaceId_customerId: { workspaceId: r.workspaceId, customerId: r.referrerId } }, select: { welcomeMonths: true } }) : null;
+    const w = { ...w0, months: own?.welcomeMonths ?? w0.months };
     let applied = false;
     if (w.months > 0) {
       const plan = await tx.billingIntent.findFirst({ where: { workspaceId: r.workspaceId, customerId: r.refereeId, kind: "recurring_setup", status: "pending" } });
@@ -299,4 +311,47 @@ export async function listCustomerLinks(workspaceId: string) {
   ]);
   const nm = new Map(names.map((c) => [c.id, c.displayName]));
   return links.map((l) => { const mine = refs.filter((r) => r.referrerId === l.customerId); return { ...l, name: nm.get(l.customerId) ?? "Unknown", leads: mine.reduce((n, r) => n + r._count, 0), won: mine.filter((r) => r.status === "qualified").reduce((n, r) => n + r._count, 0) }; });
+}
+
+/** A company's own deal, instead of the default (a different amount or percentage, or different free months for the people they send). Empty fields mean "use the default". */
+export async function setCompanyDeal(ctx: StaffCtx, customerId: string, raw: { type: string; value: number | null; months: number | null }) {
+  if (!can(ctx.role, "settings.write")) throw forbidden();
+  if (!(await db.customer.findFirst({ where: { id: customerId, workspaceId: ctx.workspaceId }, select: { id: true } }))) throw notFound();
+  await ensureLink(ctx.workspaceId, customerId);
+  const type = raw.type === "percent" ? "percent" : raw.type === "fixed" ? "fixed" : null;
+  const v = raw.value === null || !Number.isFinite(raw.value) ? null : type === "percent" ? Math.round(raw.value) : Math.round(raw.value * 100);
+  if (type && (v === null || v < 0 || (type === "percent" && v > 50) || (type === "fixed" && v > 500000))) throw new DomainError("validation", type === "percent" ? "Choose a percentage from 0 to 50." : "Enter an amount up to £5,000.");
+  const months = raw.months === null || !Number.isFinite(raw.months) ? null : Math.round(raw.months);
+  if (months !== null && (months < 0 || months > 12)) throw new DomainError("validation", "Choose between 0 and 12 free months.");
+  await db.referralLink.update({ where: { workspaceId_customerId: { workspaceId: ctx.workspaceId, customerId } }, data: { rewardType: type, rewardValue: type ? v : null, welcomeMonths: months } });
+  await db.$transaction((tx) => audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "referral.deal_set", targetType: "customer", targetId: customerId, customerId, detail: { type, value: type ? v : null, months } }));
+}
+
+export async function getCompanyDeal(workspaceId: string, customerId: string) {
+  const l = await db.referralLink.findUnique({ where: { workspaceId_customerId: { workspaceId, customerId } } });
+  return { type: (l?.rewardType as RewardType | null) ?? null, value: l?.rewardValue ?? null, months: l?.welcomeMonths ?? null };
+}
+
+/** A team member's own link. Made the first time they open it; the reward (if any) follows the team setting. */
+export async function ensureStaffLink(ctx: StaffCtx) {
+  const s = await getSettings(ctx.workspaceId);
+  const have = await db.partner.findFirst({ where: { workspaceId: ctx.workspaceId, staffId: ctx.staffId } });
+  if (have) { if (have.commissionValue !== s.teamRewardMinor || have.commissionType !== "fixed") await db.partner.update({ where: { id: have.id }, data: { commissionType: "fixed", commissionValue: s.teamRewardMinor } }); return have; }
+  try { return await db.partner.create({ data: { workspaceId: ctx.workspaceId, name: ctx.name, kind: "team", staffId: ctx.staffId, code: await freshCode(), commissionType: "fixed", commissionValue: s.teamRewardMinor } }); }
+  catch { const again = await db.partner.findFirst({ where: { workspaceId: ctx.workspaceId, staffId: ctx.staffId } }); if (again) return again; throw new DomainError("conflict", "Couldn't make your link. Try again."); }
+}
+
+/** How a team member's own link is doing. */
+export async function myTeamReferrals(ctx: StaffCtx) {
+  const p = await ensureStaffLink(ctx);
+  const [rows, owed] = await Promise.all([db.referral.findMany({ where: { workspaceId: ctx.workspaceId, partnerId: p.id }, orderBy: { createdAt: "desc" }, take: 50 }), owedTo(ctx.workspaceId, p.id)]);
+  const names = new Map((await db.customer.findMany({ where: { id: { in: rows.map((r) => r.refereeId) } }, select: { id: true, displayName: true } })).map((c) => [c.id, c.displayName]));
+  return { code: p.code, owed, rewardMinor: p.commissionValue, list: rows.map((r) => ({ id: r.id, name: names.get(r.refereeId) ?? "A company", status: r.status === "qualified" ? "won" : r.status === "rejected" || r.status === "reversed" ? "ended" : "in progress", at: r.createdAt })) };
+}
+
+/** What this company is promised for each referral, in words (their own deal if they have one, otherwise the default). */
+export async function effectiveReward(workspaceId: string, customerId: string) {
+  const [s, d] = await Promise.all([getSettings(workspaceId), getCompanyDeal(workspaceId, customerId)]);
+  const type = d.type ?? s.customerType, value = d.value ?? s.customerValue;
+  return { type, value, text: rewardText(type, value), short: type === "percent" ? `${value}%` : rewardText(type, value), months: d.months ?? s.welcome.standard.months, label: s.welcome.standard.label, settings: s };
 }

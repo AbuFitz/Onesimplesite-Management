@@ -1,7 +1,7 @@
 import { Gift } from "lucide-react";
 import { requireClient } from "@/modules/identity/session";
 import { portalLink } from "@/lib/env";
-import { myReferrals, getSettings } from "@/modules/referrals/service";
+import { myReferrals, effectiveReward } from "@/modules/referrals/service";
 import { ShareLink } from "@/components/share-link";
 import { money, timeAgo } from "@/components/ui";
 
@@ -11,17 +11,17 @@ const pounds = (m: number) => (m % 100 === 0 ? `£${m / 100}` : money(m));
 export default async function Refer() {
   const c = await requireClient();
   const m = c.memberships.find((x) => x.role !== "viewer") ?? c.memberships[0];
-  const s = await getSettings(m.customer.workspaceId);
+  const rw = await effectiveReward(m.customer.workspaceId, m.customerId);
+  const s = rw.settings;
   if (!s.enabled) return <section className="tile bg-white text-center !py-14"><Gift className="mx-auto mb-3" size={36} aria-hidden /><h1 className="text-2xl">Not available right now</h1></section>;
   const r = await myReferrals(m.customer.workspaceId, m.customerId);
   const url = portalLink(`/r/${r.code}`);
-  const w = s.welcome.standard;
   return (
     <div className="space-y-4">
       <section className="tile bg-mint !p-7 sm:!p-10">
         <h1 className="text-4xl sm:text-5xl">Refer a friend</h1>
-        <p className="mt-3 max-w-xl text-lg font-medium">Get <b>{pounds(s.customerCashMinor)} cash</b> for every business you send us{w.months > 0 ? `. They get ${w.months} ${w.months === 1 ? "month" : "months"} ${w.label}` : ""}.</p>
-        <div className="mt-6"><ShareLink url={url} from={m.customer.displayName} reward={`You get ${pounds(s.customerCashMinor)} cash when their website is paid for.`} /></div>
+        <p className="mt-3 max-w-xl text-lg font-medium">Get <b>{rw.type === "percent" ? rw.text : `${rw.text} cash`}</b> for every business you send us{rw.months > 0 ? `. They get ${rw.months} ${rw.months === 1 ? "month" : "months"} ${rw.label}` : ""}.</p>
+        <div className="mt-6"><ShareLink url={url} from={m.customer.displayName} reward={`You get ${rw.type === "percent" ? rw.text : `${rw.text} cash`} when their website is paid for.`} /></div>
       </section>
       {(r.owed > 0 || r.paid > 0) && (
         <section className="tile bg-white grid grid-cols-2 gap-4"><div><p className="text-sm text-muted">We owe you</p><p className="text-4xl">{money(Math.max(0, r.owed))}</p></div><div><p className="text-sm text-muted">Paid to you</p><p className="text-4xl">{money(r.paid)}</p></div></section>

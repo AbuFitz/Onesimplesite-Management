@@ -1,10 +1,21 @@
 "use client";
-import type { ReactNode } from "react";
+import { useTransition, type ReactNode, type FormEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 /** A search form that applies itself: change a dropdown or tick a box and the list updates. Typing in the search box still waits for Enter. */
 export function AutoGetForm({ children, className }: { children: ReactNode; className?: string }) {
+  const router = useRouter(), path = usePathname();
+  const [pending, start] = useTransition();
+  // A filter used to submit like a plain web form: the whole page reloaded and any open panel closed. Now it just updates the address and the list, in place.
+  const go = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget), p = new URLSearchParams();
+    for (const [k, v] of fd.entries()) if (typeof v === "string" && v !== "") p.set(k, v);
+    const qs = p.toString();
+    start(() => router.replace(qs ? `${path}?${qs}` : path, { scroll: false }));
+  };
   return (
-    <form role="search" className={className} onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.tagName === "SELECT" || t.type === "checkbox") e.currentTarget.requestSubmit(); }}>
+    <form role="search" className={className} data-pending={pending || undefined} onSubmit={go} onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.tagName === "SELECT" || t.type === "checkbox") e.currentTarget.requestSubmit(); }}>
       {children}
     </form>
   );

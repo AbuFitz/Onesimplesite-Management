@@ -3,8 +3,9 @@ import { ArrowRight } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { portalLink } from "@/lib/env";
-import { listReferrals, listPartners, payables, getSettings, listCustomerLinks } from "@/modules/referrals/service";
+import { listReferrals, listPartners, payables, getSettings, listCustomerLinks, rewardText } from "@/modules/referrals/service";
 import { QuickChips, FilterPanel } from "@/components/filter-bar";
+import { SheetButton } from "@/components/sheet-button";
 import { ConfirmForm } from "@/components/confirm";
 import { CopyButton } from "@/components/copy-button";
 import { Empty, Status, timeAgo, money } from "@/components/ui";
@@ -32,7 +33,7 @@ export default async function Referrals({ searchParams }: { searchParams: Promis
       <h1 className="sr-only">Referrals</h1>
       <div className="lt">
         <div className="lt-row">
-          <p className="lt-count !m-0 flex-1">{s.enabled ? `Paid when ${s.trigger === "final" ? "the website is fully paid" : "the deposit is paid"} · ${money(s.customerCashMinor)} to a customer · ${money(owedTotal)} owed now` : "Referrals are switched off"}</p>
+          <p className="lt-count !m-0 flex-1">{s.enabled ? `Paid when ${s.trigger === "final" ? "the website is fully paid" : "the deposit is paid"} · ${rewardText(s.customerType, s.customerType === "percent" ? s.customerValue : s.customerValue)} to a customer · ${money(owedTotal)} owed now` : "Referrals are switched off"}</p>
           {owner && tab === "partners" && (
             <FilterPanel active={0} label="Add partner">
               <form action={createPartnerAction} className="contents">
@@ -47,20 +48,27 @@ export default async function Referrals({ searchParams }: { searchParams: Promis
             </FilterPanel>
           )}
           {owner && (
-            <FilterPanel active={0} label="Rules">
-              <form action={saveReferralSettingsAction} className="contents">
+            <SheetButton label="Rules" title="Referral rules" className="lt-filter" icon={false}>
+              <form action={saveReferralSettingsAction} className="rl">
                 <input type="hidden" name="back" value={here} />
-                <label className="grp grp-row col-span-full" htmlFor="rs-on"><span>Referrals on</span><span className="sw"><input id="rs-on" type="checkbox" name="enabled" defaultChecked={s.enabled} /><i aria-hidden /></span></label>
-                <div className="col-span-full"><label className="label" htmlFor="rs-t">Pay the referrer when</label><select id="rs-t" name="trigger" className="field" defaultValue={s.trigger}><option value="final">The website is fully paid for</option><option value="deposit">The deposit is paid</option></select></div>
-                <div><label className="label" htmlFor="rs-a">Customer gets (£ cash)</label><input id="rs-a" name="cash" type="number" min="0" step="1" defaultValue={s.customerCashMinor / 100} className="field" /></div>
-                <div><label className="label" htmlFor="rs-c">Most a year per customer</label><input id="rs-c" name="cap" type="number" min="1" step="1" defaultValue={s.yearlyCap} className="field" /></div>
-                <div><label className="label" htmlFor="rs-m1">Website: free months</label><input id="rs-m1" name="stdMonths" type="number" min="0" max="12" defaultValue={w.standard.months} className="field" /></div>
-                <div><label className="label" htmlFor="rs-l1">…of</label><input id="rs-l1" name="stdLabel" className="field" defaultValue={w.standard.label} /></div>
-                <div><label className="label" htmlFor="rs-m2">Online shop: free months</label><input id="rs-m2" name="ecoMonths" type="number" min="0" max="12" defaultValue={w.ecommerce.months} className="field" /></div>
-                <div><label className="label" htmlFor="rs-l2">…of</label><input id="rs-l2" name="ecoLabel" className="field" defaultValue={w.ecommerce.label} /></div>
-                <button className="btn col-span-full">Save</button>
+                <label className="ab-switch" htmlFor="rs-on"><span>Referrals are on</span><span className="sw"><input id="rs-on" type="checkbox" name="enabled" defaultChecked={s.enabled} /><i aria-hidden /></span></label>
+                <section><h3>When is a reward earned?</h3>
+                  <div className="rchips"><label className="rchip"><input type="radio" name="trigger" value="final" defaultChecked={s.trigger === "final"} /><span>Website fully paid for</span></label><label className="rchip"><input type="radio" name="trigger" value="deposit" defaultChecked={s.trigger === "deposit"} /><span>Deposit paid</span></label></div>
+                  <p>Not when someone clicks a link or signs. Only once real money has arrived.</p></section>
+                <section><h3>Default reward for a customer who refers someone</h3>
+                  <div className="rchips"><label className="rchip"><input type="radio" name="rewardType" value="fixed" defaultChecked={s.customerType === "fixed"} /><span>A set amount (£)</span></label><label className="rchip"><input type="radio" name="rewardType" value="percent" defaultChecked={s.customerType === "percent"} /><span>A percentage of the website fee (%)</span></label></div>
+                  <div className="rl-two"><div><label className="label" htmlFor="rs-a">Amount in £, or percent</label><input id="rs-a" name="reward" type="number" min="0" step="1" defaultValue={s.customerType === "percent" ? s.customerValue : s.customerValue / 100} className="field" /></div><div><label className="label" htmlFor="rs-c">Most rewards per customer a year</label><input id="rs-c" name="cap" type="number" min="1" step="1" defaultValue={s.yearlyCap} className="field" /></div></div>
+                  <p>You can give any company its own deal on their company page.</p></section>
+                <section><h3>What the new customer gets</h3>
+                  <div className="rl-row"><span>Normal website</span><input aria-label="Free months for a normal website" name="stdMonths" type="number" min="0" max="12" defaultValue={w.standard.months} className="field" /><em>months of</em><input aria-label="What it is" name="stdLabel" className="field" defaultValue={w.standard.label} /></div>
+                  <div className="rl-row"><span>Online shop</span><input aria-label="Free months for an online shop" name="ecoMonths" type="number" min="0" max="12" defaultValue={w.ecommerce.months} className="field" /><em>months of</em><input aria-label="What it is" name="ecoLabel" className="field" defaultValue={w.ecommerce.label} /></div>
+                  <p>Added to their monthly plan before it starts.</p></section>
+                <section><h3>Team members</h3>
+                  <label className="label" htmlFor="rs-t">Reward for a team member whose referral is won (£)</label><input id="rs-t" name="team" type="number" min="0" step="1" defaultValue={s.teamRewardMinor / 100} className="field" />
+                  <p>Everyone on the team has their own link under My account. Set 0 to just track them.</p></section>
+                <button className="btn w-full justify-center">Save rules</button>
               </form>
-            </FilterPanel>
+            </SheetButton>
           )}
         </div>
         <QuickChips label="Show" items={TABS.map(([id, l]) => ({ label: l, count: count(id), href: `/referrals?tab=${id}`, on: tab === id }))} />
@@ -81,7 +89,7 @@ export default async function Referrals({ searchParams }: { searchParams: Promis
         partners.length === 0 ? <Empty title="No partners yet">Add an agency or individual who sends you work. They get a link and a rate.</Empty> : (
           <ul className="divide-y divide-line rounded-2xl border border-line bg-white">{partners.map((p) => { const url = portalLink(`/r/${p.code}`); return (
             <li key={p.id} className="px-4 py-3.5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1"><p className="min-w-0 flex-1 font-semibold">{p.name} <span className="font-normal text-muted">· {p.kind === "agency" ? "agency" : "individual"} · {p.commissionType === "percent" ? `${p.commissionValue}% of the website` : money(p.commissionValue)}</span></p>{!p.active && <Status label="Paused" kind="warn" />}</div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1"><p className="min-w-0 flex-1 font-semibold">{p.name} <span className="font-normal text-muted">· {p.kind === "agency" ? "agency" : p.kind === "team" ? "team member" : "individual"} · {p.commissionType === "percent" ? `${p.commissionValue}% of the website` : money(p.commissionValue)}</span></p>{!p.active && <Status label="Paused" kind="warn" />}</div>
               <p className="mt-0.5 text-[13.5px] text-muted">{p.leads} {p.leads === 1 ? "lead" : "leads"} · {p.won} won · {money(Math.max(0, p.owedMinor))} owed</p>
               <p className="mt-1.5 break-all font-mono text-[13px] text-ink/80 select-all">{url}</p>
               <div className="mt-2 flex flex-wrap gap-2"><CopyButton text={url} />{owner && <form action={togglePartnerAction}><input type="hidden" name="id" value={p.id} /><input type="hidden" name="active" value={p.active ? "0" : "1"} /><input type="hidden" name="back" value={here} /><button className="evt-b">{p.active ? "Pause" : "Resume"}</button></form>}</div>
