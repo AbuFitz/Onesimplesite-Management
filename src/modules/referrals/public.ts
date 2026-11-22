@@ -25,11 +25,11 @@ export async function submitReferralLead(raw: unknown): Promise<{ ok: true } | {
   if (i.website) return { ok: true };
   const hit = await findByCode(i.code);
   if (!hit) return { ok: false, error: "This link isn't valid any more." };
-  const ws = hit.customer.workspaceId;
+  const ws = hit.workspaceId;
   if (!(await getSettings(ws)).enabled) return { ok: false, error: "This link isn't valid any more." };
   // Throttle: a handful per link a day, and a ceiling across the whole workspace per hour.
   const [perLink, perHour] = await Promise.all([
-    db.referral.count({ where: { workspaceId: ws, referrerId: hit.customer.id, via: "link", createdAt: { gte: new Date(Date.now() - 864e5) } } }),
+    db.referral.count({ where: { workspaceId: ws, via: "link", ...(hit.source.partnerId ? { partnerId: hit.source.partnerId } : { referrerId: hit.source.customerId }), createdAt: { gte: new Date(Date.now() - 864e5) } } }),
     db.referral.count({ where: { workspaceId: ws, via: "link", createdAt: { gte: new Date(Date.now() - 36e5) } } }),
   ]);
   if (perLink >= 5 || perHour >= 30) return { ok: true };
@@ -40,10 +40,10 @@ export async function submitReferralLead(raw: unknown): Promise<{ ok: true } | {
   const created = await db.$transaction(async (tx) => {
     const c = await tx.customer.create({ data: { workspaceId: ws, reference: await nextRef(tx, ws, "customer"), displayName: i.business, kind: "business", source: "Referral", phone } });
     await tx.contact.create({ data: { workspaceId: ws, customerId: c.id, name: i.name, email: i.email, phone, isPrimary: true } });
-    await audit(tx, { workspaceId: ws, actor: null, action: "company.registered", targetType: "customer", targetId: c.id, customerId: c.id, detail: { via: "referral_link", referrer: hit.customer.displayName } });
+    await audit(tx, { workspaceId: ws, actor: null, action: "company.registered", targetType: "customer", targetId: c.id, customerId: c.id, detail: { via: "referral_link", referrer: hit.name } });
     return c;
   });
-  await attachFromLink(ws, hit.customer.id, created.id);
-  await enqueue(db as never, ws, "email.referral_notice", `referral:${created.id}`, { to: "internal", referrer: hit.customer.displayName, business: i.business, person: i.name, email: i.email, link: manageLink(`/customers/${created.id}`) });
+  await attachFromLink(ws, hit.source, created.id);
+  await enqueue(db as never, ws, "email.referral_notice", `referral:${created.id}`, { to: "internal", referrer: hit.name, business: i.business, person: i.name, email: i.email, link: manageLink(`/customers/${created.id}`) });
   return { ok: true };
 }

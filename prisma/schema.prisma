@@ -1005,8 +1005,12 @@ model ReferralLink {
 model Referral {
   id          String    @id @default(uuid()) @db.Uuid
   workspaceId String    @db.Uuid
-  referrerId  String    @db.Uuid
+  referrerId  String?   @db.Uuid // a customer who recommended them, or
+  partnerId   String?   @db.Uuid // a partner (agency or individual)
   refereeId   String    @db.Uuid
+  freeMonths  Int       @default(0) // the new company's incentive, once applied: free months at the start of their plan
+  freeLabel   String?
+  orderMinor  Int?      // what the website order was worth when the reward was worked out
   via         String    @default("team") // link | team
   status      String    @default("pending") // pending | review | qualified | rejected | reversed
   flag        String? // why it needs a look
@@ -1025,14 +1029,33 @@ model Referral {
 model RewardEntry {
   id          String   @id @default(uuid()) @db.Uuid
   workspaceId String   @db.Uuid
-  customerId  String   @db.Uuid
+  payeeId     String   @db.Uuid // the customer or partner the money is for
+  payeeType   String   @default("customer") // customer | partner
   referralId  String?  @db.Uuid
-  kind        String // earned | welcome | used | reversed
+  kind        String // earned (owed) | paid (negative) | reversed (negative)
   amountMinor Int
   note        String?
   actorLabel  String?
   createdAt   DateTime @default(now())
 
-  @@unique([referralId, customerId, kind])
-  @@index([workspaceId, customerId])
+  @@unique([referralId, payeeId, kind])
+  @@index([workspaceId, payeeId])
+}
+
+// People or agencies who send us work for a commission. They get a link; a login can come later.
+model Partner {
+  id              String    @id @default(uuid()) @db.Uuid
+  workspaceId     String    @db.Uuid
+  name            String
+  kind            String    @default("agency") // agency | individual
+  email           String?
+  code            String
+  commissionType  String    @default("fixed") // fixed | percent
+  commissionValue Int       @default(5000) // pence if fixed, whole percent if percent
+  notes           String?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  @@unique([code])
+  @@index([workspaceId, active])
 }

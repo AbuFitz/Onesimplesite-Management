@@ -9,7 +9,7 @@ import { SubmitButton } from "./submit-button";
 import { Wizard, type ReviewRow } from "./wizard";
 
 
-export function RegisterForm({ companies = [] }: { companies?: { id: string; name: string }[] }) {
+export function RegisterForm({ companies = [], partners = [] }: { companies?: { id: string; name: string }[]; partners?: { id: string; name: string }[] }) {
   const [s, act] = useActionState(registerBusinessAction, undefined as { error?: string } | undefined);
   const [kind, setKind] = useState<string>("business");
   const [src, setSrc] = useState("");
@@ -20,7 +20,7 @@ export function RegisterForm({ companies = [] }: { companies?: { id: string; nam
       { label: "Kind of customer", value: KINDS.find((k) => k.id === g("kind"))?.label ?? "", step: "kind" },
       { label: person ? "Name" : "Company name", value: g("displayName"), step: "company" }, { label: "Registered name", value: g("legalName"), step: "company" }, { label: "Company number", value: g("companyNumber"), step: "company" },
       { label: "What they do", value: g("businessType"), step: "company" }, { label: "Website", value: g("website"), step: "company" }, { label: "Phone", value: g("phone"), step: "company" },
-      { label: "Town", value: g("town"), step: "company" }, { label: "How they found us", value: g("source"), step: "company" }, ...(g("referrer") ? [{ label: "Recommended by", value: companies.find((c) => c.id === g("referrer"))?.name ?? "", step: "company" }] : []),
+      { label: "Town", value: g("town"), step: "company" }, { label: "How they found us", value: g("source"), step: "company" }, ...(g("referrer") ? [{ label: "Recommended by", value: (companies.find((c) => `c:${c.id}` === g("referrer")) ?? partners.find((c) => `p:${c.id}` === g("referrer")))?.name ?? "", step: "company" }] : []),
       { label: "Main contact", value: [g("contactName"), g("contactPosition")].filter(Boolean).join(", "), step: "contact" }, { label: "Contact email", value: g("contactEmail"), step: "contact" }, { label: "Contact phone", value: g("contactPhone"), step: "contact" },
     ];
   };
@@ -60,7 +60,7 @@ export function RegisterForm({ companies = [] }: { companies?: { id: string; nam
           <div><label className="label" htmlFor="rb-p">Company phone <span className="font-normal text-muted">(optional)</span></label><input id="rb-p" name="phone" className="field" type="tel" /></div>
           <AddressFields />
           <div><label className="label" htmlFor="rb-s">How did they find us?</label><select id="rb-s" name="source" className="field" value={src} onChange={(e) => setSrc(e.target.value)}><option value="">Not sure</option>{SOURCES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
-          {src === "Referral" && companies.length > 0 && <div><label className="label" htmlFor="rb-ref">Which customer recommended them?</label><select id="rb-ref" name="referrer" className="field" defaultValue=""><option value="">Not sure</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>}
+          {src === "Referral" && (companies.length > 0 || partners.length > 0) && <div><label className="label" htmlFor="rb-ref">Who recommended them?</label><select id="rb-ref" name="referrer" className="field" defaultValue=""><option value="">Not sure</option>{partners.length > 0 && <optgroup label="Partners">{partners.map((c) => <option key={c.id} value={`p:${c.id}`}>{c.name}</option>)}</optgroup>}<optgroup label="Customers">{companies.map((c) => <option key={c.id} value={`c:${c.id}`}>{c.name}</option>)}</optgroup></select></div>}
         </div>
         </>) },
         { id: "contact", title: "Contact", hint: "Who are we talking to? You can add more people, with their own portal access, once the company exists.", node: (<>

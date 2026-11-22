@@ -15,21 +15,20 @@ Sources: [Impact: fraud-proof referral programs](https://help.impact.com/brand/w
 | Small B2B programs live on word of mouth, so attribution is mostly manual. | Two ways in: the customer's **personal link**, and the team choosing **Referred by** when registering a company. |
 | Open source options (Refferq, Weferral, Raider) are rarely production-ready and add upkeep. | Build the small core in our own database (3 tables) rather than run another product. |
 
-## The model
-- **ReferralLink**: one short code per company (their link: `portal.../r/CODE`).
-- **Referral**: referrer company, referred company (unique), how it came in (`link` or `team`), status, and why it was flagged.
-- **RewardEntry**: the ledger. Kinds: `earned` (referrer), `welcome` (referred company), `used` (credit spent, negative), `reversed` (negative).
-
-## Status of a referral
-`pending` (they're in our pipeline) → `qualified` (deposit paid, rewards added) or `review` (needs a look first) → `rejected` or `reversed`.
+## The model (v2)
+- **Who sends work.** Customers (personal link, found in the portal) and **partners**: agencies or individuals with their own link and their own rate. A partner login can come later; a link is enough to start.
+- **ReferralLink / Partner**: one short code each. Codes are unique across both, and a paused partner's link stops working.
+- **Referral**: who sent them (a customer or a partner), the new company (unique), how it came in (`link` or `team`), status, and why it was flagged.
+- **RewardEntry**: the cash ledger, append-only. `earned` (owed), `paid` (negative, a bank transfer we made), `reversed` (negative). What we owe = the sum.
 
 ## Rules
-1. **Self-referral is impossible**: the referrer and referred company can't be the same.
-2. **Looks-the-same checks** (flag for review, never auto-reward): same contact email domain (ignoring free providers like gmail), same phone, same postcode, same website.
-3. **Yearly cap** per referrer (default 10 rewarded referrals).
-4. **Reward on deposit paid only.** Marking a deposit paid by bank transfer counts the same as card.
-5. **Reverse** if the order is cancelled or the deposit refunded within the first 30 days (a person presses Reverse; it adds a negative entry and the audit log says who).
-6. **Credit is shown to customers in the portal**, and used by the team against a payment with an exact amount and note.
+1. **Cash, not credit.** Customers and partners are both paid in cash by bank transfer. Payouts are recorded by hand (amount and reference); a payout can't exceed what is owed.
+2. **When it is earned is a setting.** Default: when the website is **fully paid for** (final payment, or a one-off payment). Or when the **deposit** is paid. Never on a click or a signature.
+3. **What the referrer gets.** Customer: a set amount (default £50). Partner: a set amount, or a **percentage of the signed website order**. A percentage with no signed order to work from goes to review.
+4. **What the new company gets** is free months at the start of their monthly plan, by site type: **normal website: 1 month free hosting**, **online shop: 1 month free care plan** (both editable: months and wording). Added to their plan while it is still waiting to start.
+5. **Lookalikes go to review**: self-referral, same email domain (free providers ignored), phone, postcode, website, or a partner and company sharing a domain. Over the yearly cap (customers) too. A person approves or rejects before anything is owed.
+6. **Reverse** if the order is cancelled or refunded: a negative entry. If it was already paid out, the balance shows what they owe back.
+7. **Idempotent**: replays and double clicks change nothing (database constraints, not just code).
 
-## Defaults (editable under Referrals, owners only)
-Referrer £50 credit. New company £50 credit. Cap 10 a year. Switched on.
+## Defaults (Referrals → Rules, owners only)
+Paid when the website is fully paid. Customer £50 cash, 10 a year. Website: 1 month free hosting. Online shop: 1 month free care plan.

@@ -11,7 +11,10 @@ export default async function ReferralLanding({ params, searchParams }: { params
   const { code } = await params;
   const sp = await searchParams;
   const hit = await findByCode(code);
-  const on = hit ? (await getSettings(hit.customer.workspaceId)).enabled : false;
+  const set = hit ? await getSettings(hit.workspaceId) : null;
+  const on = !!set?.enabled;
+  const w = set?.welcome.standard;
+  const gift = w && w.months > 0 ? `${w.months} ${w.months === 1 ? "month" : "months"} ${w.label}` : null;
   return (
     <SignShell>
       <div className="done-card mx-auto max-w-xl !text-left">
@@ -21,11 +24,11 @@ export default async function ReferralLanding({ params, searchParams }: { params
           <><h1 className="text-2xl font-light tracking-tight">Thank you</h1><p className="mt-2 text-ink-2">We&apos;ll be in touch within a working day.</p></>
         ) : (
           <>
-            <h1 className="text-[28px] font-light tracking-tight">{hit.customer.displayName} recommended us</h1>
-            <p className="mt-2 text-ink-2">Tell us a little about your business and we&apos;ll get in touch. You and {hit.customer.displayName} both get a thank-you credit when your website is under way.</p>
+            <h1 className="text-[28px] font-light tracking-tight">{hit.name} recommended us</h1>
+            <p className="mt-2 text-ink-2">Tell us a little about your business and we&apos;ll get in touch. {gift ? `As a thank-you, you get ${gift} with your new website.` : "We'll look after you."}</p>
             <ErrorSummary message={sp.error} />
             <form action={referralLeadAction} className="mt-6 space-y-4">
-              <input type="hidden" name="code" value={hit.link.code} />
+              <input type="hidden" name="code" value={hit.code} />
               <div className="hidden" aria-hidden><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
               <div><label className="label" htmlFor="rl-b">Your business</label><input id="rl-b" name="business" className="field" required autoComplete="organization" /></div>
               <div><label className="label" htmlFor="rl-n">Your name</label><input id="rl-n" name="name" className="field" required autoComplete="name" /></div>

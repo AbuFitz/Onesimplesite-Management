@@ -12,7 +12,7 @@ export async function registerBusinessAction(_: unknown, fd: FormData): Promise<
   try {
     id = (await registerBusiness(ctx, { kind: g("kind") ?? "business", displayName: g("displayName"), legalName: g("legalName"), companyNumber: g("companyNumber"), vatNumber: g("vatNumber"), addressLine1: g("addressLine1"), addressLine2: g("addressLine2"), postcode: g("postcode"), website: g("website"), phone: g("phone"), businessType: g("businessType"), town: g("town"), source: g("source"), contactName: g("contactName"), contactEmail: g("contactEmail"), contactPhone: g("contactPhone"), contactPosition: g("contactPosition") })).id;
     const referrer = g("referrer");
-    if (referrer) await import("@/modules/referrals/service").then((m) => m.attachReferrer(ctx, id, referrer)).catch(() => {}); // a problem here must never lose the company that was just saved
+    if (referrer) await import("@/modules/referrals/service").then((m) => { const src = m.parseSource(referrer); return src ? m.attachReferrer(ctx, id, src) : undefined; }).catch(() => {}); // a problem here must never lose the company that was just saved
   } catch (e) { return { error: e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join(" ") : "Something went wrong and nothing was saved." }; }
   redirect(String(fd.get("next") ?? "") === "ticket" ? `/agreements/new?business=${id}` : `/customers/${id}?tab=people&done=${encodeURIComponent("Company added. Invite their main contact to the portal when you're ready.")}`);
 }
