@@ -9,13 +9,13 @@ for (const [name, vp] of [["desktop", { width: 1366, height: 860 }], ["phone", {
   await pg.goto(`${M}/login`); await pg.fill("#email", "demo.owner@example.test"); await pg.fill("#password", PW); await pg.click("button:has-text('Sign in')"); await pg.waitForURL((u) => !u.pathname.startsWith("/login"));
   // home widgets open what is behind them
   await pg.goto(`${M}/`); await pg.waitForLoadState("networkidle");
-  for (const [label, re] of [["To collect", /\/payments\?show=(due|failed)/], ["Monthly plans", /\/payments\?show=plans/], ["Waiting to sign", /\/agreements\?show=awaiting/], ["Needs us", /\/tickets$/]]) {
+  for (const [label, re] of [["To collect", /\/payments\?show=(due|failed)/], ["Monthly plans", /\/payments\?show=plans/], ["Waiting to sign", /\/agreements\?show=awaiting/], ["Needs us", /\/tickets/]]) {
     await pg.goto(`${M}/`); await pg.waitForLoadState("networkidle");
-    await Promise.all([pg.waitForURL(re), pg.locator(`a[aria-label^='${label}']`).first().click()]);
+    await pg.locator(`button[aria-label^='${label}']`).first().click(); await pg.waitForSelector("[role=dialog] .dr-go"); await Promise.all([pg.waitForURL(re), pg.click("[role=dialog] .dr-go")]);
     ok(re.test(pg.url()), `${name}: the "${label}" widget opens ${new URL(pg.url()).pathname}${new URL(pg.url()).search}`);
   }
   await pg.goto(`${M}/`); await pg.waitForLoadState("networkidle");
-  await Promise.all([pg.waitForURL(/\/agreements\?show=awaiting/), pg.locator("a[aria-label='Waiting to sign: see them']").first().click()]);
+  await pg.locator("button[aria-label^='Waiting to sign']").first().click(); await pg.waitForSelector("[role=dialog] .dr-go"); await Promise.all([pg.waitForURL(/\/agreements/), pg.click("[role=dialog] .dr-go")]);
   ok(true, `${name}: pipeline rows open the matching agreements`);
   // payments page groups
   const groups = {};

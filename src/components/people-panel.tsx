@@ -65,21 +65,16 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
           <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
             {people.map((p) => { const st = STATE[p.access]; return (
               <li key={p.id} className="p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="flex items-center gap-2 font-semibold"><Avatar name={p.name} size={28} staffId={p.userId} base="/api/avatar/u" />{p.name}{p.isPrimary && <span className="ml-2 text-xs font-normal text-muted">main contact</span>}</p>
-                    <p className="text-sm text-muted">{[p.position, p.email, p.phone].filter(Boolean).join(" · ") || "No details"}</p>
+                <div className="pp-row">
+                  <Avatar name={p.name} size={44} staffId={p.userId} base="/api/avatar/u" />
+                  <div className="pp-main">
+                    <p className="pp-name">{p.name}{p.isPrimary && <span className="pp-tag">Main contact</span>}</p>
+                    <p className="pp-sub">{[p.position, p.email].filter(Boolean).join(" · ") || "No details"}</p>
+                    <p className="pp-state"><span className={`rounded-md px-2 py-0.5 font-semibold ${st.cls}`}>{st.label}</span>{p.role && p.access !== "none" && p.access !== "revoked" && <span>{levelLabel(p.role)}{p.billing && p.role !== "admin" ? " + billing" : ""}</span>}{p.access === "active" && <span>{p.twoStep?.authenticator ? "Two-step on" : "No two-step"}</span>}{p.access === "active" && <span>{p.lastSeen ? `Seen ${timeAgo(p.lastSeen)}` : "Not signed in yet"}</span>}</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className={`rounded-md px-2 py-0.5 font-semibold ${st.cls}`}>{st.label}</span>
-                    {canEdit && p.access === "none" && p.email && <form action={invitePersonAction}><Hidden customerId={customerId} contactId={p.id} /><input type="hidden" name="role" value="member" /><SubmitButton className="btn !min-h-9 text-[13px]" pendingText="Inviting…">Invite as team member</SubmitButton></form>}
-                    {p.role && p.access !== "none" && p.access !== "revoked" && <span className="rounded-md bg-bone px-2 py-0.5">{levelLabel(p.role)}{p.billing && p.role !== "admin" ? " + billing" : ""}</span>}
-                    {p.access === "active" && <span className={`rounded-md px-2 py-0.5 font-semibold ${p.twoStep?.authenticator ? "bg-[#e9f6ef] text-[#0a5a3d]" : "bg-bone text-muted"}`}>{p.twoStep?.authenticator ? "Two-step on" : "Two-step not set up"}{p.twoStep?.passkeys ? ` · ${p.twoStep.passkeys} passkey${p.twoStep.passkeys > 1 ? "s" : ""}` : ""}</span>}
-                    {p.access === "active" && <span className="text-muted">{p.lastSeen ? `Last seen ${timeAgo(p.lastSeen)}` : "Not signed in yet"}</span>}
-                  </div>
-                </div>
-                {canEdit && (
-                  <div className="mt-2"><SheetButton label="Manage" title={p.name} className="evt-b" icon={false}>
+                  <div className="pp-act">
+                    {canEdit && p.access === "none" && p.email && <form action={invitePersonAction}><Hidden customerId={customerId} contactId={p.id} /><input type="hidden" name="role" value="member" /><SubmitButton className="btn !min-h-9 text-[13px]" pendingText="Inviting…">Invite</SubmitButton></form>}
+                    {canEdit && (<SheetButton label="Manage" title={p.name} className="evt-b" icon={false}>
                     <div className="space-y-5 text-sm">
                       {(p.access === "none" || p.access === "invited") && p.email && (
                         <form action={invitePersonAction} className="space-y-2"><Hidden customerId={customerId} contactId={p.id} /><Level id={`i-${p.id}`} role={p.role ?? "member"} billing={p.billing} /><SubmitButton>{p.access === "invited" ? "Send the invitation again" : "Invite to the client portal"}</SubmitButton></form>
@@ -109,8 +104,9 @@ export function PeoplePanel({ customerId, people, requests, canEdit }: { custome
                       <details className="border-t border-line pt-3"><summary className="cursor-pointer text-[#7a2e12]">They've left the company</summary>
                         <form action={removePersonAction} className="mt-2 space-y-2"><Hidden customerId={customerId} contactId={p.id} /><p>This removes {p.name} from the list and ends any portal access straight away. Tickets they raised stay, without their name.</p><button className="btn !border-[#b3261e] !bg-[#b3261e] !text-white">Remove {p.name.split(" ")[0]}</button></form></details>
                     </div>
-                  </SheetButton></div>
-                )}
+                  </SheetButton>)}
+                  </div>
+                </div>
               </li>); })}
           </ul>
         )}
