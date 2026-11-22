@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { origins } from "@/lib/env";
 import { LegalLinks } from "./legal-links";
+import { SocialIcons, SOCIAL } from "./public-links";
 import { CookieNotice } from "./cookie-notice";
 
 /**
@@ -36,7 +37,8 @@ export async function AuthShell({ title, intro, children, footer }: { title: str
           {foot && <div className="auth-foot">{foot}</div>}
         </div>
         <p className="auth-other">{other.text} <a href={other.href}>{other.link}</a></p>
-        <LegalLinks className="mt-3" />
+        <SocialIcons className="!mt-4" />
+        <p className="mt-2 text-center text-[13px] text-muted"><a className="hover:underline" href={SOCIAL.site} target="_blank" rel="noopener noreferrer">onesimplesite.co.uk</a> · <a className="hover:underline" href="/legal/terms">Terms</a> · <a className="hover:underline" href="/legal/privacy">Privacy</a> · <a className="hover:underline" href="/legal/cookies">Cookies</a></p>
       </main>
     </div>
   );

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { PublicFooter } from "@/components/public-links";
 import { startAction } from "@/app/actions/start";
 import { ErrorSummary } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
@@ -29,6 +30,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
             </form>
           </>
         )}
+        <PublicFooter />
       </div>
     </main>
   );

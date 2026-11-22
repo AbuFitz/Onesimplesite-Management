@@ -1,12 +1,19 @@
 import Image from "next/image";
+import { origins } from "@/lib/env";
+import { PublicFooter } from "@/components/public-links";
 import { Gift } from "lucide-react";
-import { findByCode, getSettings } from "@/modules/referrals/service";
+import { findByCode, getSettings, effectiveReward } from "@/modules/referrals/service";
 import { referralLeadAction } from "@/app/actions/referral-public";
 import { ErrorSummary } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "A recommendation", robots: { index: false } };
+export async function generateMetadata({ params }: { params: Promise<{ code: string }> }) {
+  const hit = await findByCode((await params).code);
+  const title = hit ? `${hit.name} recommends OneSimpleSite` : "OneSimpleSite";
+  const description = "Simple, good-looking websites for small businesses. Tap to say hello.";
+  return { metadataBase: new URL(origins().portal), title, description, robots: { index: false }, openGraph: { title, description, type: "website", siteName: "OneSimpleSite" }, twitter: { card: "summary_large_image", title, description } };
+}
 
 export default async function ReferralLanding({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ sent?: string; error?: string }> }) {
   const { code } = await params;
@@ -15,7 +22,9 @@ export default async function ReferralLanding({ params, searchParams }: { params
   const set = hit ? await getSettings(hit.workspaceId) : null;
   const on = !!set?.enabled;
   const w = set?.welcome.standard;
-  const gift = w && w.months > 0 ? `${w.months} ${w.months === 1 ? "month" : "months"} ${w.label}` : null;
+  // A customer's own deal can change how many free months the people they send get.
+  const months = hit?.source.customerId ? (await effectiveReward(hit.workspaceId, hit.source.customerId)).months : (w?.months ?? 0);
+  const gift = w && months > 0 ? `${months} ${months === 1 ? "month" : "months"} ${w.label}` : null;
   return (
     <main className="ref-page">
       <i className="ref-blob" aria-hidden />
@@ -41,6 +50,7 @@ export default async function ReferralLanding({ params, searchParams }: { params
             </form>
           </>
         )}
+        <PublicFooter />
       </div>
     </main>
   );
