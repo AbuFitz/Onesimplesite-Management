@@ -1,6 +1,7 @@
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { getSettings } from "@/modules/referrals/service";
+import { RewardPicker } from "@/components/reward-picker";
 import { Flash } from "@/components/flash";
 import { saveReferralSettingsAction } from "@/app/actions/referrals";
 
@@ -21,8 +22,8 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
           <div className="rchips"><label className="rchip"><input type="radio" name="trigger" value="final" defaultChecked={s.trigger === "final"} /><span>Website fully paid for</span></label><label className="rchip"><input type="radio" name="trigger" value="deposit" defaultChecked={s.trigger === "deposit"} /><span>Deposit paid</span></label></div>
           <p>Not when someone clicks a link or signs. Only once real money has arrived.</p></section>
         <section><h3>Default reward for a customer who refers someone</h3>
-          <div className="rchips"><label className="rchip"><input type="radio" name="rewardType" value="fixed" defaultChecked={s.customerType === "fixed"} /><span>A set amount (£)</span></label><label className="rchip"><input type="radio" name="rewardType" value="percent" defaultChecked={s.customerType === "percent"} /><span>A percentage of the website (%)</span></label></div>
-          <div className="rl-two"><div><label className="label" htmlFor="rs-a">Amount in £, or percent</label><input id="rs-a" name="reward" type="number" min="0" step="1" defaultValue={s.customerType === "percent" ? s.customerValue : s.customerValue / 100} className="field" /></div><div><label className="label" htmlFor="rs-c">Most rewards per customer a year</label><input id="rs-c" name="cap" type="number" min="1" step="1" defaultValue={s.yearlyCap} className="field" /></div></div>
+          <RewardPicker typeName="rewardType" valueName="reward" type={s.customerType} value={s.customerType === "percent" ? s.customerValue : s.customerValue / 100} />
+          <div className="rl-two"><div><label className="label" htmlFor="rs-c">Most rewards per customer a year</label><input id="rs-c" name="cap" type="number" min="1" step="1" defaultValue={s.yearlyCap} className="field" /></div></div>
           <p>Any customer can have their own deal on the Customers page.</p></section>
         <section><h3>What the new customer gets</h3>
           <div className="rl-row"><span>Normal website</span><input aria-label="Free months for a normal website" name="stdMonths" type="number" min="0" max="12" defaultValue={w.standard.months} className="field" /><em>months of</em><input aria-label="What it is" name="stdLabel" className="field" defaultValue={w.standard.label} /></div>

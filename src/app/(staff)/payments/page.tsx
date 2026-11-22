@@ -42,7 +42,7 @@ export default async function Payments({ searchParams }: { searchParams: Promise
   return (
     <>
       <h1 className="sr-only">Payments</h1>
-      <div className="pay-tot">{cards.map(([id, l, v, tone]) => <Link key={id} href={href(id)} className={`${show === id ? "on" : ""} ${tone}`} aria-current={show === id ? "true" : undefined}><span>{l}</span><b className="num">{v}</b><em>{count(id)} {count(id) === 1 ? "charge" : "charges"}</em></Link>)}</div>
+      <div className="pay-tot">{cards.map(([id, l, v, tone]) => <div key={id} className={tone}><span>{l}</span><b className="num">{v}</b><em>{count(id)} {count(id) === 1 ? "charge" : "charges"}</em></div>)}</div>
       <div className="lt">
         <AutoGetForm className="lt-form"><div className="lt-row"><label className="lt-search"><span className="sr-only">Search payments</span><Search size={17} aria-hidden /><input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Company, order or item" autoComplete="off" /></label><input type="hidden" name="show" value={show} /></div></AutoGetForm>
         <QuickChips label="Show payments" items={SHOW.map(([id, l]) => ({ label: l, count: count(id), href: href(id), on: show === id }))} />

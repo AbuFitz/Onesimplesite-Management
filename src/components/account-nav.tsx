@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, UserRound, Mail, KeyRound, ShieldCheck, Building2, ScrollText, Gift, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, UserRound, Mail, KeyRound, ShieldCheck, Building2, ScrollText, Gift, Activity, Users, Handshake, Wallet, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-const ICONS: Record<string, LucideIcon> = { profile: UserRound, email: Mail, password: KeyRound, security: ShieldCheck, companies: Building2, legal: ScrollText, referrals: Gift };
+const ICONS: Record<string, LucideIcon> = { profile: UserRound, email: Mail, password: KeyRound, security: ShieldCheck, companies: Building2, legal: ScrollText, referrals: Gift, activity: Activity, customers: Users, partners: Handshake, payouts: Wallet, rules: SlidersHorizontal };
 export type AccountItem = { href: string; label: string; note: string; icon: keyof typeof ICONS; tint: string; status?: string };
 
 const here = (p: string) => p.replace(/^\/portal/, "") || "/";

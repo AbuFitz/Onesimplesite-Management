@@ -47,3 +47,24 @@ export async function submitReferralLead(raw: unknown): Promise<{ ok: true } | {
   await enqueue(db as never, ws, "email.referral_notice", `referral:${created.id}`, { to: "internal", referrer: hit.name, business: i.business, person: i.name, email: i.email, link: manageLink(`/customers/${created.id}`) });
   return { ok: true };
 }
+
+/** Someone found us themselves (no referral) and asked us to get in touch. Same safeguards as the referral form. */
+export async function submitEnquiry(raw: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
+  const p = input.omit({ code: true }).safeParse(raw);
+  if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "Check the form and try again." };
+  const i = p.data; if (i.website) return { ok: true };
+  const ws = (await db.workspace.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } }))?.id; if (!ws) return { ok: false, error: "Try again later." };
+  const recent = await db.customer.count({ where: { workspaceId: ws, source: "Website form", createdAt: { gte: new Date(Date.now() - 36e5) } } });
+  if (recent >= 30) return { ok: true };
+  const phone = i.phone ? tidyPhone(i.phone) : null;
+  if (i.phone && phone === null) return { ok: false, error: "That phone number doesn't look right." };
+  if (await db.contact.findFirst({ where: { workspaceId: ws, email: { equals: i.email, mode: "insensitive" } }, select: { id: true } })) return { ok: true };
+  const c = await db.$transaction(async (tx) => {
+    const cu = await tx.customer.create({ data: { workspaceId: ws, reference: await nextRef(tx, ws, "customer"), displayName: i.business, kind: "business", source: "Website form", phone } });
+    await tx.contact.create({ data: { workspaceId: ws, customerId: cu.id, name: i.name, email: i.email, phone, isPrimary: true } });
+    await audit(tx, { workspaceId: ws, actor: null, action: "company.registered", targetType: "customer", targetId: cu.id, customerId: cu.id, detail: { via: "get_started" } });
+    return cu;
+  });
+  await enqueue(db as never, ws, "email.referral_notice", `enquiry:${c.id}`, { to: "internal", referrer: "Our website", business: i.business, person: i.name, email: i.email, link: manageLink(`/customers/${c.id}`) });
+  return { ok: true };
+}

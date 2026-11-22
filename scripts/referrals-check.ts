@@ -3,7 +3,7 @@
 import "dotenv/config";
 import { db } from "../src/lib/db";
 import * as R from "../src/modules/referrals/service";
-import { submitReferralLead } from "../src/modules/referrals/public";
+import { submitReferralLead, submitEnquiry } from "../src/modules/referrals/public";
 
 const ok = (c: unknown, m: string) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  -", m); };
 const stamp = Date.now();
@@ -112,6 +112,13 @@ async function main() {
     await submitReferralLead({ ...lead, email: `bot${stamp}@x-${stamp}.example`, business: `Bot ${stamp}`, website: "http://spam" });
     ok((await db.customer.count({ where: { workspaceId: ws, displayName: `Bot ${stamp}` } })) === 0, "the hidden field catches bots");
     ok(!(await submitReferralLead({ ...lead, code: "ZZZZZZ" })).ok, "an unknown code is refused");
+    // A partner's private page: only the signed address works.
+    const pv = await R.partnerView(tp.code, R.partnerKey(tp.code)); ok(!!pv && pv.name.length > 0, "a partner's private page opens with its signed address");
+    ok((await R.partnerView(tp.code, "wrongwrongwrongwrong")) === null && (await R.partnerView("ZZZZZZ", R.partnerKey("ZZZZZZ"))) === null, "a wrong or guessed address shows nothing");
+    // The public get-started form creates a lead, once, and ignores bots.
+    const em = `enq${stamp}@enq-${stamp}.example`; ok((await submitEnquiry({ business: `Enq ${stamp}`, name: "Kim", email: em })).ok, "someone can ask to get started");
+    const ec = await db.customer.findFirst({ where: { workspaceId: ws, displayName: `Enq ${stamp}` } }); if (ec) made.push(ec.id);
+    await submitEnquiry({ business: `Enq ${stamp}`, name: "Kim", email: em }); ok((await db.customer.count({ where: { workspaceId: ws, displayName: `Enq ${stamp}` } })) === 1, "asking twice with the same email makes one lead");
     console.log("ALL OK");
   } finally {
     const ids = made;

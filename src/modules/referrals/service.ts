@@ -369,3 +369,21 @@ export async function listCustomerAccounts(workspaceId: string) {
   const lk = new Map(links.map((l) => [l.customerId, l])), ow = new Map(owed.map((o) => [o.payeeId, o._sum.amountMinor ?? 0]));
   return { settings: st, rows: customers.map((c) => { const l = lk.get(c.id); const mine = refs.filter((r) => r.referrerId === c.id); const type = (l?.rewardType as RewardType | null) ?? st.customerType, value = l?.rewardValue ?? st.customerValue; return { id: c.id, name: c.displayName, ref: c.reference, code: l?.code ?? null, ownDeal: !!(l?.rewardType || l?.welcomeMonths !== null && l?.welcomeMonths !== undefined), reward: rewardText(type, value), leads: mine.reduce((n, r) => n + r._count, 0), won: mine.filter((r) => r.status === "qualified").reduce((n, r) => n + r._count, 0), owedMinor: ow.get(c.id) ?? 0 }; }) };
 }
+
+// ───────── A partner's own private page ─────────
+import { createHmac, timingSafeEqual } from "node:crypto";
+/** The private address for a partner's own page. It is signed, so only the link we give them works, and it never exposes the public referral code's page. */
+export const partnerKey = (code: string) => createHmac("sha256", process.env.BETTER_AUTH_SECRET ?? "").update(`partner-view:${code}`).digest("base64url").slice(0, 22);
+export const partnerKeyOk = (code: string, key: string) => { const a = Buffer.from(partnerKey(code)), b = Buffer.from(key); return a.length === b.length && timingSafeEqual(a, b); };
+
+/** What a partner may see about themselves: how many they have sent and how each is going, and what they are owed. Never the other company's contact details. */
+export async function partnerView(code: string, key: string) {
+  if (!partnerKeyOk(code, key)) return null;
+  const p = await db.partner.findUnique({ where: { code } });
+  if (!p) return null;
+  const rows = await db.referral.findMany({ where: { workspaceId: p.workspaceId, partnerId: p.id }, orderBy: { createdAt: "desc" }, take: 100 });
+  const names = new Map((await db.customer.findMany({ where: { id: { in: rows.map((r) => r.refereeId) } }, select: { id: true, displayName: true } })).map((c) => [c.id, c.displayName]));
+  const entries = await db.rewardEntry.findMany({ where: { workspaceId: p.workspaceId, payeeId: p.id }, orderBy: { createdAt: "desc" }, take: 30 });
+  const owed = entries.reduce((n, e) => n + e.amountMinor, 0), paid = entries.filter((e) => e.kind === "paid").reduce((n, e) => n - e.amountMinor, 0);
+  return { name: p.name, code: p.code, active: p.active, rate: p.commissionType === "percent" ? `${p.commissionValue}% of the website price` : null, rateMinor: p.commissionType === "fixed" ? p.commissionValue : null, owed, paid, entries, list: rows.map((r) => ({ id: r.id, name: names.get(r.refereeId) ?? "A company", status: r.status === "qualified" ? "won" : r.status === "rejected" || r.status === "reversed" ? "ended" : "in progress", at: r.createdAt })) };
+}
