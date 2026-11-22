@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { portalLink } from "@/lib/env";
-import { listReferrals, listPartners, payables, getSettings } from "@/modules/referrals/service";
+import { listReferrals, listPartners, payables, getSettings, listCustomerLinks } from "@/modules/referrals/service";
 import { QuickChips, FilterPanel } from "@/components/filter-bar";
 import { ConfirmForm } from "@/components/confirm";
 import { CopyButton } from "@/components/copy-button";
@@ -11,18 +11,18 @@ import { Empty, Status, timeAgo, money } from "@/components/ui";
 import { approveReferralAction, rejectReferralAction, reverseReferralAction, saveReferralSettingsAction, createPartnerAction, togglePartnerAction, markPaidAction } from "@/app/actions/referrals";
 
 export const metadata = { title: "Referrals" };
-const TABS = [["review", "Needs a look"], ["pending", "On the way"], ["qualified", "Rewarded"], ["payouts", "Payouts"], ["partners", "Partners"], ["ended", "Ended"], ["all", "All"]] as const;
+const TABS = [["review", "Needs a look"], ["pending", "On the way"], ["qualified", "Rewarded"], ["payouts", "Payouts"], ["partners", "Partners"], ["links", "Customer links"], ["ended", "Ended"], ["all", "All"]] as const;
 const bucket = (s: string) => (s === "rejected" || s === "reversed" ? "ended" : s);
 const WORD: Record<string, { label: string; kind: "good" | "warn" | "bad" | "neutral" }> = { pending: { label: "On the way", kind: "neutral" }, review: { label: "Needs a look", kind: "warn" }, qualified: { label: "Rewarded", kind: "good" }, rejected: { label: "Rejected", kind: "bad" }, reversed: { label: "Reversed", kind: "bad" } };
 
 export default async function Referrals({ searchParams }: { searchParams: Promise<{ tab?: string; done?: string; error?: string }> }) {
   const ctx = await requireStaff("customer.read");
   const sp = await searchParams;
-  const [all, s, partners, owing] = await Promise.all([listReferrals(ctx.workspaceId), getSettings(ctx.workspaceId), listPartners(ctx.workspaceId), payables(ctx.workspaceId)]);
+  const [all, s, partners, owing, links] = await Promise.all([listReferrals(ctx.workspaceId), getSettings(ctx.workspaceId), listPartners(ctx.workspaceId), payables(ctx.workspaceId), listCustomerLinks(ctx.workspaceId)]);
   const first = all.some((r) => r.status === "review") ? "review" : "all";
   const tab = TABS.find(([id]) => id === sp.tab)?.[0] ?? first;
   const rows = all.filter((r) => tab === "all" || bucket(r.status) === tab);
-  const count = (id: string) => id === "partners" ? partners.length : id === "payouts" ? owing.filter((o) => o.owedMinor > 0).length : all.filter((r) => id === "all" || bucket(r.status) === id).length;
+  const count = (id: string) => id === "links" ? links.length : id === "partners" ? partners.length : id === "payouts" ? owing.filter((o) => o.owedMinor > 0).length : all.filter((r) => id === "all" || bucket(r.status) === id).length;
   const owner = can(ctx.role, "settings.write");
   const here = `/referrals?tab=${tab}`;
   const owedTotal = owing.reduce((n, o) => n + Math.max(0, o.owedMinor), 0);
@@ -68,7 +68,16 @@ export default async function Referrals({ searchParams }: { searchParams: Promis
       {sp.done && <p role="status" className="mb-3 rounded-lg bg-[#dff5ea] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">{sp.done}</p>}
       {sp.error && <p role="alert" className="mb-3 rounded-lg bg-[#fdecea] px-3 py-2 text-sm font-semibold text-[#a12a1f]">{sp.error}</p>}
 
-      {tab === "partners" ? (
+      {tab === "links" ? (
+        links.length === 0 ? <Empty title="No links yet">A customer gets their link the first time they open Refer in the portal.</Empty> : (
+          <ul className="divide-y divide-line rounded-2xl border border-line bg-white">{links.map((l) => { const url = portalLink(`/r/${l.code}`); return (
+            <li key={l.id} className="px-4 py-3.5">
+              <p className="font-semibold"><Link className="hover:underline" href={`/customers/${l.customerId}`}>{l.name}</Link> <span className="font-normal text-muted">· {l.leads} {l.leads === 1 ? "lead" : "leads"} · {l.won} won</span></p>
+              <p className="mt-1 break-all font-mono text-[13px] text-ink/80 select-all">{url}</p>
+              <div className="mt-2"><CopyButton text={url} /></div>
+            </li>); })}</ul>
+        )
+      ) : tab === "partners" ? (
         partners.length === 0 ? <Empty title="No partners yet">Add an agency or individual who sends you work. They get a link and a rate.</Empty> : (
           <ul className="divide-y divide-line rounded-2xl border border-line bg-white">{partners.map((p) => { const url = portalLink(`/r/${p.code}`); return (
             <li key={p.id} className="px-4 py-3.5">

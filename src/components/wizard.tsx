@@ -1,4 +1,5 @@
 "use client";
+import { useFormStatus } from "react-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil } from "lucide-react";
 
@@ -14,6 +15,13 @@ export type ReviewRow = { label: string; value: string; step: string };
 type Vals = Record<string, string | string[]>;
 const TTL = 7 * 864e5;
 const ago = (t: number) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", ...(Date.now() - t > 864e5 ? { day: "numeric", month: "short" } : {}) }).format(t); };
+
+/** While the form is being sent: a veil with a spinner, so a click always feels like something is happening. */
+export function PendingVeil({ text }: { text: string }) {
+  const { pending } = useFormStatus();
+  if (!pending) return null;
+  return <div className="wz-veil" role="status" aria-live="polite"><i aria-hidden /><b>{text}</b></div>;
+}
 
 export function Wizard({ steps, action, review, actions, error, errorMessage, intro, check, draftKey, onRestore, later }: {
   steps: WizardStep[]; action: (fd: FormData) => void; review: (fd: FormData) => ReviewRow[]; actions: ReactNode; error?: ReactNode; intro?: ReactNode;
@@ -126,6 +134,7 @@ export function Wizard({ steps, action, review, actions, error, errorMessage, in
       const t = e.target as HTMLElement;
       if (e.key === "Enter" && t.tagName === "INPUT" && !last) { e.preventDefault(); next(); }
     }}>
+      <PendingVeil text="Saving…" />
       <nav className="wz-bar" aria-label="Progress">
         <p className="wz-now"><b>{cur.title}</b><span>Step {Math.min(i + 1, all.length)} of {all.length}</span></p>
         <ol>

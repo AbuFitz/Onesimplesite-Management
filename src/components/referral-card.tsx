@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { Gift } from "lucide-react";
 import { db } from "@/lib/db";
-import { owedTo } from "@/modules/referrals/service";
+import { owedTo, ensureLink } from "@/modules/referrals/service";
+import { portalLink } from "@/lib/env";
+import { CopyButton } from "./copy-button";
 import { attachReferrerAction, markPaidAction } from "@/app/actions/referrals";
 import { money } from "./ui";
 
 /** On a company: who recommended them, who they have recommended, and any cash we owe them. */
 export async function ReferralCard({ workspaceId, customerId, canWrite, back }: { workspaceId: string; customerId: string; canWrite: boolean; back: string }) {
-  const [from, gave, owed] = await Promise.all([
+  const [from, gave, owed, code] = await Promise.all([
     db.referral.findUnique({ where: { workspaceId_refereeId: { workspaceId, refereeId: customerId } } }),
     db.referral.findMany({ where: { workspaceId, referrerId: customerId }, orderBy: { createdAt: "desc" }, take: 20 }),
     owedTo(workspaceId, customerId),
+    ensureLink(workspaceId, customerId),
   ]);
   const ids = [...new Set([from?.referrerId, ...gave.map((g) => g.refereeId)].filter((x): x is string => !!x))];
   const [cn, partner] = await Promise.all([db.customer.findMany({ where: { id: { in: ids } }, select: { id: true, displayName: true } }), from?.partnerId ? db.partner.findUnique({ where: { id: from.partnerId }, select: { name: true } }) : null]);
@@ -21,6 +24,7 @@ export async function ReferralCard({ workspaceId, customerId, canWrite, back }: 
   return (
     <section className="mb-8 rounded-2xl border border-[var(--card-line)] bg-white p-4" aria-label="Referrals">
       <p className="mb-2 flex items-center gap-2 font-semibold"><Gift size={17} aria-hidden />Referrals {owed > 0 && <span className="pill pill-good">{money(owed)} owed</span>}</p>
+      <div className="mb-4 rounded-2xl bg-[#f3f7e9] p-3"><p className="text-sm text-muted">Their referral link</p><p className="mt-0.5 break-all font-mono text-[13px] select-all">{portalLink(`/r/${code}`)}</p><div className="mt-2"><CopyButton text={portalLink(`/r/${code}`)} /></div></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <p className="text-sm text-muted">Recommended by</p>

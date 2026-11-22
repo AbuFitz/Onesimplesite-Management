@@ -19,6 +19,7 @@ export function RecordModal({ children, variant = "record", title }: { children:
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+  const kind = path.startsWith("/support") ? "Ticket" : path.startsWith("/projects") ? "Project" : path.startsWith("/contracts") || path.startsWith("/proposals") ? "Agreement" : "Details";
   const close = () => { if (moves.current > 0) window.history.go(-(moves.current + 1)); else router.back(); };
   return (
     <dialog ref={ref} aria-label="Details" onCancel={(e) => { e.preventDefault(); close(); }} onClick={(e) => { if (e.target === ref.current) close(); }}
@@ -27,10 +28,13 @@ export function RecordModal({ children, variant = "record", title }: { children:
         {variant === "create" ? (
           <div className="cm-head"><h2>{title}</h2><button type="button" onClick={close} aria-label="Close" className="iconbtn"><X size={18} aria-hidden /></button></div>
         ) : (
-        <div className="rec-head" style={{ paddingTop: "max(.5rem, env(safe-area-inset-top))" }}>
-          <a href={path} className="btn btn-quiet !min-h-10 sm:!min-h-8 !px-2.5 text-[13px]"><Maximize2 size={14} aria-hidden /> Open as a page</a>
-          <button type="button" onClick={close} aria-label="Close" className="btn btn-quiet !min-h-10 sm:!min-h-8 !w-8 !px-0"><X size={16} aria-hidden /></button>
-        </div>
+          <div className="rec-head">
+            <p className="rec-kind">{kind}</p>
+            <div className="rec-act">
+              <a href={path} className="iconbtn" aria-label="Open as a page" title="Open as a page"><Maximize2 size={17} aria-hidden /></a>
+              <button type="button" onClick={close} aria-label="Close" className="iconbtn"><X size={18} aria-hidden /></button>
+            </div>
+          </div>
         )}
         <div className={variant === "create" ? "cm-body" : "min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-4 sm:px-8"}><ModalCloseContext.Provider value={close}>{children}</ModalCloseContext.Provider></div>
       </div>

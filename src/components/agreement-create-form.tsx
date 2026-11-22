@@ -1,42 +1,49 @@
 "use client";
 import { useActionState, useState } from "react";
+import { Check } from "lucide-react";
 import { createAgreementAction } from "@/app/actions/agreements";
 import { WORK_TYPES } from "@/modules/sales/job-options";
 import { ErrorSummary } from "./ui";
 import { SubmitButton } from "./submit-button";
-import { Wizard, type ReviewRow } from "./wizard";
+import { PendingVeil } from "./wizard";
 
 type P = { id: string; name: string; position: string | null };
-/** Three short steps and a check, then straight into the agreement. Price, deposit and any offer are set on the next page. */
+/** One screen: what we're building, who signs, and (if you want) a note. Then straight into the agreement, where the price, deposit and offer are set. */
 export function AgreementCreateForm({ customer, people }: { customer: { id: string; name: string }; people: P[] }) {
   const [s, act] = useActionState(createAgreementAction, undefined as { error?: string } | undefined);
+  const [work, setWork] = useState<string>("simple");
   const [who, setWho] = useState(people[0]?.id ?? "new");
-  const review = (fd: FormData): ReviewRow[] => {
-    const cid = String(fd.get("contactId") ?? "");
-    const signer = cid === "new" ? `${fd.get("newName") ?? ""} (${fd.get("newEmail") ?? ""})` : people.find((p) => p.id === cid)?.name ?? "";
-    return [
-      { label: "Company", value: customer.name, step: "work" },
-      { label: "What we are building", value: WORK_TYPES.find((w) => w.id === String(fd.get("work") ?? ""))?.label ?? "", step: "work" },
-      { label: "Who signs", value: signer, step: "who" },
-      { label: "What they asked for", value: String(fd.get("details") ?? "").slice(0, 280), step: "notes" },
-    ];
-  };
   return (
-    <Wizard action={act} review={review} draftKey={`agreement:${customer.id}`} later={{ href: "/agreements" }} errorMessage={s?.error} error={<ErrorSummary message={s?.error} />}
-      intro={<p className="wz-hint">Four quick steps, then you set the price, deposit and any offer on the next page before anything is sent.</p>}
-      actions={<SubmitButton pendingText="Starting…">Start the agreement</SubmitButton>}
-      steps={[
-        { id: "work", title: "Work", hint: "What are we building for them?", node: (<><input type="hidden" name="customerId" value={customer.id} /><select id="ag-w" name="work" className="field" defaultValue="simple" aria-label="What are we building for them?">{WORK_TYPES.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}</select></>) },
-        { id: "who", title: "Signer", hint: "Who signs for the company?", node: (<>
-          <select id="ag-p" name="contactId" className="field" value={who} onChange={(e) => setWho(e.target.value)} aria-label="Who signs?">{people.map((p) => <option key={p.id} value={p.id}>{p.name}{p.position ? `, ${p.position}` : ""}</option>)}<option value="new">Someone new at {customer.name}…</option></select>
-          {who === "new" && (
-            <div className="grp">
-              <label className="grp-row" htmlFor="ag-nn"><span>Name</span><input id="ag-nn" name="newName" required autoComplete="off" placeholder="Their name" /></label>
-              <label className="grp-row" htmlFor="ag-ne"><span>Email</span><input id="ag-ne" name="newEmail" type="email" inputMode="email" required autoComplete="off" placeholder="name@company.com" /></label>
-              <label className="grp-row" htmlFor="ag-np"><span>Role</span><input id="ag-np" name="newPosition" placeholder="Owner…" /></label>
-            </div>
-          )}</>) },
-        { id: "notes", title: "Notes", hint: "Anything they have asked for? You can skip this.", node: <textarea id="ag-d" name="details" rows={5} className="field" aria-label="Anything they have asked for" /> },
-      ]} />
+    <form action={act} className="ac relative">
+      <PendingVeil text="Starting the agreement…" />
+      <input type="hidden" name="customerId" value={customer.id} /><input type="hidden" name="work" value={work} /><input type="hidden" name="contactId" value={who} />
+      <ErrorSummary message={s?.error} />
+      <section className="ab-sec" aria-labelledby="ac1"><h2 id="ac1">What are we building?</h2>
+        <div className="ac-types" role="radiogroup" aria-label="What are we building">
+          {WORK_TYPES.map((w) => (
+            <button key={w.id} type="button" role="radio" aria-checked={work === w.id} className={work === w.id ? "on" : ""} onClick={() => setWork(w.id)}>
+              <b>{w.label}</b><small>{w.hint}</small>{work === w.id && <Check size={16} aria-hidden />}
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="ab-sec" aria-labelledby="ac2"><h2 id="ac2">Who signs?</h2>
+        <div className="ab-seg" role="radiogroup" aria-label="Who signs">
+          {people.map((p) => <button key={p.id} type="button" role="radio" aria-checked={who === p.id} className={who === p.id ? "on" : ""} onClick={() => setWho(p.id)}>{p.name}{p.position ? ` · ${p.position}` : ""}</button>)}
+          <button type="button" role="radio" aria-checked={who === "new"} className={who === "new" ? "on" : ""} onClick={() => setWho("new")}>Someone new</button>
+        </div>
+        {who === "new" && (
+          <div className="grp">
+            <label className="grp-row" htmlFor="ag-nn"><span>Name</span><input id="ag-nn" name="newName" required autoComplete="off" placeholder="Their name" /></label>
+            <label className="grp-row" htmlFor="ag-ne"><span>Email</span><input id="ag-ne" name="newEmail" type="email" inputMode="email" required autoComplete="off" placeholder="name@company.com" /></label>
+            <label className="grp-row" htmlFor="ag-np"><span>Role</span><input id="ag-np" name="newPosition" placeholder="Owner…" /></label>
+          </div>
+        )}
+      </section>
+      <details className="ab-sec ab-more"><summary>Add a note <span>optional</span></summary>
+        <textarea id="ag-d" name="details" rows={4} className="field mt-3" aria-label="Anything they have asked for" placeholder="Anything they have asked for" />
+      </details>
+      <div className="ac-go"><SubmitButton pendingText="Starting…">Start the agreement</SubmitButton><p>Price, deposit and any offer come next. Nothing is sent yet.</p></div>
+    </form>
   );
 }

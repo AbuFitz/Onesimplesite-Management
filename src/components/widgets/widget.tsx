@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { Spark, Delta } from "./spark";
 import { Drill, DrillTile } from "./drill";
@@ -26,7 +27,8 @@ export function Widget({ title, icon: Icon, action, range, children, empty, erro
   return drill ? <Drill title={title} href={drill.href} linkLabel={drill.label} detail={drill.detail}>{body}</Drill> : body;
 }
 
-export function SeeAll({ href, children = "See all" }: { href: string; children?: ReactNode }) { return <Link className="wdg-link" href={href}>{children}</Link>; }
+/** The whole widget opens (see Drill); this is only the arrow that says so. */
+export function SeeAll(_: { href: string; children?: ReactNode }) { void _; return <span className="wdg-go" aria-hidden><ArrowUpRight size={16} /></span>; }
 
 /** Day range tabs that drive the page through `?range=`. Server rendered, so the choice survives a refresh and can be shared. */
 export function RangeTabs({ current, base = "" }: { current: number; base?: string }) {

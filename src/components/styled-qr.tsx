@@ -27,19 +27,15 @@ export function StyledQr({ url, size = 220, label = "QR code for your referral l
   return (
     <figure className="qr-fig">
       <svg ref={ref} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${N} ${N}`} width={size} height={size} role="img" aria-label={label}>
-        <defs>
-          <linearGradient id="qr-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#2f7a4e" /><stop offset="1" stopColor="#161d0b" /></linearGradient>
-        </defs>
-        <rect width={N} height={N} rx="3.2" fill="#fff" />
-        {dots.map(([r, c]) => <circle key={`${r}-${c}`} cx={c + pad + 0.5} cy={r + pad + 0.5} r="0.46" fill="url(#qr-g)" />)}
+        <rect width={N} height={N} rx="2.6" fill="#fff" />
+        {dots.map(([r, c]) => <circle key={`${r}-${c}`} cx={c + pad + 0.5} cy={r + pad + 0.5} r="0.46" fill="#14170f" />)}
         {eyes.map(([x, y]) => (
           <g key={`${x}-${y}`}>
-            <rect x={x + 0.5} y={y + 0.5} width="6" height="6" rx="2.2" fill="none" stroke="url(#qr-g)" strokeWidth="1" />
-            <rect x={x + 2} y={y + 2} width="3" height="3" rx="1.1" fill="url(#qr-g)" />
+            <rect x={x + 0.5} y={y + 0.5} width="6" height="6" rx="2.2" fill="none" stroke="#14170f" strokeWidth="1" />
+            <rect x={x + 2} y={y + 2} width="3" height="3" rx="1.1" fill="#14170f" />
           </g>
         ))}
-        <circle cx={mid} cy={mid} r="3.4" fill="#fff" />
-        <circle cx={mid} cy={mid} r="2.7" fill="url(#qr-g)" />
+        <circle cx={mid} cy={mid} r="3.2" fill="#14170f" />
         <g transform={`translate(${mid - 1.5} ${mid - 1.5}) scale(.125)`} fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 12v10H4V12" /><path d="M2 7h20v5H2z" /><path d="M12 22V7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
         </g>

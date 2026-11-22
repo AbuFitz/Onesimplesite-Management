@@ -17,16 +17,16 @@ const opts = await pg.locator("#show option").allInnerTexts();
 ok(opts.some((o) => o.startsWith("Signed")) && opts.some((o) => o.startsWith("Waiting for signature")), "has its own Signed and Waiting tabs");
 await pg.goto(`${M}/tickets`); await pg.waitForLoadState("networkidle");
 ok(!(await pg.locator("#type option").allInnerTexts()).some((o) => o.startsWith("New website")), "tickets no longer include New website");
-await pg.goto(`${M}/contracts`); ok(pg.url().endsWith("/agreements"), "old contracts list lands on Agreements");
+await pg.goto(`${M}/contracts`); await pg.waitForURL(/\/agreements$/, { timeout: 15000 }).catch(() => {}); ok(pg.url().endsWith("/agreements"), "old contracts list lands on Agreements");
 // one open agreement per company: starting a second one opens the first
 await pg.goto(`${M}/customers/new`); await pg.waitForLoadState("networkidle");
 const name = `Guard ${Date.now()}`;
 await pg.click(".wz-next"); await pg.fill("#rb-n", name); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.click(".wz-next"); await pg.fill("#rc-n", "Pat Lee"); await pg.fill("#rc-e", `pat${Date.now()}@guard.test`); await pg.click(".wz-next");
 await pg.click("button:has-text('Add company and start an agreement')"); await pg.waitForURL(/\/agreements\/new\?business=/);
 const biz = new URL(pg.url()).searchParams.get("business");
-await pg.click(".wz-next"); await pg.click(".wz-next"); await pg.click(".wz-next"); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
+await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
 const first = pg.url();
-await pg.goto(`${M}/agreements/new?business=${biz}`); await pg.click(".wz-next"); await pg.click(".wz-next"); await pg.click(".wz-next"); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/existing=1/);
+await pg.goto(`${M}/agreements/new?business=${biz}`); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/existing=1/);
 ok(pg.url().split("?")[0] === first.split("?")[0], "a second agreement for the same company opens the first instead");
 ok(await pg.locator("text=already has an agreement in progress").count() === 1, "and says why");
 // Preview before sending: the real agreement, a PDF, and nothing sent
@@ -44,25 +44,23 @@ await pg.goto(`${M}/agreements/new?business=${biz}&another=1`);
   await pg.goto(`${M}/customers/new`); const name2 = `Care ${Date.now()}`;
   await pg.click(".wz-next"); await pg.fill("#rb-n", name2); await pg.selectOption("#rb-t", "Food and drink"); await pg.fill("input[name=town]", "Leeds"); await pg.click(".wz-next"); await pg.fill("#rc-n", "Dee Lee"); await pg.fill("#rc-e", `dee${Date.now()}@guard.test`); await pg.click(".wz-next");
   await pg.click("button:has-text('Add company and start an agreement')"); await pg.waitForURL(/\/agreements\/new\?business=/);
-  await pg.selectOption("#ag-w", "care"); await pg.click(".wz-next"); await pg.click(".wz-next"); await pg.click(".wz-next"); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
-  await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=2/);
+  await pg.click(".ac-types button:has-text('Hosting')"); await pg.click("button:has-text('Start the agreement')"); await pg.waitForURL(/\/proposals\/[0-9a-f-]{36}/);
   ok(await pg.locator("input[name=l0d]").inputValue() === "Hosting set-up and move-over", "a hosting-only job names its price line for the job");
-  ok((await pg.locator("#plan").inputValue()) !== "", "and the care plan is already chosen");
-  const sum = await pg.locator("[aria-label='What the customer will pay']").innerText();
-  ok(/a month, starting when the site goes live/.test(sum), "the summary says what the customer pays each month, and when it starts");
+  ok((await pg.locator("input[name=plan]").inputValue()) !== "", "and the care plan is already chosen");
+  ok(await pg.locator("input[name$=r]").count() === 0, "there is no separate repeats tick, so the care plan can never be counted twice");
+  ok(/month/.test(await pg.locator(".ab-side").innerText()), "the summary shows the monthly care plan");
   await pg.fill("input[name=l0p]", "100");
-  await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=3/);
-  await pg.selectOption("#dp", "50");
-  ok(/£50\.00 when they sign \(50% deposit\), then £50\.00 before the site goes live/.test(await pg.locator("[aria-label='What the customer will pay']").innerText()), "the summary updates live as the deposit is chosen");
-  await pg.selectOption("#pfm", "1"); await pg.selectOption("#pfe", "stop");
-  ok(/free for 1 month from the day the site goes live, then it simply ends/.test(await pg.locator("[aria-label='What the customer will pay']").innerText()), "and explains a free month that simply ends");
-  // going back keeps what was typed, and the review shows it all
-  await pg.click("button:has-text('Back')"); await pg.waitForURL(/step=2/);
-  ok(await pg.locator("input[name=l0p]").inputValue() === "100.00", "going back keeps what was saved");
-  await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=3/); await pg.click("button:has-text('Save and continue')"); await pg.waitForURL(/step=4/); await pg.click("button:has-text('Save and review')"); await pg.waitForURL(/step=5/);
+  await pg.click("button[role=radio]:has-text('50% deposit')");
+  ok(/£50\.00 when they sign, then £50\.00 before the site goes live/.test(await pg.locator(".ab-hint").first().innerText()), "the summary updates live as the deposit is chosen");
+  await pg.locator(".ab-switch .sw").click(); await pg.click("button[role=radio]:has-text('1 mo')"); await pg.click("button[role=radio]:has-text('Then just end')");
+  ok(/1 free month, then ends/.test(await pg.locator(".ab-side").innerText()), "and explains a free month that simply ends");
+  // saving keeps what was typed, and the review shows it all
+  await pg.click("button:has-text('Save')"); await pg.waitForURL(/saved=1/);
+  ok(await pg.locator("input[name=l0p]").inputValue() === "100.00", "saving keeps what was typed");
+  await pg.click("button:has-text('Review')"); await pg.waitForURL(/step=5/);
   const review = await pg.locator("main").innerText();
   ok(/Deposit £50\.00 \(50%\) when they sign, then £50\.00 before the site goes live/.test(review) && /Offer/.test(review), "the review step shows the price, deposit and offer in plain words");
-  ok(await pg.locator("a:has-text('Change')").count() >= 4, "each part of the review has a Change link back to its step");
+  ok(await pg.locator("a:has-text('Change')").count() >= 4, "each part of the review has a Change link back to editing");
   ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "the form fits a phone");
   void first2;
 }

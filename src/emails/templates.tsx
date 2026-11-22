@@ -1,4 +1,4 @@
-import { render, Text } from "@react-email/components";
+import { render, Text, Img } from "@react-email/components";
 import type { ReactNode } from "react";
 import { Layout, H, P, Action, Facts } from "./layout";
 
@@ -15,7 +15,7 @@ export type EmailData = {
   security_notice: { to: string; name: string; headline: string; detail: string; when: string };
   backup_reminder: { to: string; lastBackup: string; link: string };
   referral_notice: { to: string; referrer: string; business: string; person: string; email: string; link: string };
-  announcement: { to: string; name: string; audience: "team" | "customer"; link: string };
+  announcement: { to: string; name: string; audience: "team" | "customer"; link: string; items?: string[]; images?: { src: string; alt: string }[] };
   staff_invitation: { to: string; name: string; inviter: string; roleLabel: string; link: string; expires: string };
   payment_received: { to: string; name: string; ref: string; what: string; amount: string; paidOn: string; link: string; receiptRef?: string; receiptId?: string };
   plan_started: { to: string; name: string; ref: string; amount: string; link: string; freeUntil?: string; receiptRef?: string; receiptId?: string };
@@ -380,11 +380,13 @@ const builders: { [K in TemplateName]: (d: EmailData[K]) => Built } = {
         <H>A new version is on its way</H>
         <P>Hello {d.name}, we are rolling out a new version of OneSimpleSite {d.audience === "team" ? "Manage" : "for customers"} over the next few hours. It will update by itself, there is nothing to install.</P>
         <P>Your sign-in does not change: same email, same password. You may be asked to set up two-step sign-in (an authenticator app or a passkey) the next time you sign in. It takes about a minute and keeps your account safe.</P>
+        {d.items && d.items.length > 0 && <><P><strong>What&apos;s new</strong></P>{d.items.map((x) => <P key={x}>• {x}</P>)}</>}
+        {(d.images ?? []).map((im) => <Img key={im.src} src={im.src} alt={im.alt} width="520" style={{ width: "100%", maxWidth: 520, height: "auto", borderRadius: 14, margin: "8px 0 14px", border: "1px solid #e4e7dc" }} />)}
         <Action href={d.link}>Sign in</Action>
         <P>If anything looks wrong, reply to this email and we will sort it.</P>
       </Layout>
     ),
-    text: `A new version is on its way\n\nHello ${d.name},\n\nWe are rolling out a new version of OneSimpleSite ${d.audience === "team" ? "Manage" : "for customers"} over the next few hours. It will update by itself, there is nothing to install.\n\nYour sign-in does not change: same email, same password. You may be asked to set up two-step sign-in (an authenticator app or a passkey) the next time you sign in. It takes about a minute and keeps your account safe.\n\nSign in: ${d.link}\n\nIf anything looks wrong, reply to this email and we will sort it.\n\nOneSimpleSite`,
+    text: `A new version is on its way\n\nHello ${d.name},\n\nWe are rolling out a new version of OneSimpleSite ${d.audience === "team" ? "Manage" : "for customers"} over the next few hours. It will update by itself, there is nothing to install.\n\nYour sign-in does not change: same email, same password. You may be asked to set up two-step sign-in (an authenticator app or a passkey) the next time you sign in. It takes about a minute and keeps your account safe.\n\n${d.items && d.items.length ? `What's new\n${d.items.map((x) => `- ${x}`).join("\n")}\n\n` : ""}Sign in: ${d.link}\n\nIf anything looks wrong, reply to this email and we will sort it.\n\nOneSimpleSite`,
   }),
   backup_reminder: (d) => ({
     subject: "Weekly backup due: OneSimpleSite Manage",

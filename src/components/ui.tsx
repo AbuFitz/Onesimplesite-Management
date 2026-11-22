@@ -43,7 +43,7 @@ export function Avatar({ name, size = 36, staffId, base = "/api/avatar" }: { nam
 
 export function RecordHeader({ back, title, status, meta, action, avatar, logoId }: { back?: { href: string; label: string }; title: string; status?: ReactNode; meta?: ReactNode; action?: ReactNode; avatar?: boolean; logoId?: string }) {
   return (
-    <header className="mb-6 sm:mb-8">
+    <header className="rh mb-5 sm:mb-6">
       {back && <Link href={back.href} className="mb-1 inline-flex min-h-9 items-center gap-1 text-sm text-muted hover:text-ink">‹ {back.label}</Link>}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 items-center gap-3">

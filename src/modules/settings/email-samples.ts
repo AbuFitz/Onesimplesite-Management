@@ -68,7 +68,7 @@ export function sampleEmail(id: TemplateName) {
     case "ticket_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", ref: "OSS-TK-2026-0001", title: "The contact form isn't sending", business: "Sample Café Ltd", person: "Alex Sample", priority: "high", excerpt: "Since yesterday nothing arrives when someone fills in the contact form.", link: MANAGE });
     case "staff_invitation": return renderEmail(id, { to: "new.person@onesimplesite.co.uk", name: "New Person", inviter: "Jamie", roleLabel: "Team member", link: MANAGE, expires: "9 November 2026" });
     case "referral_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", referrer: "Sample Café Ltd", business: "Harbour Bakery", person: "Sam Taylor", email: "sam@example.com", link: "https://manage.onesimplesite.co.uk/customers" });
-    case "announcement": return renderEmail(id, { to, name: "Alex", audience: "customer", link: PORTAL });
+    case "announcement": return renderEmail(id, { to, name: "Alex", audience: "customer", link: PORTAL, items: ["Refer a friend: earn cash for every business you send us", "A bell for replies, payments and signatures", "Passkeys and an authenticator app for safer sign-in"], images: [{ src: "https://portal.onesimplesite.co.uk/email/c-refer.jpg", alt: "Refer a friend" }, { src: "https://portal.onesimplesite.co.uk/email/c-qr.jpg", alt: "Your referral QR code" }] });
     case "backup_reminder": return renderEmail(id, { to: "hello@onesimplesite.co.uk", lastBackup: "26 October 2026", link: "https://manage.onesimplesite.co.uk/backup" });
     default: return renderEmail("password_changed", { to, name: "Alex", when: "" });
   }

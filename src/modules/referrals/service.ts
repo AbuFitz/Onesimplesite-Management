@@ -288,3 +288,15 @@ export async function myReferrals(workspaceId: string, customerId: string) {
     list: rows.map((r) => ({ id: r.id, name: names.get(r.refereeId) ?? "A company", status: r.status === "qualified" ? "rewarded" : r.status === "reversed" || r.status === "rejected" ? "ended" : "in progress", at: r.createdAt })),
   };
 }
+
+/** Every customer's personal link (they get one when they open Refer in the portal), with how it has done. */
+export async function listCustomerLinks(workspaceId: string) {
+  const links = await db.referralLink.findMany({ where: { workspaceId }, orderBy: { createdAt: "desc" }, take: 300 });
+  const ids = links.map((l) => l.customerId);
+  const [names, refs] = await Promise.all([
+    db.customer.findMany({ where: { id: { in: ids } }, select: { id: true, displayName: true } }),
+    db.referral.groupBy({ by: ["referrerId", "status"], where: { workspaceId, referrerId: { in: ids } }, _count: true }),
+  ]);
+  const nm = new Map(names.map((c) => [c.id, c.displayName]));
+  return links.map((l) => { const mine = refs.filter((r) => r.referrerId === l.customerId); return { ...l, name: nm.get(l.customerId) ?? "Unknown", leads: mine.reduce((n, r) => n + r._count, 0), won: mine.filter((r) => r.status === "qualified").reduce((n, r) => n + r._count, 0) }; });
+}

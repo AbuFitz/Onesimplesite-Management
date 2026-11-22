@@ -20,7 +20,11 @@ export function QuickChips({ items, label }: { items: Chip[]; label: string }) {
 
 /** The rest of the filters sit in one popover behind a "Filters" button that shows how many are set. Fields inside still apply the moment they change. */
 export function FilterPanel({ active, children, label = "Filters" }: { active: number; children: React.ReactNode; label?: string }) {
-  const [open, setOpen] = useState(false);
+  const key = `oss-fp:${label}`;
+  // Changing a filter reloads the list, which used to close this panel every time. It now stays open until you close it yourself.
+  const [open, setOpenRaw] = useState(false);
+  const setOpen = (v: boolean | ((o: boolean) => boolean)) => setOpenRaw((o) => { const n = typeof v === "function" ? v(o) : v; try { if (n) sessionStorage.setItem(key, "1"); else sessionStorage.removeItem(key); } catch { /* ignore */ } return n; });
+  useEffect(() => { try { if (sessionStorage.getItem(key)) setOpenRaw(true); } catch { /* ignore */ } }, [key]);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;

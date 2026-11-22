@@ -12,6 +12,9 @@ import { setTicketStageAction } from "@/app/actions/crm";
 import { ONBOARDING_LABEL } from "@/modules/support/options";
 import { RecordHeader, Status, ErrorSummary, money, fmtDateTime } from "@/components/ui";
 import { ProposalFields, STEPS } from "@/components/proposal-fields";
+import { AgreementBuilder } from "@/components/agreement-builder";
+import { REQUIREMENT_FIELDS } from "@/modules/sales/service";
+import { PROJECT_TYPES } from "@/modules/projects/service";
 import Link from "next/link";
 import { promoFrom } from "@/modules/billing/promo";
 
@@ -74,19 +77,14 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   );
   const filledReqs = Object.entries(req).filter(([k, v]) => v && ["pages", "features", "integrations", "domainHosting", "contentBy", "timeline", "payment", "notes"].includes(k)).length;
   const wizard = !editable ? null : step < 5 ? (
-    <form action={saveDraftAction} className="mx-auto max-w-3xl"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} /><input type="hidden" name="from" value={step} />
-      <button type="submit" name="go" value={step + 1} hidden aria-hidden tabIndex={-1} />
-      {stepper(true)}
-      <ProposalFields step={step} plans={plans} initial={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil, recurringPeriod: cur.recurringPeriod, lines: cur.lines.map((l) => ({ description: l.description, quantity: l.quantity, unitMinor: l.unitMinor, recurring: l.recurring })), requirements: cur.requirements as Record<string, string | undefined> | null }} />
-      <div className="wz-foot mt-6">
-        {step > 1 && <button type="submit" name="go" value={step - 1} formNoValidate className="wz-back">Back</button>}
-        <button type="submit" name="go" value={step + 1} className="wz-next">{step === 4 ? "Save and review" : "Save and continue"}</button>
-      </div>
-      <p className="mt-2 text-center text-sm text-muted">Everything is saved when you continue.</p>
+    <form action={saveDraftAction} className="relative"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="version" value={p.version} /><input type="hidden" name="from" value={step} />
+      <AgreementBuilder
+        init={{ title: p.title, scope: cur.scope, terms: cur.terms, validUntil: cur.validUntil ? cur.validUntil.toISOString().slice(0, 10) : undefined, lines: cur.lines.map((l) => ({ description: l.description, quantity: l.quantity, unitMinor: l.unitMinor, recurring: l.recurring })), req: req }}
+        plans={plans} reqFields={REQUIREMENT_FIELDS as unknown as [string, string][]} projectTypes={Object.entries(PROJECT_TYPES).map(([id, v]) => ({ id, label: v.label }))} canSend={can(ctx.role, "proposal.send")} />
     </form>
   ) : (
     <div className="mx-auto max-w-3xl space-y-4">
-      {stepper(false)}
+      <Link href={`/proposals/${p.id}?step=1`} className="inline-flex min-h-10 items-center text-sm font-semibold text-moss">‹ Back to editing</Link>
       <h2 className="sr-only">Step 5: Check and send</h2><p className="mb-1 text-[15px] text-muted">{STEPS[4].help}</p>
       {summaryCard(1, "The job", <><p className="font-semibold">{p.title}</p><p className="text-sm text-muted">{cur.scope}</p></>)}
       {summaryCard(2, "Price", <>{priceLines}<ul className="mt-1 text-sm text-muted">{cur.lines.map((l) => <li key={l.id}>{l.description}: {money(l.unitMinor * l.quantity)}{l.recurring ? " a month" : ""}</li>)}</ul></>)}

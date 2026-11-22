@@ -101,19 +101,17 @@ await staff.goto(`${M}/customers/new`); await staff.waitForLoadState("networkidl
 await staff.click(".wz-next"); await staff.fill("#rb-n", name); await staff.selectOption("#rb-t", "Food and drink"); await staff.fill("input[name=town]", "Bristol");
 await staff.click(".wz-next"); await staff.fill("#rc-n", "Casey Morgan"); await staff.fill("#rc-e", email); await staff.click(".wz-next");
 await staff.click("button:has-text('Add company and start an agreement')"); await staff.waitForURL(/\/agreements\/new\?business=/);
-await staff.click(".wz-next"); await staff.click(".wz-next"); await staff.fill("#ag-d", "A website with bookings for their bakery.");
-await staff.click(".wz-next"); await staff.click("button:has-text('Start the agreement')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
+await staff.click(".ab-more summary"); await staff.fill("#ag-d", "A website with bookings for their bakery.");
+await staff.click("button:has-text('Start the agreement')"); await staff.waitForURL(/\/proposals\/[0-9a-f-]{36}$/);
 // the agreement, one step at a time
-ok(await staff.locator("h2:has-text('Step 1: The job')").count() === 1, "the agreement opens on step 1");
+ok(await staff.locator(".ab").count() === 1, "the agreement opens as one page with a live summary");
 await staff.fill("#title", title); await staff.fill("#scope", "A website with bookings in Bristol");
-await staff.click("button:has-text('Save and continue')"); await staff.waitForURL(/step=2/);
-ok(await staff.locator("h2:has-text('Step 2: Price')").isVisible(), "step 2 is the price");
-await staff.fill("input[name=l0d]", "Website build"); await staff.fill("input[name=l0p]", "1500"); await staff.fill("input[name=l1d]", "Hosting"); await staff.fill("input[name=l1p]", "25"); await staff.check("input[name=l1r]");
-await staff.click("button:has-text('Save and continue')"); await staff.waitForURL(/step=3/);
-await staff.selectOption("#dp", "50");
-await staff.click("button:has-text('Save and continue')"); await staff.waitForURL(/step=4/);
-await staff.fill("#req_pages", "Up to 5 pages"); await staff.fill("#req_features", "Contact form");
-await staff.click("button:has-text('Save and review')"); await staff.waitForURL(/step=5/); await staff.waitForSelector("text=Saved.");
+await staff.fill("input[name=l0d]", "Website build"); await staff.fill("input[name=l0p]", "1500");
+await staff.locator(".ab-plans button:not(:has-text('No care plan'))").first().click();
+await staff.click("button[role=radio]:has-text('50% deposit')");
+ok(/£750\.00 when they sign, then £750\.00 before the site goes live/.test(await staff.locator(".ab-hint").first().innerText()), "the summary updates live as the price and deposit are chosen");
+await staff.click(".ab-more summary"); await staff.fill("#req_pages", "Up to 5 pages"); await staff.fill("#req_features", "Contact form");
+await staff.click("button:has-text('Review')"); await staff.waitForURL(/step=5/); await staff.waitForSelector("text=Saved.");
 ok(await staff.locator("h2:has-text('Step 5: Check and send')").isVisible(), "the last step is check and send");
 ok(true, "a company was registered, then its agreement was started");
 const earlyProposal = staff.url();

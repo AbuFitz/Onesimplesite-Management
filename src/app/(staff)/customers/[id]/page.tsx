@@ -103,6 +103,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         { id: "activity", label: "Activity", href: href("activity") },
       ]} />
 
+      <div className="pg-card">
       {tab === "overview" && (
         <>
           <ReferralCard workspaceId={ctx.workspaceId} customerId={c.id} canWrite={can(ctx.role, "customer.write")} back={`/customers/${c.id}`} />
@@ -181,6 +182,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
           <Timeline events={activity} empty="No activity yet." />
         </Section>
       )}
+      </div>
     </>
   );
 }
