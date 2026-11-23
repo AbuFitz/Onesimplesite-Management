@@ -2,9 +2,9 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
-import { RecordHeader, Status, Empty, timeAgo, money } from "@/components/ui";
+import { Status, Empty, timeAgo, money } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
-import { QuickChips } from "@/components/filter-bar";
+import { QuickChips, FilterPanel } from "@/components/filter-bar";
 import { promoFrom } from "@/modules/billing/promo";
 
 export const metadata = { title: "Agreements" };
@@ -44,17 +44,21 @@ export default async function Agreements({ searchParams }: { searchParams: Promi
   const companies = [...new Map(all.map((r) => [r.companyId, r.company])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
   return (
     <>
-      <RecordHeader title="Agreements" meta="Written, sent and signed, in one place" action={<Link className="btn" href="/agreements/new"><Plus size={16} aria-hidden /> New agreement</Link>} />
-      <QuickChips label="Show agreements" items={SHOW.map(([id, l]) => ({ label: l, count: count(id), href: `/agreements?show=${id}${company ? `&c=${company}` : ""}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`, on: show === id }))} />
-      <AutoGetForm className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,1fr))_auto]">
-        <div className="relative col-span-2 min-w-0 lg:col-span-1"><Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-[2.2rem] text-muted" /><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="q">Search</label>
-          <input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Name, company or number" className="field !pl-9" /></div>
-        <div className="hidden lg:block"><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="show">Show</label>
-          <select id="show" name="show" defaultValue={show} className="field">{SHOW.map(([id, l]) => <option key={id} value={id}>{l} ({count(id)})</option>)}</select></div>
-        <div><label className="mb-1 block text-xs font-semibold text-muted" htmlFor="c">Company</label>
-          <select id="c" name="c" defaultValue={company} className="field"><option value="">Any</option>{companies.map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></div>
-        {(show !== "open" || company || q) && <div className="col-span-2 flex items-end lg:col-span-1"><Link href="/agreements" className="min-h-11 py-2.5 text-sm underline">Clear</Link></div>}
-      </AutoGetForm>
+      <h1 className="sr-only">Agreements</h1>
+      <div className="lt">
+        <AutoGetForm className="lt-form">
+          <div className="lt-row">
+            <label className="lt-search"><span className="sr-only">Search agreements</span><Search size={17} aria-hidden /><input id="q" name="q" type="search" defaultValue={sp.q} placeholder="Name, company or number" autoComplete="off" /></label>
+            <input type="hidden" name="show" value={show} />
+            <FilterPanel active={company ? 1 : 0}>
+              <div className="col-span-full"><label className="label" htmlFor="c">Company</label><select id="c" name="c" defaultValue={company} className="field"><option value="">Any</option>{companies.map(([id, n]) => <option key={id} value={id}>{n}</option>)}</select></div>
+            </FilterPanel>
+            <Link className="lt-add" href="/agreements/new" aria-label="New agreement"><Plus size={18} aria-hidden /><span>New agreement</span></Link>
+          </div>
+        </AutoGetForm>
+        <QuickChips label="Show agreements" items={SHOW.map(([id, l]) => ({ label: l, count: count(id), href: `/agreements?show=${id}${company ? `&c=${company}` : ""}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`, on: show === id }))} />
+        <p className="lt-count">{rows.length} {rows.length === 1 ? "agreement" : "agreements"}{(show !== "open" || company || q) && <> · <Link href="/agreements" className="underline">Clear</Link></>}</p>
+      </div>
       {rows.length === 0 ? <Empty title="No agreements here">{show === "open" ? "Start one from a company, or press New agreement." : "Nothing matches that filter."}</Empty> : (
         <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
           {rows.map((r) => (
