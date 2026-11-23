@@ -5,6 +5,7 @@
 set -e
 cd "$(dirname "$0")/.."
 step() { echo; echo "== $1"; }
+step "0. Generate Prisma client"; npx prisma generate
 step "1. Types";                npx tsc --noEmit
 step "2. Unit tests";           npx vitest run
 step "3. Build with NO environment settings (exactly what Vercel does)"
