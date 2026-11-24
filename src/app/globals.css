@@ -485,24 +485,22 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
   .kpi b, .kpi strong, .dial b, .stat b { font-weight: 300; }
 }
 
-/* Phones: flat sage, glassier cards, tighter spacing for browsers with chrome. */
+/* Phones: the sage gradient (pale at the top, deepening to green at the bottom), glassier cards, tighter spacing for browsers with chrome. */
 @media (max-width: 1023px) {
-  /* One flat sage on phones. The iPhone status bar and toolbar areas show the page's own background, so any gradient left a visible band there. */
-  html { background: #dde8d1; }
-  body::before { background: #dde8d1; }
-  body::after { display: none; }
-  /* A solid cap over the status-bar area. Without it the page scrolls underneath the clock and iOS blurs and fades that strip, which looked like a leftover filter. */
-  html::after { content: ""; position: fixed; z-index: 90; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: #dde8d1; pointer-events: none; }
-  /* When a sheet or the More menu opens, the page dims, and the strips behind the iPhone bars must dim with it. They take the colour the dimmed page ends up as.
-     No transition on purpose: iOS reads the colour at the moment it changes, and an animated change made it pick up the old colour and lag a step behind. */
-  /* Fixed layers normally stop at the edge of the page area, leaving the strips behind the iPhone bars unpainted. Let the dim and the status-bar cap reach into them. */
+  /* The page gradient, and caps in the strips behind the iPhone bars that carry its two end colours on, so the look runs on unbroken under the clock and the Safari bar. */
+  html { background-color: #f1f4ea; }
+  body::before { background: linear-gradient(180deg, #f1f4ea 0%, #e0e9d5 38%, #bcd0ae 72%, #9db890 100%); }
+  html::after { content: ""; position: fixed; z-index: 90; top: -120px; left: 0; right: 0; height: calc(120px + env(safe-area-inset-top)); background: #f1f4ea; pointer-events: none; }
+  html::before { content: ""; position: fixed; z-index: 5; left: 0; right: 0; bottom: -280px; height: 280px; background: #9db890; pointer-events: none; }
+  /* Sheets and the More menu: the dim and blur reach into the strips, and the caps take the colour the dimmed ends of the gradient come to. No transition on purpose: iOS reads the colour when it changes. */
   .sheet-wrap { top: -160px; bottom: -280px; padding-top: 160px; padding-bottom: calc(14px + 280px + env(safe-area-inset-bottom)); }
   .switcher { top: -160px; bottom: -280px; padding: calc(184px + env(safe-area-inset-top)) 0 calc(308px + env(safe-area-inset-bottom)); }
-  html::after { top: -120px; height: calc(120px + env(safe-area-inset-top)); }
-  /* The same cap under the page, in the strip behind the Safari bar. The top one already made that strip follow the page; the bottom one had nothing to follow. */
-  html::before { content: ""; position: fixed; z-index: 5; left: 0; right: 0; bottom: -280px; height: 280px; background: #dde8d1; pointer-events: none; }
-  html:has(.sheet-wrap), html:has(.sheet-wrap)::after, html:has(.sheet-wrap)::before { background: #8e968a; }
-  html:has(.switcher), html:has(.switcher)::after, html:has(.switcher)::before { background: #2b2e30; }
+  html:has(.sheet-wrap) { background-color: #9b9d99; }
+  html:has(.sheet-wrap)::after { background: #9b9d99; }
+  html:has(.sheet-wrap)::before { background: #677862; }
+  html:has(.switcher) { background-color: #3c3e40; }
+  html:has(.switcher)::after { background: #3c3e40; }
+  html:has(.switcher)::before { background: #191d20; }
   .card, .list-card, .wdg, .kpi, .card-section { background: rgba(255, 255, 255, .74); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border-color: rgba(255, 255, 255, .7); }
   .oss-bar { padding-top: 10px; padding-bottom: 6px; }
   :root { --dock-h: 4.75rem; }
