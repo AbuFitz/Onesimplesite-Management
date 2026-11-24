@@ -147,7 +147,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
       {(sp.added || sp.updated) && <p role="status" className="mb-3 rounded-lg bg-[#dff5ea] px-3 py-2 text-sm font-semibold text-[#0a5a3d]">{sp.updated ? "Event updated." : "Event added."}</p>}
       {sp.error && !sp.add && !sp.edit && <p role="alert" className="mb-3 rounded-lg bg-[#fdecea] px-3 py-2 text-sm font-semibold text-[#a12a1f]">{sp.error}</p>}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid items-start gap-4 min-[1500px]:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-4">
 
           {/* Phone + tablet: a week strip you can tap through */}
@@ -167,7 +167,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
             <section aria-label="Week" className="hidden overflow-hidden rounded-xl border border-[var(--card-line)] bg-white lg:block">
               <div className="grid grid-cols-7 divide-x divide-[var(--card-rule)]">
                 {week.map((k) => { const ev = byDay.get(k) ?? [], mk = marks.get(k) ?? [], sel = k === selected, td = k === today; return (
-                  <div key={k} className={`group relative flex min-h-[22rem] flex-col ${sel ? "bg-[#fafafa]" : ""}`}>
+                  <div key={k} className={`group relative flex min-h-[26rem] flex-col ${sel ? "bg-[#fafafa]" : ""}`}>
                     <Link href={q({ day: k })} className={`flex items-center justify-between border-b border-[var(--card-rule)] px-3 py-2.5 hover:bg-[#f4f4f5] ${sel ? "bg-[#f4f4f5]" : ""}`} aria-current={td ? "date" : undefined}>
                       <span className="text-[13px] font-semibold text-muted">{fmt(k, { weekday: "short" })}</span>
                       <span className={`grid h-7 min-w-7 place-items-center rounded-full px-1 text-[14px] font-bold ${td ? "bg-[#18181b] text-white" : ""}`}>{noon(k).getUTCDate()}</span>
