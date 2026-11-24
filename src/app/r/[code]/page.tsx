@@ -1,6 +1,5 @@
-import Image from "next/image";
 import { origins } from "@/lib/env";
-import { PublicFooter } from "@/components/public-links";
+import { PublicSplit } from "@/components/public-split";
 import { Gift } from "lucide-react";
 import { findByCode, getSettings, effectiveReward } from "@/modules/referrals/service";
 import { referralLeadAction } from "@/app/actions/referral-public";
@@ -25,21 +24,19 @@ export default async function ReferralLanding({ params, searchParams }: { params
   // A customer's own deal can change how many free months the people they send get.
   const months = hit?.source.customerId ? (await effectiveReward(hit.workspaceId, hit.source.customerId)).months : (w?.months ?? 0);
   const gift = w && months > 0 ? `${months} ${months === 1 ? "month" : "months"} ${w.label}` : null;
+  const who = hit && on && !sp.sent ? `${hit.name} recommended us` : "Your website, all in one place.";
   return (
-    <main className="ref-page">
-      <i className="ref-blob" aria-hidden />
-      <div className="ref-frame">
-        <Image className="logo" src="/brand/wordmark-colour.svg" alt="OneSimpleSite" width={164} height={34} priority />
-        {!hit || !on ? (
-          <><h1 className="text-3xl">This link isn&apos;t valid any more</h1><p className="mt-2 text-ink-2">hello@onesimplesite.co.uk will help.</p></>
-        ) : sp.sent ? (
-          <><h1 className="text-4xl">Thank you</h1><p className="mt-2 text-ink-2">We&apos;ll be in touch within a working day.</p></>
-        ) : (
-          <>
-            <h1 className="text-[34px] leading-[1.05] tracking-tight">{hit.name} recommended us</h1>
-            {gift && <p className="ref-gift"><Gift size={16} aria-hidden /> You get {gift}</p>}
+    <PublicSplit title={who} offer={hit && on && !sp.sent && gift ? <p className="auth-hero-gift"><Gift size={16} aria-hidden /> You get {gift}</p> : null}>
+      {!hit || !on ? (
+        <div className="auth-head"><h1>This link isn&apos;t valid any more</h1><p>hello@onesimplesite.co.uk will help.</p></div>
+      ) : sp.sent ? (
+        <div className="auth-head"><h1>Thank you</h1><p>We&apos;ll be in touch within a working day.</p></div>
+      ) : (
+        <>
+          <div className="auth-head"><h1>Say hello</h1><p>Tell us a little about you and we&apos;ll be in touch within a working day.</p></div>
+          <div className="auth-body">
             <ErrorSummary message={sp.error} />
-            <form action={referralLeadAction} className="mt-6 space-y-4">
+            <form action={referralLeadAction} className="space-y-4">
               <input type="hidden" name="code" value={hit.code} />
               <div className="hidden" aria-hidden><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
               <div><label className="label" htmlFor="rl-b">Your business</label><input id="rl-b" name="business" className="field" required autoComplete="organization" /></div>
@@ -48,10 +45,9 @@ export default async function ReferralLanding({ params, searchParams }: { params
               <div><label className="label" htmlFor="rl-p">Phone <span className="font-normal text-muted">(optional)</span></label><input id="rl-p" name="phone" type="tel" className="field" autoComplete="tel" /></div>
               <SubmitButton pendingText="Sending…">Get in touch</SubmitButton>
             </form>
-          </>
-        )}
-        <PublicFooter />
-      </div>
-    </main>
+          </div>
+        </>
+      )}
+    </PublicSplit>
   );
 }

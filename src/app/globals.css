@@ -1689,3 +1689,6 @@ html:has(.ref-page), body:has(.ref-page) { background: #0f1a08; }
 .mn-menu button { font-size: 15px; text-align: left; padding: 0 12px; }
 .mention { background: #e4efc9; color: inherit; border-radius: 6px; padding: 0 3px; font-weight: 600; }
 .chan-pill { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: #eef0e6; color: #4a5a28; }
+
+/* The recommended-by offer, in the sign-in hero */
+.auth-hero-gift { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 14px; border-radius: 999px; font-size: 15px; font-weight: 500; color: #1d2b12; background: #d6e8a7; }
