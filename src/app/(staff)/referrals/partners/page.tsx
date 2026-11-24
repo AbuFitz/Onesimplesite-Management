@@ -2,12 +2,10 @@ import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
 import { portalLink } from "@/lib/env";
 import { listPartners, partnerKey } from "@/modules/referrals/service";
-import { SheetButton } from "@/components/sheet-button";
 import { CopyButton } from "@/components/copy-button";
-import { RewardPicker } from "@/components/reward-picker";
 import { Flash } from "@/components/flash";
 import { Empty, Status, money } from "@/components/ui";
-import { createPartnerAction, togglePartnerAction } from "@/app/actions/referrals";
+import { togglePartnerAction } from "@/app/actions/referrals";
 
 export const metadata = { title: "Referral partners" };
 /** Agencies, individuals and team members who send work, each with their own link and rate. */
@@ -19,17 +17,7 @@ export default async function Partners({ searchParams }: { searchParams: Promise
   const here = "/referrals/partners";
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-3"><p className="text-sm text-muted">{partners.length} {partners.length === 1 ? "partner" : "partners"}. Team members appear here once they open their link.</p>
-        {owner && (
-          <SheetButton label="Add partner" title="Add a partner" className="lt-add">
-            <form action={createPartnerAction} className="rl"><input type="hidden" name="back" value={here} />
-              <section><label className="label" htmlFor="pt-n">Name</label><input id="pt-n" name="name" className="field" required autoComplete="off" />
-                <div className="rl-two"><div><label className="label" htmlFor="pt-k">Kind</label><select id="pt-k" name="kind" className="field"><option value="agency">Agency</option><option value="individual">Individual</option></select></div><div><label className="label" htmlFor="pt-e">Email (optional)</label><input id="pt-e" name="email" type="email" className="field" autoComplete="off" /></div></div></section>
-              <section><h3>What they earn</h3><RewardPicker typeName="type" valueName="value" type="fixed" value={50} /></section>
-              <button className="btn w-full justify-center">Add and get their link</button>
-            </form>
-          </SheetButton>
-        )}
+      <div className="mb-4"><p className="text-sm text-muted">{partners.length} {partners.length === 1 ? "partner" : "partners"}. Team members appear here once they open their link.</p>
       </div>
       <Flash done={sp.done} error={sp.error} />
       {partners.length === 0 ? <Empty title="No partners yet">Add an agency or individual who sends you work. They get a link and a rate.</Empty> : (

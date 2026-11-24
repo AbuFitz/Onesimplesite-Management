@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { requireStaff } from "@/modules/identity/session";
-import { can } from "@/modules/identity/permissions";
-import { payables, getSettings, rewardText, listReferrals } from "@/modules/referrals/service";
-import { ReferralAdd } from "@/components/referral-add";
+import { listReferrals } from "@/modules/referrals/service";
 import { db } from "@/lib/db";
-import { money, timeAgo } from "@/components/ui";
+import { timeAgo } from "@/components/ui";
 
 export const metadata = { title: "Referrals" };
 const stateOf = (s: string) => (s === "qualified" ? "Rewarded" : s === "review" ? "Needs a look" : s === "pending" ? "On the way" : s === "reversed" ? "Reversed" : "Declined");
@@ -12,27 +10,14 @@ const stateOf = (s: string) => (s === "qualified" ? "Rewarded" : s === "review" 
 /** The home of Referrals: who is owed, what needs a decision, and what has just come in. One action up top: add someone. */
 export default async function ReferralsHome() {
   const ctx = await requireStaff("customer.read");
-  const w = ctx.workspaceId, write = can(ctx.role, "customer.write");
-  const [s, owing, all, won] = await Promise.all([getSettings(w), payables(w), listReferrals(w), db.referral.count({ where: { workspaceId: w, status: "qualified" } })]);
-  const owed = owing.reduce((n, o) => n + Math.max(0, o.owedMinor), 0), owedTo = owing.filter((o) => o.owedMinor > 0).length;
+  const w = ctx.workspaceId;
+  const [all, won] = await Promise.all([listReferrals(w), db.referral.count({ where: { workspaceId: w, status: "qualified" } })]);
   const review = all.filter((r) => r.status === "review"), onWay = all.filter((r) => r.status === "pending").length;
   const recent = all.slice(0, 6);
   const top = [...all.filter((r) => r.status === "qualified").reduce((m, r) => m.set(r.referrer, (m.get(r.referrer) ?? 0) + 1), new Map<string, number>())].sort((a, b) => b[1] - a[1]).slice(0, 5);
   return (
     <div className="space-y-4">
       <h1 className="sr-only">Referrals</h1>
-      <section className="bill-hero" aria-label="Referrals at a glance">
-        <div className="bill-hero-in">
-          <p className="bill-eye">{owed > 0 ? `Owed to ${owedTo} ${owedTo === 1 ? "person" : "people"}` : "Referrals"}</p>
-          <p className="bill-big">{owed > 0 ? money(owed) : `${won} won`}</p>
-          <p className="bill-sub">{owed > 0 ? "Ready to pay out once you have sent it." : s.enabled ? `${onWay} on the way. ${rewardText(s.customerType, s.customerValue)} for each customer referral.` : "Referrals are switched off."}</p>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            {write && s.enabled && <ReferralAdd workspaceId={w} back="/referrals" />}
-            {owed > 0 && <Link href="/referrals/payouts" className="text-sm font-semibold text-white underline underline-offset-4">Go to payouts</Link>}
-          </div>
-        </div>
-      </section>
-
       {review.length > 0 && (
         <section className="rounded-2xl bg-[#fdf1d6] p-4" aria-label="Needs a look">
           <p className="mb-2 font-semibold">{review.length} {review.length === 1 ? "referral needs" : "referrals need"} a look</p>
@@ -40,7 +25,7 @@ export default async function ReferralsHome() {
         </section>
       )}
 
-      <div className="pj-stats" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(9rem,1fr))" }}>
+      <div className="pj-stats" style={{ gridTemplateColumns: "repeat(3,minmax(0,1fr))" }}>
         <div className="pj-stat"><span>Won</span><b className="num">{won}</b><em>referrals paid</em></div>
         <div className="pj-stat"><span>On the way</span><b className="num">{onWay}</b><em>not yet paid for</em></div>
         <div className="pj-stat"><span>Partners</span><b className="num">{new Set(all.filter((r) => r.isPartner).map((r) => r.referrer)).size}</b><em>sending us work</em></div>
