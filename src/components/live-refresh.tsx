@@ -36,10 +36,10 @@ export function LiveRefresh({ seconds = 120 }: { seconds?: number }) {
     };
     const id = window.setInterval(run, fastest() * 1000);
     const evs = ["pointerdown", "keydown", "scroll", "touchstart"] as const;
-    evs.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    evs.forEach((e) => window.addEventListener(e, touch, { passive: true, capture: true }));
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("online", run);
-    return () => { asks.delete(seconds); window.clearInterval(id); window.clearTimeout(pending); evs.forEach((e) => window.removeEventListener(e, touch)); document.removeEventListener("visibilitychange", onVisibility); window.removeEventListener("online", run); };
+    return () => { asks.delete(seconds); window.clearInterval(id); window.clearTimeout(pending); evs.forEach((e) => window.removeEventListener(e, touch, { capture: true })); document.removeEventListener("visibilitychange", onVisibility); window.removeEventListener("online", run); };
   }, [router, seconds]);
   return null;
 }

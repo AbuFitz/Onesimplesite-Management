@@ -1,5 +1,6 @@
 "use client";
 import { useFormStatus } from "react-dom";
+import { scrollPageTop } from "@/lib/scroll";
 import { useModalClose } from "./modal-context";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil } from "lucide-react";
@@ -125,7 +126,7 @@ export function Wizard({ steps, action, review, actions, error, errorMessage, in
 
   // New screen: back to the top, and into the first field so the keyboard (on a phone) is already where you type.
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollPageTop(true);
     const sec = form.current?.querySelector<HTMLElement>(`[data-step="${cur.id}"]`);
     const el = sec?.querySelector<HTMLElement>("input:not([type=hidden]):not([type=radio]):not([type=checkbox]),textarea");
     if (el && window.matchMedia("(pointer: fine)").matches) el.focus({ preventScroll: true });

@@ -45,7 +45,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
       </div>
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         {posts.length === 0 ? <Empty title={sp.q ? "No topics match" : "Quiet in here"}>{sp.q ? "Try a different word." : "Start the first topic."}</Empty> : (
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
+          <ul className="min-w-0 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
             {posts.map((p) => (
               <li key={p.id}>
                 <Link href={`/board/${p.id}`} className="flex items-start gap-3 px-4 py-3.5 hover:bg-bone/60">

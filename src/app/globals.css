@@ -487,23 +487,19 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
 
 /* Phones: a soft sage wash that is pale at both the top and the bottom, glassier cards, tighter spacing for browsers with chrome. */
 @media (max-width: 1023px) {
-  /* The strips behind the iPhone bars take whatever is at the edge of the page, so the two edges are the same pale colour and the caps in the strips use it too:
-     nothing can show as a band, whichever strip iOS reads from. The glows stay clear of the edges for the same reason. */
-  html { background-color: #e4ecd9; }
+  /* The page scrolls inside the frame the browser gives it (the body), not as a whole document. On iPhones the document scrolls underneath the status bar and the Safari bar,
+     so whatever was scrolled there showed through blurred and could not be controlled. Inside a frame, nothing can: the strips behind the bars show only the page colour,
+     which is the colour the wash is at its top and bottom edge, and which dims together with a sheet. */
+  html { height: 100%; overflow: hidden; background-color: #e4ecd9; scroll-padding: 0; }
+  body { height: 100%; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: none; scroll-padding-top: 1rem; scroll-padding-bottom: 7rem; }
   body::before { background: linear-gradient(180deg, #e4ecd9 0%, #d5e1c8 40%, #cddcbf 68%, #e4ecd9 100%); }
   body::after { background: radial-gradient(46vw 46vw at -4vw 22vh, #9db862aa, transparent 70%), radial-gradient(38vw 38vw at 104vw 24vh, #c7d8eeaa, transparent 70%); }
-  html::after { content: ""; position: fixed; z-index: 90; top: -120px; left: 0; right: 0; height: calc(120px + env(safe-area-inset-top)); background: linear-gradient(180deg, #e4ecd9 0, #e4ecd9 calc(120px + env(safe-area-inset-top) * .75), rgba(228, 236, 217, 0) 100%); pointer-events: none; }
-  /* No cap under the page: on iPhones fixed layers stop at the edge of the page area, so a cap there only drew a hard line across the content scrolling beneath the Safari bar. */
-  /* Sheets and the More menu: the dim and blur reach into the strips, and the strips take the colour that pale edge comes to when dimmed. No transition: iOS reads the colour when it changes. */
-  .sheet-wrap { top: -160px; bottom: -280px; padding-top: 160px; padding-bottom: calc(14px + 280px + env(safe-area-inset-bottom)); }
-  .switcher { top: -160px; bottom: -280px; padding: calc(184px + env(safe-area-inset-top)) 0 calc(308px + env(safe-area-inset-bottom)); }
-  /* The dock and sheet shadows used to reach the very bottom of the screen and darkened the last rows of the page, so the plain strip below showed as a hard line. They now fade out before the edge. */
+  /* Sheets and the More menu dim the page, and the strips take the colour the pale edge comes to when dimmed. No transition: iOS reads the colour when it changes. */
+  html:has(.sheet-wrap) { background-color: #92988f; }
+  html:has(.switcher) { background-color: #2c2f31; }
+  /* The dock and sheet shadows used to reach the very bottom of the screen and darkened the last rows of the page. They now fade out before the edge. */
   .tb .tb-in { box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 3px 10px -7px rgba(12, 20, 8, .6); }
   .sheet-wrap .sheet { box-shadow: 0 1.5px 0 #fff inset, 0 -1px 0 rgba(255, 255, 255, .4) inset, 0 8px 20px -16px rgba(20, 30, 10, .4); }
-  html:has(.sheet-wrap) { background-color: #92988f; }
-  html:has(.sheet-wrap)::after { background: #92988f; }
-  html:has(.switcher) { background-color: #2c2f31; }
-  html:has(.switcher)::after { background: #2c2f31; }
   .card, .list-card, .wdg, .kpi, .card-section { background: rgba(255, 255, 255, .74); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border-color: rgba(255, 255, 255, .7); }
   .oss-bar { padding-top: 10px; padding-bottom: 6px; }
   :root { --dock-h: 4.75rem; }
