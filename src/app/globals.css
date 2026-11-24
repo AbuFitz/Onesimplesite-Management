@@ -485,12 +485,12 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
   .kpi b, .kpi strong, .dial b, .stat b { font-weight: 300; }
 }
 
-/* Phones: the sage gradient of the Mobile AI reference (pale at the top, deepening to green at the bottom), glassier cards, tighter spacing for browsers with chrome. */
+/* Phones: flat sage, glassier cards, tighter spacing for browsers with chrome. */
 @media (max-width: 1023px) {
-  /* The same wash is painted on the page itself (html), not only on the fixed layer: on iPhones the bars at the top and bottom of the screen
-     show the page background, so a flat colour there made a visible band. The ends of the gradient are close to the flat colour on purpose. */
-  html { background-color: #dde8d1; background-image: linear-gradient(180deg, #f1f4ea 0%, #e0e9d5 38%, #c5d7b7 72%, #b3c9a6 100%); background-repeat: no-repeat; background-attachment: fixed; background-size: 100% 100%; }
-  body::before { background: linear-gradient(180deg, #f1f4ea 0%, #e0e9d5 38%, #c5d7b7 72%, #b3c9a6 100%); }
+  /* One flat sage on phones. The iPhone status bar and toolbar areas show the page's own background, so any gradient left a visible band there. */
+  html { background: #dde8d1; }
+  body::before { background: #dde8d1; }
+  body::after { display: none; }
   .card, .list-card, .wdg, .kpi, .card-section { background: rgba(255, 255, 255, .74); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border-color: rgba(255, 255, 255, .7); }
   .oss-bar { padding-top: 10px; padding-bottom: 6px; }
   :root { --dock-h: 4.75rem; }
