@@ -5,7 +5,7 @@ import { myReferrals, effectiveReward, referredBy } from "@/modules/referrals/se
 import { ShareLink } from "@/components/share-link";
 import { money, timeAgo } from "@/components/ui";
 
-export const metadata = { title: "Refer a friend" };
+export const metadata = { title: "Referrals" };
 const pounds = (m: number) => (m % 100 === 0 ? `£${m / 100}` : money(m));
 
 export default async function Refer() {
@@ -21,7 +21,7 @@ export default async function Refer() {
     <div className="space-y-4">
       {by && <section className="tile bg-white"><p className="text-sm text-muted">Recommended by</p><p className="text-2xl font-semibold">{by.who}</p>{by.months > 0 && <p className="mt-1 text-muted">You get {by.months} {by.months === 1 ? "month" : "months"} {by.label}{by.applied ? "" : " once your website is paid for"}.</p>}</section>}
       <section className="tile bg-mint !p-7 sm:!p-10">
-        <h1 className="text-4xl sm:text-5xl">Refer a friend</h1>
+        <h1 className="text-4xl sm:text-5xl">Referrals</h1>
         <p className="mt-3 max-w-xl text-lg font-medium">Get <b>{rw.type === "percent" ? rw.text : `${rw.text} cash`}</b> for every business you send us{rw.months > 0 ? `. They get ${rw.months} ${rw.months === 1 ? "month" : "months"} ${rw.label}` : ""}.</p>
         <div className="mt-6"><ShareLink url={url} from={m.customer.displayName} reward={`You get ${rw.type === "percent" ? rw.text : `${rw.text} cash`} when their website is paid for.`} /></div>
       </section>
@@ -31,7 +31,7 @@ export default async function Refer() {
       <section className="tile bg-white">
         <h2 className="mb-2 text-xl">Your referrals</h2>
         {r.list.length === 0 ? <p className="text-muted">Nobody yet. Send your link to get started.</p> : (
-          <ul className="divide-y divide-line">{r.list.map((x) => <li key={x.id} className="flex items-center justify-between gap-3 py-3"><span className="min-w-0 truncate font-semibold">{x.name}</span><span className="shrink-0 text-sm text-muted">{x.status} · {timeAgo(x.at)}</span></li>)}</ul>
+          <ul className="divide-y divide-line">{r.list.map((x) => <li key={x.id} className="flex items-center justify-between gap-3 py-3"><span className="min-w-0"><span className="block truncate font-semibold">{x.name}</span>{x.person && <span className="block truncate text-sm text-muted">{x.person}</span>}</span><span className="shrink-0 text-right text-sm"><span className={`pill ${x.status === "rewarded" ? "pill-good" : "pill-neutral"}`}>{x.status}</span><span className="block text-muted">{timeAgo(x.at)}</span></span></li>)}</ul>
         )}
       </section>
       {r.entries.length > 0 && (

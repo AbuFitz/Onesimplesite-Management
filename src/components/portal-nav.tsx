@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Home, FolderKanban, FileText, LifeBuoy, UserRound, CreditCard, Users, Ellipsis, Gift } from "lucide-react";
 
-const links = [["/overview", "Home", Home], ["/projects", "Projects", FolderKanban], ["/documents", "Documents", FileText], ["/billing", "Billing", CreditCard], ["/people", "People", Users], ["/help", "Get help", LifeBuoy], ["/referrals", "Refer", Gift], ["/account", "Settings", UserRound]] as const;
+const links = [["/overview", "Home", Home], ["/projects", "Projects", FolderKanban], ["/documents", "Documents", FileText], ["/billing", "Billing", CreditCard], ["/people", "People", Users], ["/help", "Get help", LifeBuoy], ["/referrals", "Referrals", Gift], ["/account", "Settings", UserRound]] as const;
 const pick = (show: readonly string[]) => links.filter(([h]) => !["/billing", "/people"].includes(h) || show.includes(h));
 const useActive = () => { const p = usePathname().replace(/^\/portal/, "") || "/overview"; return (h: string) => p === h || p.startsWith(h + "/"); };
 

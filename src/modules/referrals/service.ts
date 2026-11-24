@@ -293,11 +293,14 @@ export async function myReferrals(workspaceId: string, customerId: string) {
     db.rewardEntry.findMany({ where: { workspaceId, payeeId: customerId }, orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
   const names = new Map((await db.customer.findMany({ where: { id: { in: rows.map((r) => r.refereeId) } }, select: { id: true, displayName: true } })).map((c) => [c.id, c.displayName]));
+  const people = await db.contact.findMany({ where: { customerId: { in: rows.map((r) => r.refereeId) } }, orderBy: { isPrimary: "desc" }, select: { customerId: true, name: true } });
+  const who = new Map<string, string>();
+  for (const c of people) if (!who.has(c.customerId)) who.set(c.customerId, c.name);
   const paid = entries.filter((e) => e.kind === "paid").reduce((n, e) => n - e.amountMinor, 0);
   return {
     code, owed, paid, entries,
     // "review" and "rejected" are our business: the customer just sees it as still in progress.
-    list: rows.map((r) => ({ id: r.id, name: names.get(r.refereeId) ?? "A company", status: r.status === "qualified" ? "rewarded" : r.status === "reversed" || r.status === "rejected" ? "ended" : "in progress", at: r.createdAt })),
+    list: rows.map((r) => ({ id: r.id, name: names.get(r.refereeId) ?? "A company", person: who.get(r.refereeId) ?? null, status: r.status === "qualified" ? "rewarded" : r.status === "reversed" || r.status === "rejected" ? "ended" : "in progress", at: r.createdAt })),
   };
 }
 
