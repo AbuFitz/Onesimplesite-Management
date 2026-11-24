@@ -58,7 +58,7 @@ export default async function SupportTicket({ params, searchParams }: { params: 
   );
   return (
     <>
-      <LiveRefresh seconds={20} />
+      <LiveRefresh seconds={90} />
       <RecordHeader back={{ href: "/support", label: "Support tickets" }} title={t.title} status={<AutoSelect action={supportUpdateAction} name="status" value={t.status} label="Ticket status" hidden={{ id: t.id }} options={STATUSES.map((x) => ({ value: x, label: STATUS_LABEL[x]?.label ?? x }))} />} meta={<><span className={`mr-2 rounded-md px-2 py-0.5 text-xs font-semibold ${CATEGORY_LABEL[t.category]?.cls ?? ""}`}>{CATEGORY_LABEL[t.category]?.label ?? "Support"}</span>{t.reference}{waitingOnUs && <> · <WaitTimer since={(t.lastCustomerAt ?? t.createdAt).toISOString()} limitHours={TEAM_WAIT_HOURS[t.priority as keyof typeof TEAM_WAIT_HOURS] ?? 24} /></>} · <Link className="underline" href={`/customers/${t.customer.id}`}>{t.customer.displayName}</Link>{t.contact ? ` · ${t.contact.name}${t.contact.position ? `, ${t.contact.position}` : ""}` : ""}{t.project ? ` · ${t.project.name}` : ""}</>} />
       <div className="mb-3 lg:hidden"><SheetButton label="Details, owner and price" title="Ticket details" className="btn btn-quiet" icon={false}><div className="space-y-4">{side("m-")}</div></SheetButton></div>
       <ErrorSummary message={sp.error} />

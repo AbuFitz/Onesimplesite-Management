@@ -23,7 +23,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const amount = rw?.short ?? "";
   return (
     <div className="min-h-dvh pb-28 sm:pb-12">
-      <LiveRefresh seconds={30} />
+      <LiveRefresh seconds={120} />
       <header style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto max-w-5xl px-3 pt-3 sm:px-6 sm:pt-4">
           <div className="pt-bar">

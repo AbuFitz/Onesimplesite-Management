@@ -1,7 +1,7 @@
 import { Gift } from "lucide-react";
 import { requireClient } from "@/modules/identity/session";
 import { portalLink } from "@/lib/env";
-import { myReferrals, effectiveReward } from "@/modules/referrals/service";
+import { myReferrals, effectiveReward, referredBy } from "@/modules/referrals/service";
 import { ShareLink } from "@/components/share-link";
 import { money, timeAgo } from "@/components/ui";
 
@@ -16,8 +16,10 @@ export default async function Refer() {
   if (!s.enabled) return <section className="tile bg-white text-center !py-14"><Gift className="mx-auto mb-3" size={36} aria-hidden /><h1 className="text-2xl">Not available right now</h1></section>;
   const r = await myReferrals(m.customer.workspaceId, m.customerId);
   const url = portalLink(`/r/${r.code}`);
+  const by = await referredBy(m.customer.workspaceId, m.customerId);
   return (
     <div className="space-y-4">
+      {by && <section className="tile bg-white"><p className="text-sm text-muted">Recommended by</p><p className="text-2xl font-semibold">{by.who}</p>{by.months > 0 && <p className="mt-1 text-muted">You get {by.months} {by.months === 1 ? "month" : "months"} {by.label}{by.applied ? "" : " once your website is paid for"}.</p>}</section>}
       <section className="tile bg-mint !p-7 sm:!p-10">
         <h1 className="text-4xl sm:text-5xl">Refer a friend</h1>
         <p className="mt-3 max-w-xl text-lg font-medium">Get <b>{rw.type === "percent" ? rw.text : `${rw.text} cash`}</b> for every business you send us{rw.months > 0 ? `. They get ${rw.months} ${rw.months === 1 ? "month" : "months"} ${rw.label}` : ""}.</p>

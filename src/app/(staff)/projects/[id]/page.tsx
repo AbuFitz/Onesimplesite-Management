@@ -63,7 +63,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const btn = "btn btn-quiet !min-h-10 sm:!min-h-8 text-[13px]";
   return (
     <>
-      <LiveRefresh seconds={30} />
+      <LiveRefresh seconds={90} />
       <ErrorSummary message={error} />
       <section className="pj-head" aria-label="Project">
         <p className="pj-meta">

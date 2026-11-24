@@ -245,7 +245,7 @@ export async function setPlanOffer(ctx: StaffCtx, id: string, months: number, la
   if (!isMonthly(b.kind)) throw new DomainError("conflict", "Free months only apply to the monthly plan.");
   if (b.status !== "pending") throw new DomainError("conflict", "The plan has already started or been cancelled, so it's too late to add free months. A credit can be given in Stripe instead.");
   await db.$transaction(async (tx) => {
-    await tx.billingIntent.update({ where: { id }, data: { trialMonths: months, promoLabel: months > 0 ? (label.trim().slice(0, 60) || "Special offer") : null } });
+    await tx.billingIntent.update({ where: { id }, data: { trialMonths: months, paidVia: months > 0 ? "free" : null, description: months > 0 ? `Care plan (free for ${months} month${months === 1 ? "" : "s"}, then ends)` : null, promoLabel: months > 0 ? (label.trim().slice(0, 60) || "Special offer") : null } });
     await audit(tx, { workspaceId: ctx.workspaceId, actor: { userId: ctx.userId, label: ctx.name }, action: "billing.offer_set", targetType: "billing_intent", targetId: id, customerId: b.customerId, visibility: "client", detail: { months, label } });
   });
 }

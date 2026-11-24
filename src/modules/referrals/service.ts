@@ -165,7 +165,7 @@ async function award(actor: { userId: string; label: string } | null, referralId
     let applied = false;
     if (w.months > 0) {
       const plan = await tx.billingIntent.findFirst({ where: { workspaceId: r.workspaceId, customerId: r.refereeId, kind: "recurring_setup", status: "pending" } });
-      if (plan) { await tx.billingIntent.update({ where: { id: plan.id }, data: { trialMonths: Math.min(12, plan.trialMonths + w.months), promoLabel: plan.promoLabel ? `${plan.promoLabel} + referral` : `Referral: ${w.label}` } }); applied = true; }
+      if (plan) { await tx.billingIntent.update({ where: { id: plan.id }, data: { paidVia: "free", trialMonths: Math.min(12, plan.trialMonths + w.months), description: `Care plan (free for ${Math.min(12, plan.trialMonths + w.months)} months, then ends)`, promoLabel: plan.promoLabel ? `${plan.promoLabel} + referral` : `Referral: ${w.label}` } }); applied = true; }
     }
     await tx.referral.update({ where: { id: referralId }, data: { status: "qualified", qualifiedAt: new Date(), flag: null, decidedBy: actor?.label ?? null, orderMinor: order, freeMonths: w.months, freeLabel: w.months > 0 ? w.label : null } });
     await audit(tx, { workspaceId: r.workspaceId, actor, action: "referral.qualified", targetType: "referral", targetId: referralId, customerId: r.refereeId, detail: { payeeType: payee?.type, amountMinor: amount, freeMonths: w.months, freeApplied: applied } });
@@ -391,4 +391,17 @@ export async function partnerView(code: string, key: string) {
 /** False until the referral tables exist in this database (a new release can arrive before its database change). Pages use it to say "not ready yet" instead of crashing. */
 export async function referralsReady(): Promise<boolean> {
   try { await db.referralLink.count({ take: 1 } as never); await db.partner.count(); await db.rewardEntry.count(); return true; } catch { return false; }
+}
+
+/** For the portal: who recommended this company, and the free months they were offered. Never throws. */
+export async function referredBy(workspaceId: string, customerId: string) {
+  try {
+    const r = await db.referral.findUnique({ where: { workspaceId_refereeId: { workspaceId, refereeId: customerId } }, select: { referrerId: true, partnerId: true, status: true, freeMonths: true, freeLabel: true } });
+    if (!r || r.status === "rejected" || r.status === "reversed") return null;
+    const who = r.referrerId ? (await db.customer.findUnique({ where: { id: r.referrerId }, select: { displayName: true } }))?.displayName : r.partnerId ? (await db.partner.findUnique({ where: { id: r.partnerId }, select: { name: true } }))?.name : null;
+    if (!who) return null;
+    const eff = await effectiveReward(workspaceId, r.referrerId ?? "");
+    const months = r.freeMonths || (r.status === "qualified" ? 0 : eff.months), label = r.freeLabel ?? eff.label;
+    return { who, months, label, applied: r.freeMonths > 0 };
+  } catch { return null; }
 }

@@ -42,7 +42,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   const href = (t: string) => `/customers/${c.id}${t === "overview" ? "" : `?tab=${t}`}`;
   return (
     <>
-      <LiveRefresh seconds={20} />
+      <LiveRefresh seconds={90} />
       <RecordHeader avatar logoId={c.id} back={{ href: "/customers", label: "Companies" }} title={c.displayName}
         status={<><Status label={LIFECYCLE[c.lifecycle as LifecycleKey]?.label ?? c.lifecycle} kind={LIFECYCLE[c.lifecycle as LifecycleKey]?.kind ?? "neutral"} />{c.atRisk && <Status label="at risk" kind="bad" />}{c.archivedAt && <Status label="Archived" kind="neutral" />}</>}
         meta={<span>{c.reference}</span>}

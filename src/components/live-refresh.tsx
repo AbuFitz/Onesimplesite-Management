@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 /**
  * Keeps the page current without anyone pressing refresh, and costs as little as possible while doing it. Every refresh is a full
  * server render, so a tab left open all day used to add up to hundreds of thousands of requests. Now:
- * - ONE timer per tab, however many pages ask for one (the fastest request wins, never faster than 45 seconds);
+ * - ONE timer per tab, however many pages ask for one (the fastest request wins, never faster than 90 seconds);
  * - it stops after 3 minutes with no touch, key or scroll, and picks up again with a single refresh the moment someone is back;
  * - never while the tab is hidden or offline, while someone is typing, or while a dialog is open.
  * Client state (open panels, typed text) is preserved by router.refresh().
@@ -14,15 +14,15 @@ const asks = new Set<number>();
 let last = typeof window === "undefined" ? 0 : Date.now();
 const IDLE_MS = 3 * 60_000;
 
-export function LiveRefresh({ seconds = 60 }: { seconds?: number }) {
+export function LiveRefresh({ seconds = 120 }: { seconds?: number }) {
   const router = useRouter();
   useEffect(() => {
     asks.add(seconds);
     const mine = seconds;
     const typing = () => { const a = document.activeElement as HTMLElement | null; return !!a && (["INPUT", "TEXTAREA", "SELECT"].includes(a.tagName) || a.isContentEditable); };
     let busy = false, wasIdle = false, hiddenAt = 0, pending = 0;
-    const fastest = () => Math.max(45, Math.min(...asks));
-    const owner = () => fastest() === Math.max(45, mine) && Math.min(...asks) === mine; // only the fastest asker runs the timer
+    const fastest = () => Math.max(90, Math.min(...asks));
+    const owner = () => fastest() === Math.max(90, mine) && Math.min(...asks) === mine; // only the fastest asker runs the timer
     const run = () => {
       if (busy || !owner() || document.visibilityState !== "visible" || !navigator.onLine || typing() || document.querySelector("dialog[open]")) return;
       if (Date.now() - last > IDLE_MS) { wasIdle = true; return; }
