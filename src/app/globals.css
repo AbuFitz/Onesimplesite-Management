@@ -493,7 +493,7 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
   body::before { background: linear-gradient(180deg, #e4ecd9 0%, #d5e1c8 40%, #cddcbf 68%, #e4ecd9 100%); }
   body::after { background: radial-gradient(46vw 46vw at -4vw 22vh, #9db862aa, transparent 70%), radial-gradient(38vw 38vw at 104vw 24vh, #c7d8eeaa, transparent 70%); }
   html::after { content: ""; position: fixed; z-index: 90; top: -120px; left: 0; right: 0; height: calc(120px + env(safe-area-inset-top)); background: linear-gradient(180deg, #e4ecd9 0, #e4ecd9 calc(120px + env(safe-area-inset-top) * .75), rgba(228, 236, 217, 0) 100%); pointer-events: none; }
-  html::before { content: ""; position: fixed; z-index: 5; left: 0; right: 0; bottom: -280px; height: 332px; background: linear-gradient(180deg, rgba(228, 236, 217, 0) 0, #e4ecd9 52px, #e4ecd9 100%); pointer-events: none; }
+  /* No cap under the page: on iPhones fixed layers stop at the edge of the page area, so a cap there only drew a hard line across the content scrolling beneath the Safari bar. */
   /* Sheets and the More menu: the dim and blur reach into the strips, and the strips take the colour that pale edge comes to when dimmed. No transition: iOS reads the colour when it changes. */
   .sheet-wrap { top: -160px; bottom: -280px; padding-top: 160px; padding-bottom: calc(14px + 280px + env(safe-area-inset-bottom)); }
   .switcher { top: -160px; bottom: -280px; padding: calc(184px + env(safe-area-inset-top)) 0 calc(308px + env(safe-area-inset-bottom)); }
