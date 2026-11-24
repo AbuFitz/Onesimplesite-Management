@@ -10,7 +10,7 @@ import { attachReferrerAction, markPaidAction } from "@/app/actions/referrals";
 import { money } from "./ui";
 
 /** On a company: who recommended them, who they have recommended, and any cash we owe them. */
-export async function ReferralCard({ workspaceId, customerId, canWrite, back }: { workspaceId: string; customerId: string; canWrite: boolean; back: string }) {
+async function ReferralCardInner({ workspaceId, customerId, canWrite, back }: { workspaceId: string; customerId: string; canWrite: boolean; back: string }) {
   if (!(await referralsReady())) return null;
   const [deal, eff] = await Promise.all([getCompanyDeal(workspaceId, customerId), effectiveReward(workspaceId, customerId)]);
   const [from, gave, owed, code] = await Promise.all([
@@ -60,4 +60,9 @@ export async function ReferralCard({ workspaceId, customerId, canWrite, back }: 
       )}
     </section>
   );
+}
+
+/** Never lets a referral problem take the whole company page down. */
+export async function ReferralCard(props: Parameters<typeof ReferralCardInner>[0]) {
+  try { return await ReferralCardInner(props); } catch (e) { console.error("referral card failed", e); return null; }
 }
