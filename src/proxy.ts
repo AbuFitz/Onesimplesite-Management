@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Exact-host routing. Hosts come from configuration, never from trusting Host for links.
- * portal host: serves /portal/* (rewritten), /p/* (public proposal), /s/* (signing) and /api/auth/portal only.
+ * portal host: serves /portal/* (rewritten), public customer flows, portal auth and operational health probes.
  * manage host: serves everything except /portal.
  * Unknown hosts are refused. This is defence in depth; every handler still checks permissions.
  */
@@ -27,7 +27,7 @@ function route(req: NextRequest, hdrs: Headers): NextResponse {
   const h = req.headers.get("host");
   const { pathname } = req.nextUrl;
   if (h === portal) {
-    if (pathname === "/api/health" || pathname === "/api/notifications" || pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/r/") || pathname.startsWith("/partner/") || pathname === "/start" || pathname.startsWith("/email/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || /^\/(icon|apple-icon|favicon)(\.|$)/.test(pathname) || pathname === "/manifest.webmanifest" || /^\/icon-[\w-]+\.png$/.test(pathname) || pathname === "/login" || pathname === "/setup-security" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next({ request: { headers: hdrs } });
+    if (pathname === "/api/health" || pathname === "/api/launch-ready" || pathname === "/api/notifications" || pathname.startsWith("/api/auth/portal") || pathname.startsWith("/p/") || pathname.startsWith("/s/") || pathname.startsWith("/invite/") || pathname.startsWith("/r/") || pathname.startsWith("/partner/") || pathname === "/start" || pathname.startsWith("/email/") || pathname.startsWith("/legal/") || pathname.startsWith("/_next") || pathname.startsWith("/brand") || /^\/(icon|apple-icon|favicon)(\.|$)/.test(pathname) || pathname === "/manifest.webmanifest" || /^\/icon-[\w-]+\.png$/.test(pathname) || pathname === "/login" || pathname === "/setup-security" || pathname === "/forgot-password" || pathname === "/reset-password") return NextResponse.next({ request: { headers: hdrs } });
     if (pathname.startsWith("/portal")) return NextResponse.next({ request: { headers: hdrs } });
     const url = req.nextUrl.clone();
     url.pathname = `/portal${pathname === "/" ? "/overview" : pathname}`;
