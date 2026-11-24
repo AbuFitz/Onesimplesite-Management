@@ -408,3 +408,21 @@ export async function referredBy(workspaceId: string, customerId: string) {
     return { who, months, label, applied: r.freeMonths > 0 };
   } catch { return null; }
 }
+
+/** Add someone a customer or partner sent us, by hand: the company and a contact are created, then it is linked to whoever sent them. */
+export async function addReferral(ctx: StaffCtx, raw: { referrer: string; business: string; name: string; email: string; phone?: string }) {
+  if (!can(ctx.role, "customer.write")) throw forbidden();
+  const from = parseSource(raw.referrer);
+  if (!from) throw new DomainError("validation", "Choose who sent them.");
+  const business = raw.business.trim(), name = raw.name.trim(), email = raw.email.trim().toLowerCase();
+  if (!business || !name) throw new DomainError("validation", "Add the company and the person's name.");
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new DomainError("validation", "That email doesn't look right.");
+  if (!(await getSettings(ctx.workspaceId)).enabled) throw new DomainError("conflict", "Referrals are switched off.");
+  if (!(await sourceName(ctx.workspaceId, from))) throw notFound();
+  const dupe = await db.contact.findFirst({ where: { workspaceId: ctx.workspaceId, email: { equals: email, mode: "insensitive" } }, select: { customerId: true } });
+  if (dupe) throw new DomainError("conflict", "We already know this email. Open that company and choose who recommended them.");
+  const { createLead } = await import("@/modules/crm/service");
+  const lead = await createLead(ctx, { displayName: business, contactName: name, email, phone: raw.phone?.trim() || undefined, source: "Referral" });
+  await attachReferrer(ctx, lead.customerId, from);
+  return lead.customerId;
+}
