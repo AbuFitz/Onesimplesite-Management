@@ -35,7 +35,7 @@ export async function clientNotices(c: ClientCtx): Promise<Notice[]> {
   const [events, tickets, rewards] = await Promise.all([
     db.auditEvent.findMany({ where: { customerId: { in: customerIds }, visibility: "client", createdAt: { gte: DAYS(30) }, OR: [{ actorId: null }, { actorId: { not: c.userId } }] }, orderBy: { createdAt: "desc" }, take: 25 }),
     db.ticket.findMany({ where: { customerId: { in: customerIds }, status: { notIn: ["closed"] }, lastStaffAt: { gte: DAYS(14) } }, orderBy: { lastStaffAt: "desc" }, take: 10, select: { id: true, title: true, lastStaffAt: true, lastCustomerAt: true } }),
-    db.rewardEntry.findMany({ where: { workspaceId: { in: workspaceIds }, payeeId: { in: customerIds }, kind: { in: ["earned", "paid"] }, createdAt: { gte: DAYS(60) } }, orderBy: { createdAt: "desc" }, take: 5 }),
+    db.rewardEntry.findMany({ where: { workspaceId: { in: workspaceIds }, payeeId: { in: customerIds }, kind: { in: ["earned", "paid"] }, createdAt: { gte: DAYS(60) } }, orderBy: { createdAt: "desc" }, take: 5 }).catch(() => []),
   ]);
   const out: Notice[] = events.map((e) => { const d = describe(e.action); return { id: `a:${e.id}`, at: e.createdAt.toISOString(), title: d.text, href: hrefFor(e.action, e.targetType, e.targetId, e.customerId, false), kind: d.group, tone: d.tone }; });
   for (const t of tickets) if (t.lastStaffAt && (!t.lastCustomerAt || t.lastStaffAt > t.lastCustomerAt)) out.push({ id: `r:${t.id}:${+t.lastStaffAt}`, at: t.lastStaffAt.toISOString(), title: "We replied", sub: t.title, href: `/help/${t.id}`, kind: "reply", tone: "good" });

@@ -11,7 +11,7 @@ export const metadata = { title: "Your referrals", robots: { index: false } };
 /** An agency's or individual's own page. No login: the address itself is the key, and it is only ever shown to them. */
 export default async function PartnerPage({ params }: { params: Promise<{ code: string; key: string }> }) {
   const { code, key } = await params;
-  const v = await partnerView(code, key);
+  const v = await partnerView(code, key).catch(() => null);
   return (
     <main className="ref-page">
       <i className="ref-blob" aria-hidden />

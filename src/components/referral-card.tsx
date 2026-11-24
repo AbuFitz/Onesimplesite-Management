@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Gift } from "lucide-react";
 import { db } from "@/lib/db";
-import { owedTo, ensureLink, getCompanyDeal, effectiveReward } from "@/modules/referrals/service";
+import { owedTo, ensureLink, referralsReady, getCompanyDeal, effectiveReward } from "@/modules/referrals/service";
 import { SheetButton } from "./sheet-button";
 import { DealForm } from "./referral-deal";
 import { portalLink } from "@/lib/env";
@@ -11,6 +11,7 @@ import { money } from "./ui";
 
 /** On a company: who recommended them, who they have recommended, and any cash we owe them. */
 export async function ReferralCard({ workspaceId, customerId, canWrite, back }: { workspaceId: string; customerId: string; canWrite: boolean; back: string }) {
+  if (!(await referralsReady())) return null;
   const [deal, eff] = await Promise.all([getCompanyDeal(workspaceId, customerId), effectiveReward(workspaceId, customerId)]);
   const [from, gave, owed, code] = await Promise.all([
     db.referral.findUnique({ where: { workspaceId_refereeId: { workspaceId, refereeId: customerId } } }),

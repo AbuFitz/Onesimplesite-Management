@@ -387,3 +387,8 @@ export async function partnerView(code: string, key: string) {
   const owed = entries.reduce((n, e) => n + e.amountMinor, 0), paid = entries.filter((e) => e.kind === "paid").reduce((n, e) => n - e.amountMinor, 0);
   return { name: p.name, code: p.code, active: p.active, rate: p.commissionType === "percent" ? `${p.commissionValue}% of the website price` : null, rateMinor: p.commissionType === "fixed" ? p.commissionValue : null, owed, paid, entries, list: rows.map((r) => ({ id: r.id, name: names.get(r.refereeId) ?? "A company", status: r.status === "qualified" ? "won" : r.status === "rejected" || r.status === "reversed" ? "ended" : "in progress", at: r.createdAt })) };
 }
+
+/** False until the referral tables exist in this database (a new release can arrive before its database change). Pages use it to say "not ready yet" instead of crashing. */
+export async function referralsReady(): Promise<boolean> {
+  try { await db.referralLink.count({ take: 1 } as never); await db.partner.count(); await db.rewardEntry.count(); return true; } catch { return false; }
+}

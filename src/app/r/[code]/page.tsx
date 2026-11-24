@@ -9,7 +9,7 @@ import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ code: string }> }) {
-  const hit = await findByCode((await params).code);
+  const hit = await findByCode((await params).code).catch(() => null);
   const title = hit ? `${hit.name} recommends OneSimpleSite` : "OneSimpleSite";
   const description = "Simple, good-looking websites for small businesses. Tap to say hello.";
   return { metadataBase: new URL(origins().portal), title, description, robots: { index: false }, openGraph: { title, description, type: "website", siteName: "OneSimpleSite" }, twitter: { card: "summary_large_image", title, description } };
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
 export default async function ReferralLanding({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ sent?: string; error?: string }> }) {
   const { code } = await params;
   const sp = await searchParams;
-  const hit = await findByCode(code);
+  const hit = await findByCode(code).catch(() => null);
   const set = hit ? await getSettings(hit.workspaceId) : null;
   const on = !!set?.enabled;
   const w = set?.welcome.standard;
