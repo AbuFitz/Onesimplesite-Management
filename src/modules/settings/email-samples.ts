@@ -1,3 +1,4 @@
+import { UPDATE } from "@/modules/outbox/announce";
 import { renderEmail, type TemplateName } from "@/emails/templates";
 
 /** Every email the system sends, in the order a customer meets them, with sample content. Used by the preview and the test sender. */
@@ -30,6 +31,7 @@ export const EMAILS: { id: TemplateName; label: string; audience: "Customer" | "
   { id: "staff_invitation", label: "Team invitation", audience: "Team", when: "When you add someone to the team.", sender: "noreply" },
   { id: "referral_notice", label: "New referral for us", audience: "Team", when: "When someone fills in a customer's referral link.", sender: "noreply" },
   { id: "announcement", label: "New version rollout notice", audience: "Customer", when: "Only when you press Send in the box below. One email to each person, same wording for team and customers.", sender: "noreply" },
+  { id: "whats_changed", label: "What's changed (follow-up)", audience: "Customer", when: "Only when you press Send in the box below. Goes after the rollout notice: two-step sign-in and a breakdown of the new design, different for team and customers.", sender: "noreply" },
   { id: "backup_reminder", label: "Backup reminder", audience: "Team", when: "Weekly, if no backup has been taken.", sender: "noreply" },
 ];
 
@@ -69,6 +71,7 @@ export function sampleEmail(id: TemplateName) {
     case "staff_invitation": return renderEmail(id, { to: "new.person@onesimplesite.co.uk", name: "New Person", inviter: "Jamie", roleLabel: "Team member", link: MANAGE, expires: "9 November 2026" });
     case "referral_notice": return renderEmail(id, { to: "hello@onesimplesite.co.uk", referrer: "Sample Café Ltd", business: "Harbour Bakery", person: "Sam Taylor", email: "sam@example.com", link: "https://manage.onesimplesite.co.uk/customers" });
     case "announcement": return renderEmail(id, { to, name: "Alex", audience: "customer", link: PORTAL, items: ["Refer a friend: earn cash for every business you send us", "A bell for replies, payments and signatures", "Passkeys and an authenticator app for safer sign-in"], images: [{ src: "https://portal.onesimplesite.co.uk/email/c-refer.jpg", alt: "Refer a friend" }, { src: "https://portal.onesimplesite.co.uk/email/c-qr.jpg", alt: "Your referral QR code" }] });
+    case "whats_changed": return renderEmail(id, { to, name: "Alex", audience: "customer", link: PORTAL, sections: UPDATE.customer.sections.map((x) => ({ title: x.title, points: [...x.points] })), images: UPDATE.customer.images.map(([path, alt]) => ({ src: `https://portal.onesimplesite.co.uk/${path}`, alt })) });
     case "backup_reminder": return renderEmail(id, { to: "hello@onesimplesite.co.uk", lastBackup: "26 October 2026", link: "https://manage.onesimplesite.co.uk/backup" });
     default: return renderEmail("password_changed", { to, name: "Alex", when: "" });
   }

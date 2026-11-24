@@ -49,6 +49,7 @@ export default async function Emails({ searchParams }: { searchParams: Promise<{
           </div>
           <div className="mb-4 flex flex-wrap items-start gap-3"><EmailTestButton only={cur.id} label="Send this one to hello@" /><EmailTestButton label="Send all test emails to hello@" /></div>
           {cur.id === "announcement" && <AnnounceSend />}
+          {cur.id === "whats_changed" && <AnnounceSend kind="update" />}
           <div className="mb-3 rounded-xl border border-line px-4 py-3 text-sm"><span className="text-muted">Subject</span><p className="font-semibold break-words">{r.subject}</p></div>
           <div className="rounded-2xl bg-[#eef0ee] p-3 sm:p-6">
             <iframe title={`${cur.label} preview`} srcDoc={r.html} sandbox="" className="mx-auto block h-[44rem] max-w-full rounded-lg bg-white" style={{ width: phone ? 390 : 680 }} />

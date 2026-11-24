@@ -1,6 +1,6 @@
 "use server";
 import { requireStaff } from "@/modules/identity/session";
-import { announcementRecipients, queueAnnouncement, type Audience } from "@/modules/outbox/announce";
+import { announcementRecipients, queueAnnouncement, queueUpdate, type Audience } from "@/modules/outbox/announce";
 import { flushEmails } from "@/lib/flush-email";
 
 const pick = (a: string): Audience => (a === "team" || a === "customers" ? a : "everyone");
@@ -12,10 +12,10 @@ export async function announcementCountsAction() {
   return { team, customers, everyone };
 }
 
-export async function sendAnnouncementAction(audience: string): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+export async function sendAnnouncementAction(audience: string, kind: string = "rollout"): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
   const ctx = await requireStaff("settings.write");
   try {
-    const count = await queueAnnouncement(ctx, pick(audience));
+    const count = kind === "update" ? await queueUpdate(ctx, pick(audience)) : await queueAnnouncement(ctx, pick(audience));
     flushEmails();
     return { ok: true, count };
   } catch (e) { return { ok: false, error: String(e).slice(0, 160) }; }
