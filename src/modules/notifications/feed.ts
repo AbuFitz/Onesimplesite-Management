@@ -22,10 +22,13 @@ export async function staffNotices(ctx: StaffCtx): Promise<Notice[]> {
     db.auditEvent.findMany({ where: { workspaceId: ctx.workspaceId, createdAt: { gte: DAYS(14) }, action: { in: STAFF_ACTIONS }, OR: [{ actorId: null }, { actorId: { not: ctx.userId } }] }, orderBy: { createdAt: "desc" }, take: 30 }),
     db.ticket.findMany({ where: { workspaceId: ctx.workspaceId, status: { notIn: ["resolved", "closed"] }, lastCustomerAt: { gte: DAYS(14) } }, orderBy: { lastCustomerAt: "desc" }, take: 15, select: { id: true, title: true, lastCustomerAt: true, lastStaffAt: true, customer: { select: { displayName: true } } } }),
   ]);
+  const tag = `@${ctx.name}`;
+  const mentions = await db.noteComment.findMany({ where: { workspaceId: ctx.workspaceId, createdAt: { gte: DAYS(14) }, authorId: { not: ctx.staffId }, body: { contains: tag, mode: "insensitive" }, note: { archivedAt: null, OR: [{ visibility: "team" }, { ownerId: ctx.staffId }] } }, orderBy: { createdAt: "desc" }, take: 10, include: { note: { select: { id: true, title: true } } } }).catch(() => []);
   const ids = [...new Set(events.map((e) => e.customerId).filter((x): x is string => !!x))];
   const names = new Map((await db.customer.findMany({ where: { id: { in: ids } }, select: { id: true, displayName: true } })).map((c) => [c.id, c.displayName]));
   const out: Notice[] = events.map((e) => { const d = describe(e.action); return { id: `a:${e.id}`, at: e.createdAt.toISOString(), title: e.action.startsWith("referral.") ? (e.action === "referral.qualified" ? "A referral is complete" : "New referral") : d.text, sub: e.customerId ? names.get(e.customerId) : undefined, href: hrefFor(e.action, e.targetType, e.targetId, e.customerId, true), kind: e.action.startsWith("referral.") ? "referral" : d.group, tone: d.tone }; });
   for (const t of replies) if (t.lastCustomerAt && (!t.lastStaffAt || t.lastCustomerAt > t.lastStaffAt)) out.push({ id: `r:${t.id}:${+t.lastCustomerAt}`, at: t.lastCustomerAt.toISOString(), title: `${t.customer.displayName} replied`, sub: t.title, href: `/support/${t.id}`, kind: "reply", tone: "warn" });
+  for (const m of mentions) out.push({ id: `m:${m.id}`, at: m.createdAt.toISOString(), title: "You were mentioned", sub: m.note.title, href: `/board/${m.note.id}`, kind: "reply" });
   return out.sort((a, b) => +new Date(b.at) - +new Date(a.at)).slice(0, 40);
 }
 

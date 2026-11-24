@@ -3,14 +3,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { requireStaff } from "@/modules/identity/session";
-import { createPost, deletePost, setPinned, addComment, deleteComment } from "@/modules/notes/service";
+import { createPost, deletePost, setPinned, addComment, deleteComment, toggleReaction } from "@/modules/notes/service";
 import { DomainError } from "@/lib/errors";
 
 const msg = (e: unknown) => (e instanceof DomainError ? e.message : e instanceof ZodError ? e.issues.map((i) => i.message).join("; ") : "Something went wrong. Nothing was changed.");
 
 export async function postAction(_: unknown, fd: FormData): Promise<{ error?: string; done?: boolean }> {
   const ctx = await requireStaff("notes.write");
-  try { await createPost(ctx, { title: fd.get("title") ?? undefined, body: fd.get("body"), visibility: fd.get("visibility") ?? "team" }); }
+  try { await createPost(ctx, { title: fd.get("title") ?? undefined, body: fd.get("body"), visibility: fd.get("visibility") ?? "team", channel: fd.get("channel") ?? undefined }); }
   catch (e) { return { error: msg(e) }; }
   revalidatePath("/board");
   return { done: true };
@@ -38,4 +38,10 @@ export async function deleteCommentAction(fd: FormData) {
   const id = String(fd.get("id"));
   try { await deleteComment(ctx, String(fd.get("commentId"))); } catch { /* not allowed */ }
   revalidatePath(`/board/${id}`);
+}
+export async function reactAction(noteId: string, targetType: "note" | "comment", targetId: string, emoji: string): Promise<{ ok: boolean }> {
+  const ctx = await requireStaff("notes.write");
+  try { await toggleReaction(ctx, noteId, targetType, targetId, emoji); } catch { return { ok: false }; }
+  revalidatePath(`/board/${noteId}`);
+  return { ok: true };
 }

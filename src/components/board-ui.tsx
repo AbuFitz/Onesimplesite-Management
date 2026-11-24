@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Lock, Users, Plus } from "lucide-react";
+import { Lock, Users, Plus, AtSign } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Sheet } from "./sheet";
 import { postAction, commentAction } from "@/app/actions/board";
@@ -39,11 +39,19 @@ export function Composer({ name, staffId }: { name: string; staffId?: string }) 
   );
 }
 
-export function CommentForm({ id, name, staffId }: { id: string; name: string; staffId?: string }) {
+export function CommentForm({ id, name, staffId, people = [] }: { id: string; name: string; staffId?: string; people?: { id: string; displayName: string }[] }) {
   const [s, act, pending] = useActionState(commentAction, undefined as { error?: string; done?: boolean } | undefined);
   const form = useRef<HTMLFormElement>(null);
+  const area = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState("");
+  const [pick, setPick] = useState(false);
   useEffect(() => { if (s?.done) { form.current?.reset(); setText(""); } }, [s]);
+  const mention = (n: string) => {
+    const el = area.current, at = el?.selectionStart ?? text.length, end = el?.selectionEnd ?? at;
+    const add = `@${n} `, next = text.slice(0, at) + add + text.slice(end);
+    setText(next); setPick(false);
+    requestAnimationFrame(() => { el?.focus(); el?.setSelectionRange(at + add.length, at + add.length); });
+  };
   return (
     <form ref={form} action={act} className="flex items-start gap-3">
       <input type="hidden" name="id" value={id} />
@@ -51,8 +59,16 @@ export function CommentForm({ id, name, staffId }: { id: string; name: string; s
       <div className="min-w-0 flex-1 space-y-2">
         <ErrorSummary message={s?.error} />
         <label className="sr-only" htmlFor="cm-body">Write a comment</label>
-        <textarea id="cm-body" name="body" rows={2} className="field" placeholder="Reply…" value={text} onChange={(e) => setText(e.target.value)} />
-        <button className="btn" disabled={pending || !text.trim()}>{pending ? "Posting…" : "Comment"}</button>
+        <textarea ref={area} id="cm-body" name="body" rows={2} className="field" placeholder="Reply…" value={text} onChange={(e) => setText(e.target.value)} />
+        <div className="flex items-center gap-2">
+          <button className="btn" disabled={pending || !text.trim()}>{pending ? "Posting…" : "Comment"}</button>
+          {people.length > 0 && (
+            <span className="rx-add">
+              <button type="button" className="btn btn-quiet" aria-expanded={pick} aria-haspopup="menu" onClick={() => setPick((o) => !o)}><AtSign size={16} aria-hidden />Mention</button>
+              {pick && <span className="rx-menu mn-menu" role="menu">{people.map((p) => <button key={p.id} type="button" role="menuitem" onClick={() => mention(p.displayName)}>{p.displayName}</button>)}</span>}
+            </span>
+          )}
+        </div>
       </div>
     </form>
   );
@@ -63,7 +79,7 @@ export const VisBadge = ({ v }: { v: string }) => (
 );
 
 /** "New topic" opens the composer in a sheet, so the feed gets the whole page. */
-export function NewTopic({ name, staffId }: { name: string; staffId?: string }) {
+export function NewTopic({ name, staffId, channels, channel }: { name: string; staffId?: string; channels: readonly (readonly [string, string])[]; channel?: string }) {
   const [open, setOpen] = useState(false);
   const [s, act, pending] = useActionState(postAction, undefined as { error?: string; done?: boolean } | undefined);
   useEffect(() => { if (s?.done) setOpen(false); }, [s]);
@@ -74,6 +90,8 @@ export function NewTopic({ name, staffId }: { name: string; staffId?: string }) 
         <Sheet open onClose={() => setOpen(false)} title="New topic">
           <form action={act} className="space-y-3">
             <ErrorSummary message={s?.error} />
+            <label className="sr-only" htmlFor="bp-ch">Channel</label>
+            <select id="bp-ch" name="channel" className="field" defaultValue={channel || "general"}>{channels.map(([id, l]) => <option key={id} value={id}>{l}</option>)}</select>
             <label className="sr-only" htmlFor="bp-title">Topic</label>
             <input id="bp-title" name="title" className="field" placeholder="Topic (optional)" autoComplete="off" />
             <label className="sr-only" htmlFor="bp-body">Message</label>

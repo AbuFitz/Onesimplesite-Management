@@ -3,26 +3,29 @@ import { MessageCircle, Pin, Search } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/modules/identity/session";
 import { can } from "@/modules/identity/permissions";
-import { listPosts, visibleNotes, type BoardFilter } from "@/modules/notes/service";
+import { listPosts, visibleNotes, channelCounts, CHANNELS, type BoardFilter } from "@/modules/notes/service";
 import { NewTopic, VisBadge } from "@/components/board-ui";
 import { Avatar, Empty, timeAgo } from "@/components/ui";
 import { AutoGetForm } from "@/components/auto-form";
-import { QuickChips } from "@/components/filter-bar";
+import { QuickChips, FilterPanel } from "@/components/filter-bar";
 
 export const metadata = { title: "Team Board" };
-const FILTERS: [BoardFilter, string][] = [["all", "Everything"], ["pinned", "Pinned"], ["mine", "Mine"], ["private", "Only me"]];
+const FILTERS: [BoardFilter, string][] = [["all", "Everything"], ["pinned", "Pinned"], ["mine", "My topics"], ["mentions", "Mentions me"], ["private", "Only me"]];
 const plain = (b: string) => b.replace(/^[#>\-*\s]+/gm, "").replace(/\*\*|`|\[|\]\(https?:[^)]*\)/g, "").replace(/\s+/g, " ").trim();
 
-export default async function Board({ searchParams }: { searchParams: Promise<{ q?: string; f?: string }> }) {
+export default async function Board({ searchParams }: { searchParams: Promise<{ q?: string; f?: string; c?: string }> }) {
   const ctx = await requireStaff();
   const sp = await searchParams;
   const filter = (FILTERS.find(([id]) => id === sp.f)?.[0] ?? "all") as BoardFilter;
-  const [posts, comments] = await Promise.all([
-    listPosts(ctx, { q: sp.q, filter }),
+  const channel = CHANNELS.find(([id]) => id === sp.c)?.[0];
+  const [posts, comments, chans] = await Promise.all([
+    listPosts(ctx, { q: sp.q, filter, channel }),
     db.noteComment.findMany({ where: { workspaceId: ctx.workspaceId, note: visibleNotes(ctx) }, orderBy: { createdAt: "desc" }, take: 6, include: { note: { select: { id: true, title: true } } } }),
+    channelCounts(ctx),
   ]);
   const authors = new Map((await db.staffMembership.findMany({ where: { id: { in: comments.map((c) => c.authorId) } }, select: { id: true, displayName: true } })).map((a) => [a.id, a.displayName]));
-  const href = (f: string) => `/board?${new URLSearchParams({ ...(sp.q ? { q: sp.q } : {}), ...(f !== "all" ? { f } : {}) }).toString()}`;
+  const hrefC = (c: string) => `/board?${new URLSearchParams({ ...(sp.q ? { q: sp.q } : {}), ...(filter !== "all" ? { f: filter } : {}), ...(c ? { c } : {}) }).toString()}`;
+  const total = chans.reduce((n, c) => n + c.count, 0);
   return (
     <>
       <h1 className="sr-only">Team Board</h1>
@@ -30,11 +33,15 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
         <AutoGetForm className="lt-form">
           <div className="lt-row">
             <label className="lt-search"><span className="sr-only">Search the board</span><Search size={17} aria-hidden /><input id="bq" name="q" type="search" defaultValue={sp.q} placeholder="Search topics" autoComplete="off" /></label>
-            {filter !== "all" && <input type="hidden" name="f" value={filter} />}
-            {can(ctx.role, "notes.write") && <NewTopic name={ctx.name} staffId={ctx.staffId} />}
+            {channel && <input type="hidden" name="c" value={channel} />}
+            <FilterPanel active={filter !== "all" ? 1 : 0}>
+              <div className="col-span-full"><label className="label" htmlFor="bf">Show</label>
+                <select id="bf" name="f" defaultValue={filter} className="field">{FILTERS.map(([id, l]) => <option key={id} value={id}>{l}</option>)}</select></div>
+            </FilterPanel>
+            {can(ctx.role, "notes.write") && <NewTopic name={ctx.name} staffId={ctx.staffId} channels={CHANNELS} channel={channel} />}
           </div>
         </AutoGetForm>
-        <QuickChips label="Show" items={FILTERS.map(([id, l]) => ({ label: l, href: href(id), on: filter === id }))} />
+        <QuickChips label="Channels" items={[{ label: "All", count: total, href: hrefC(""), on: !channel }, ...chans.map((c) => ({ label: c.label, count: c.count, href: hrefC(c.id), on: channel === c.id }))]} />
       </div>
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         {posts.length === 0 ? <Empty title={sp.q ? "No topics match" : "Quiet in here"}>{sp.q ? "Try a different word." : "Start the first topic."}</Empty> : (
@@ -44,11 +51,11 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
                 <Link href={`/board/${p.id}`} className="flex items-start gap-3 px-4 py-3.5 hover:bg-bone/60">
                   <Avatar name={p.author.displayName} size={36} staffId={p.author.id} />
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2"><span className="truncate font-semibold">{p.title}</span>{p.pinned && <Pin size={13} className="shrink-0 text-olive-700" aria-label="Pinned" />}<VisBadge v={p.visibility} /></span>
+                    <span className="flex items-center gap-2"><span className="truncate font-semibold">{p.title}</span>{p.pinned && <Pin size={13} className="shrink-0 text-olive-700" aria-label="Pinned" />}<VisBadge v={p.visibility} />{!channel && p.channel !== "general" && <span className="chan-pill">{CHANNELS.find(([id]) => id === p.channel)?.[1]}</span>}</span>
                     {plain(p.body) && <span className="mt-0.5 block line-clamp-1 text-[14.5px] text-muted">{plain(p.body)}</span>}
                     <span className="mt-1 block text-[13px] text-muted">{p.author.displayName} · {timeAgo(p.updatedAt)}</span>
                   </span>
-                  <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-soft px-2.5 py-1 text-[13px] font-semibold text-ink/80" aria-label={`${p._count.comments} replies`}><MessageCircle size={14} aria-hidden />{p._count.comments}</span>
+                  <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-soft px-2.5 py-1 text-[13px] font-semibold text-ink/80" aria-label={`${p._count.comments} replies`}><MessageCircle size={14} aria-hidden />{p._count.comments}{p._count.reactions > 0 && <span aria-label={`${p._count.reactions} reactions`}> · 🙂 {p._count.reactions}</span>}</span>
                 </Link>
               </li>
             ))}

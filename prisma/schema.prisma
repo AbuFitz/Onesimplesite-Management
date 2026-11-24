@@ -78,14 +78,14 @@ model Verification {
 }
 
 model TwoFactor {
-  id          String @id
-  secret      String
-  backupCodes String
-  userId      String
-  verified    Boolean   @default(true)
-  failedVerificationCount Int @default(0)
-  lockedUntil DateTime?
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("two_factor")
@@ -127,17 +127,17 @@ model Passkey {
 
 // ───────── Workspace, access ─────────
 model Workspace {
-  vaultEntries VaultEntry[]
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  timezone  String   @default("Europe/London")
+  vaultEntries      VaultEntry[]
+  id                String       @id @default(uuid()) @db.Uuid
+  name              String
+  timezone          String       @default("Europe/London")
   // Our own company details, shown on every agreement. Never invented: empty until the team fills them in.
   legalName         String?
   companyNumber     String?
   registeredAddress String?
   vatNumber         String?
-  settings          Json     @default("{}") // values the legal documents quote: support hours, notice period, emails...
-  createdAt DateTime @default(now())
+  settings          Json         @default("{}") // values the legal documents quote: support hours, notice period, emails...
+  createdAt         DateTime     @default(now())
 
   plans     ServicePlan[]
   staff     StaffMembership[]
@@ -161,22 +161,22 @@ enum MembershipStatus {
 }
 
 model StaffMembership {
-  id          String           @id @default(uuid()) @db.Uuid
-  workspaceId String           @db.Uuid
-  userId      String?
-  email       String
-  displayName String
-  username    String?
-  aliasEmail  String? // customer-facing address, e.g. abukar@onesimplesite.co.uk
-  jobTitle    String?
-  phone       String?
-  signature   String?
-  role        StaffRole
-  status      MembershipStatus @default(pending)
-  createdAt   DateTime         @default(now())
+  id            String           @id @default(uuid()) @db.Uuid
+  workspaceId   String           @db.Uuid
+  userId        String?
+  email         String
+  displayName   String
+  username      String?
+  aliasEmail    String? // customer-facing address, e.g. abukar@onesimplesite.co.uk
+  jobTitle      String?
+  phone         String?
+  signature     String?
+  role          StaffRole
+  status        MembershipStatus @default(pending)
+  createdAt     DateTime         @default(now())
   deactivatedAt DateTime?
-  photo       Bytes?
-  photoType   String?
+  photo         Bytes?
+  photoType     String?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -189,19 +189,19 @@ model StaffMembership {
 
 // Single-use invitations; only the SHA-256 of the token is stored.
 model Invitation {
-  id          String    @id @default(uuid()) @db.Uuid
-  workspaceId String    @db.Uuid
-  kind        String // staff | client
-  email       String
-  tokenHash   String    @unique
-  staffRole   StaffRole?
-  customerId  String?   @db.Uuid
-  clientRole  ClientRole?
-  clientBilling Boolean   @default(false)
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
+  id            String      @id @default(uuid()) @db.Uuid
+  workspaceId   String      @db.Uuid
+  kind          String // staff | client
+  email         String
+  tokenHash     String      @unique
+  staffRole     StaffRole?
+  customerId    String?     @db.Uuid
+  clientRole    ClientRole?
+  clientBilling Boolean     @default(false)
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime    @default(now())
 
   @@index([workspaceId, email])
 }
@@ -237,32 +237,32 @@ enum Lifecycle {
 }
 
 model Customer {
-  id            String    @id @default(uuid()) @db.Uuid
-  workspaceId   String    @db.Uuid
-  reference     String
-  displayName   String
-  legalName     String?
-  kind          String    @default("business") // business (a company) | sole_trader | individual
-  businessType  String? // what kind of business: Food and drink, Trades...
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceId      String    @db.Uuid
+  reference        String
+  displayName      String
+  legalName        String?
+  kind             String    @default("business") // business (a company) | sole_trader | individual
+  businessType     String? // what kind of business: Food and drink, Trades...
   stripeCustomerId String?
-  town          String?
-  addressLine1  String?
-  addressLine2  String?
-  postcode      String?
-  lifecycle     Lifecycle @default(prospect)
-  atRisk        Boolean   @default(false)
-  ownerId       String?   @db.Uuid // StaffMembership
-  source        String?
-  website       String?
-  phone         String?
-  billingAddress String?
-  companyNumber String?
-  vatNumber     String?
-  tags          String[]
-  archivedAt    DateTime?
-  version       Int       @default(1)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  town             String?
+  addressLine1     String?
+  addressLine2     String?
+  postcode         String?
+  lifecycle        Lifecycle @default(prospect)
+  atRisk           Boolean   @default(false)
+  ownerId          String?   @db.Uuid // StaffMembership
+  source           String?
+  website          String?
+  phone            String?
+  billingAddress   String?
+  companyNumber    String?
+  vatNumber        String?
+  tags             String[]
+  archivedAt       DateTime?
+  version          Int       @default(1)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   workspace     Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   contacts      Contact[]
@@ -279,16 +279,16 @@ model Customer {
 }
 
 model Contact {
-  id          String   @id @default(uuid()) @db.Uuid
-  workspaceId String   @db.Uuid
-  customerId  String   @db.Uuid
-  name        String
-  email       String?
-  phone       String?
-  isPrimary   Boolean  @default(false)
-  marketingOptIn Boolean @default(false)
-  position    String? // where they sit in the business: Owner, Director, Manager...
-  createdAt   DateTime @default(now())
+  id             String   @id @default(uuid()) @db.Uuid
+  workspaceId    String   @db.Uuid
+  customerId     String   @db.Uuid
+  name           String
+  email          String?
+  phone          String?
+  isPrimary      Boolean  @default(false)
+  marketingOptIn Boolean  @default(false)
+  position       String? // where they sit in the business: Owner, Director, Manager...
+  createdAt      DateTime @default(now())
 
   customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   tickets  Ticket[]
@@ -322,7 +322,7 @@ model Opportunity {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+  customer  Customer   @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   proposals Proposal[]
 
   @@index([workspaceId, stage])
@@ -340,21 +340,21 @@ enum ProposalStatus {
 }
 
 model Proposal {
-  id             String         @id @default(uuid()) @db.Uuid
-  workspaceId    String         @db.Uuid
-  customerId     String         @db.Uuid
-  opportunityId  String?        @db.Uuid
-  reference      String
-  title          String
-  status         ProposalStatus @default(draft)
-  currentVersion Int            @default(1)
-  acceptedVersionId String?     @db.Uuid
-  version        Int            @default(1) // optimistic concurrency
-  createdById    String?        @db.Uuid
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                String         @id @default(uuid()) @db.Uuid
+  workspaceId       String         @db.Uuid
+  customerId        String         @db.Uuid
+  opportunityId     String?        @db.Uuid
+  reference         String
+  title             String
+  status            ProposalStatus @default(draft)
+  currentVersion    Int            @default(1)
+  acceptedVersionId String?        @db.Uuid
+  version           Int            @default(1) // optimistic concurrency
+  createdById       String?        @db.Uuid
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+  customer    Customer          @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   opportunity Opportunity?      @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
   versions    ProposalVersion[]
 
@@ -364,24 +364,24 @@ model Proposal {
 }
 
 model ProposalVersion {
-  id          String    @id @default(uuid()) @db.Uuid
-  workspaceId String    @db.Uuid
-  proposalId  String    @db.Uuid
-  number      Int
-  scope       String // structured text: scope, deliverables, exclusions
-  terms       String
-  currency    String    @default("GBP")
-  oneOffMinor Int       @default(0)
-  recurringMinor Int    @default(0)
+  id              String    @id @default(uuid()) @db.Uuid
+  workspaceId     String    @db.Uuid
+  proposalId      String    @db.Uuid
+  number          Int
+  scope           String // structured text: scope, deliverables, exclusions
+  terms           String
+  currency        String    @default("GBP")
+  oneOffMinor     Int       @default(0)
+  recurringMinor  Int       @default(0)
   recurringPeriod String? // month | year
-  requirements Json? // website requirements + payment schedule, filled in by the team for each deal
-  validUntil  DateTime?
-  sentAt      DateTime? // non-null => immutable (enforced by trigger)
-  sentToEmail String?
-  supersededAt DateTime?
-  createdAt   DateTime  @default(now())
+  requirements    Json? // website requirements + payment schedule, filled in by the team for each deal
+  validUntil      DateTime?
+  sentAt          DateTime? // non-null => immutable (enforced by trigger)
+  sentToEmail     String?
+  supersededAt    DateTime?
+  createdAt       DateTime  @default(now())
 
-  proposal    Proposal           @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  proposal    Proposal             @relation(fields: [proposalId], references: [id], onDelete: Restrict)
   lines       ProposalLine[]
   acceptances ProposalAcceptance[]
   contract    Contract?
@@ -391,13 +391,13 @@ model ProposalVersion {
 }
 
 model ProposalLine {
-  id          String   @id @default(uuid()) @db.Uuid
-  versionId   String   @db.Uuid
+  id          String  @id @default(uuid()) @db.Uuid
+  versionId   String  @db.Uuid
   position    Int
   description String
   quantity    Int
   unitMinor   Int
-  recurring   Boolean  @default(false)
+  recurring   Boolean @default(false)
 
   version ProposalVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
 
@@ -422,16 +422,16 @@ model ProposalAcceptance {
 
 // High-entropy link tokens, stored hashed, scoped to one purpose + entity.
 model ScopedLinkToken {
-  id          String    @id @default(uuid()) @db.Uuid
-  workspaceId String    @db.Uuid
-  purpose     String // proposal_accept | contract_sign
-  entityId    String    @db.Uuid
-  tokenHash   String    @unique
+  id             String    @id @default(uuid()) @db.Uuid
+  workspaceId    String    @db.Uuid
+  purpose        String // proposal_accept | contract_sign
+  entityId       String    @db.Uuid
+  tokenHash      String    @unique
   recipientEmail String
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  usedAt      DateTime?
-  createdAt   DateTime  @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
 
   @@index([workspaceId, purpose, entityId])
 }
@@ -447,32 +447,32 @@ enum ContractStatus {
 }
 
 model Contract {
-  cancelledAt  DateTime? // a signed order the customer or we later called off. The signed copy is kept; the order, its unpaid charges and its project are closed.
-  cancelReason String?
-  id              String         @id @default(uuid()) @db.Uuid
-  workspaceId     String         @db.Uuid
-  customerId      String         @db.Uuid
-  reference       String
-  title           String
-  status          ContractStatus @default(draft)
-  proposalVersionId String?      @unique @db.Uuid // unique conversion key
-  scopeSnapshot   String
-  oneOffMinor     Int            @default(0)
-  recurringMinor  Int            @default(0)
-  currency        String         @default("GBP")
-  signingMode     String         @default("manual_record") // manual_record | original_capture | external
-  startDate       DateTime?      @db.Date
-  endDate         DateTime?      @db.Date
-  noticeDate      DateTime?      @db.Date
-  completedAt     DateTime?
+  cancelledAt          DateTime? // a signed order the customer or we later called off. The signed copy is kept; the order, its unpaid charges and its project are closed.
+  cancelReason         String?
+  id                   String         @id @default(uuid()) @db.Uuid
+  workspaceId          String         @db.Uuid
+  customerId           String         @db.Uuid
+  reference            String
+  title                String
+  status               ContractStatus @default(draft)
+  proposalVersionId    String?        @unique @db.Uuid // unique conversion key
+  scopeSnapshot        String
+  oneOffMinor          Int            @default(0)
+  recurringMinor       Int            @default(0)
+  currency             String         @default("GBP")
+  signingMode          String         @default("manual_record") // manual_record | original_capture | external
+  startDate            DateTime?      @db.Date
+  endDate              DateTime?      @db.Date
+  noticeDate           DateTime?      @db.Date
+  completedAt          DateTime?
   completionRecordedBy String?
   completionEvidence   String?
-  version         Int            @default(1)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  version              Int            @default(1)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
-  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
-  proposalVersion ProposalVersion? @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
+  customer        Customer           @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+  proposalVersion ProposalVersion?   @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
   project         Project?
   billingIntents  BillingIntent[]
   signingRequests SigningRequest[]
@@ -499,27 +499,27 @@ enum ProjectStage {
 }
 
 model Project {
-  id          String       @id @default(uuid()) @db.Uuid
-  workspaceId String       @db.Uuid
-  customerId  String       @db.Uuid
-  contractId  String?      @unique @db.Uuid // one project per contract
-  reference   String
-  name        String
-  stage       ProjectStage @default(planned)
-  awaitingContract Boolean @default(false)
-  workType    String       @default("new_site") // new_site | revamp | shop | hosting_only | care | custom: decides which stages and usual tasks apply
-  ownerId     String?      @db.Uuid
-  dueDate     DateTime?    @db.Date
-  scopeSnapshot String
-  version     Int          @default(1)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id               String       @id @default(uuid()) @db.Uuid
+  workspaceId      String       @db.Uuid
+  customerId       String       @db.Uuid
+  contractId       String?      @unique @db.Uuid // one project per contract
+  reference        String
+  name             String
+  stage            ProjectStage @default(planned)
+  awaitingContract Boolean      @default(false)
+  workType         String       @default("new_site") // new_site | revamp | shop | hosting_only | care | custom: decides which stages and usual tasks apply
+  ownerId          String?      @db.Uuid
+  dueDate          DateTime?    @db.Date
+  scopeSnapshot    String
+  version          Int          @default(1)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  customer Customer @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
-  contract Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
-  tasks    Task[]
-  tickets  Ticket[]
-  updates  ProjectUpdate[]
+  customer      Customer        @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+  contract      Contract?       @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  tasks         Task[]
+  tickets       Ticket[]
+  updates       ProjectUpdate[]
   assetRequests AssetRequest[]
 
   @@unique([workspaceId, reference])
@@ -544,13 +544,13 @@ model Task {
 }
 
 model ProjectUpdate {
-  id          String   @id @default(uuid()) @db.Uuid
-  workspaceId String   @db.Uuid
-  projectId   String   @db.Uuid
-  body        String
-  clientVisible Boolean @default(false)
-  authorId    String?  @db.Uuid
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid()) @db.Uuid
+  workspaceId   String   @db.Uuid
+  projectId     String   @db.Uuid
+  body          String
+  clientVisible Boolean  @default(false)
+  authorId      String?  @db.Uuid
+  createdAt     DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
@@ -577,58 +577,58 @@ model AssetRequest {
 
 // A billing intention is NOT an invoice. Stripe invoices come later.
 model BillingIntent {
-  id          String   @id @default(uuid()) @db.Uuid
-  workspaceId String   @db.Uuid
-  customerId  String   @db.Uuid
-  contractId  String?  @db.Uuid
-  ticketId    String?  @unique @db.Uuid // a change request that is charged for
-  kind        String // deposit | balance | recurring_setup | one_off | change
-  amountMinor Int
-  currency    String   @default("GBP")
-  status      String   @default("pending") // pending | paid (one-off) | active | past_due | cancelled (monthly)
-  description String?
-  paidAt      DateTime?
-  paidVia     String? // stripe | bank | other
+  id                   String    @id @default(uuid()) @db.Uuid
+  workspaceId          String    @db.Uuid
+  customerId           String    @db.Uuid
+  contractId           String?   @db.Uuid
+  ticketId             String?   @unique @db.Uuid // a change request that is charged for
+  kind                 String // deposit | balance | recurring_setup | one_off | change
+  amountMinor          Int
+  currency             String    @default("GBP")
+  status               String    @default("pending") // pending | paid (one-off) | active | past_due | cancelled (monthly)
+  description          String?
+  paidAt               DateTime?
+  paidVia              String? // stripe | bank | other
   stripeSessionId      String?
   stripePaymentIntent  String?
   stripeSubscriptionId String?
-  cancelsAt   DateTime? // a monthly plan that has been cancelled and ends on this date
-  createdAt   DateTime @default(now())
+  cancelsAt            DateTime? // a monthly plan that has been cancelled and ends on this date
+  createdAt            DateTime  @default(now())
 
-  contract Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
-  ticket   Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Restrict)
-
-  @@unique([contractId, kind])
-  @@index([stripeSubscriptionId])
+  contract    Contract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  ticket      Ticket?   @relation(fields: [ticketId], references: [id], onDelete: Restrict)
   trialMonths Int       @default(0) // free months at the start of a monthly plan (a promotion agreed with this company)
   trialEndsAt DateTime? // set when the plan starts: when the free period ends and the first payment is due
   promoLabel  String? // what the offer is called, e.g. "Launch offer"
   requestedAt DateTime? // when we asked them to pay the final payment (until then it is shown as "due before launch" and cannot be paid)
+
+  @@unique([contractId, kind])
+  @@index([stripeSubscriptionId])
 }
 
 // ───────── Calendar & Notes ─────────
 model CalendarEvent {
-  id          String    @id @default(uuid()) @db.Uuid
-  workspaceId String    @db.Uuid
-  organiserId String    @db.Uuid
-  title       String
-  type        String    @default("internal_meeting")
-  startsAt    DateTime
-  endsAt      DateTime
-  allDay      Boolean   @default(false)
-  startDate   DateTime? @db.Date
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceId      String    @db.Uuid
+  organiserId      String    @db.Uuid
+  title            String
+  type             String    @default("internal_meeting")
+  startsAt         DateTime
+  endsAt           DateTime
+  allDay           Boolean   @default(false)
+  startDate        DateTime? @db.Date
   endDateExclusive DateTime? @db.Date
-  timezone    String    @default("Europe/London")
-  location    String?
-  description String?
-  status      String    @default("scheduled") // scheduled | cancelled
-  customerId  String?   @db.Uuid
-  projectId   String?   @db.Uuid
-  icsUid      String    @unique
-  icsSequence Int       @default(0)
-  version     Int       @default(1)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  timezone         String    @default("Europe/London")
+  location         String?
+  description      String?
+  status           String    @default("scheduled") // scheduled | cancelled
+  customerId       String?   @db.Uuid
+  projectId        String?   @db.Uuid
+  icsUid           String    @unique
+  icsSequence      Int       @default(0)
+  version          Int       @default(1)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   attendees EventAttendee[]
 
@@ -636,9 +636,9 @@ model CalendarEvent {
 }
 
 model EventAttendee {
-  id        String @id @default(uuid()) @db.Uuid
-  eventId   String @db.Uuid
-  staffId   String @db.Uuid
+  id      String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  staffId String @db.Uuid
 
   event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -657,6 +657,7 @@ model Note {
   projectId   String?   @db.Uuid
   eventId     String?   @db.Uuid
   pinned      Boolean   @default(false)
+  channel     String    @default("general") // general | sales | delivery | ideas
   version     Int       @default(1)
   archivedAt  DateTime?
   createdAt   DateTime  @default(now())
@@ -664,17 +665,36 @@ model Note {
 
   revisions NoteRevision[]
   comments  NoteComment[]
+  reactions NoteReaction[]
 
   @@index([workspaceId, archivedAt])
+  @@index([workspaceId, channel])
+}
+
+// An emoji on a topic or on one reply. One of each emoji per person per target.
+model NoteReaction {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  noteId      String   @db.Uuid
+  targetId    String   @db.Uuid // the note or the comment
+  targetType  String // note | comment
+  staffId     String   @db.Uuid
+  emoji       String
+  createdAt   DateTime @default(now())
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([targetId, staffId, emoji])
+  @@index([noteId])
 }
 
 model NoteRevision {
-  id       String   @id @default(uuid()) @db.Uuid
-  noteId   String   @db.Uuid
-  version  Int
-  title    String
-  body     String
-  actorId  String   @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
+  noteId    String   @db.Uuid
+  version   Int
+  title     String
+  body      String
+  actorId   String   @db.Uuid
   createdAt DateTime @default(now())
 
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
@@ -728,19 +748,19 @@ model SequenceCounter {
 // Electronic acceptance/signature capture. NOT a certificate/PAdES signature and not identity verification:
 // the signer is whoever controlled the emailed link.
 model SigningRequest {
-  id            String    @id @default(uuid()) @db.Uuid
-  workspaceId   String    @db.Uuid
-  contractId    String    @db.Uuid
-  signerName    String
-  signerEmail   String
-  status        String    @default("pending") // pending | signed | declined | voided | expired
-  contentText   String // exact text shown to the signer (frozen at send time)
-  contentSha256 String
-  expiresAt     DateTime
-  sentById      String?   @db.Uuid
-  declineReason String?
+  id             String   @id @default(uuid()) @db.Uuid
+  workspaceId    String   @db.Uuid
+  contractId     String   @db.Uuid
+  signerName     String
+  signerEmail    String
+  status         String   @default("pending") // pending | signed | declined | voided | expired
+  contentText    String // exact text shown to the signer (frozen at send time)
+  contentSha256  String
+  expiresAt      DateTime
+  sentById       String?  @db.Uuid
+  declineReason  String?
   termsVersionId String?  @db.Uuid
-  createdAt     DateTime  @default(now())
+  createdAt      DateTime @default(now())
 
   contract  Contract         @relation(fields: [contractId], references: [id], onDelete: Restrict)
   signature SignatureRecord?
@@ -834,31 +854,31 @@ model NoteComment {
 
 /// A support ticket (an issue, a request or a question) from a person at a customer.
 model Ticket {
-  id          String    @id @default(uuid()) @db.Uuid
-  workspaceId String    @db.Uuid
-  customerId  String    @db.Uuid
-  contactId   String?   @db.Uuid
-  projectId   String?   @db.Uuid
-  reference   String
-  kind        String    @default("issue") // issue | request | question
-  title       String
-  body        String
-  category    String    @default("support") // support | change_request (onboarding lives in the sales flow and is shown alongside)
-  status      String    @default("open") // open (New) | in_progress | waiting_customer | customer_replied | resolved | closed
-  priority    String    @default("normal") // low | normal | high | urgent
-  source      String    @default("staff") // portal | staff
-  assigneeId  String?   @db.Uuid // StaffMembership
-  priceMinor  Int? // change requests: what it costs. Empty = included in their plan
-  chargeStatus String   @default("none") // none | quoted (waiting for the customer) | approved | declined | paid
-  approvedAt  DateTime?
+  id             String    @id @default(uuid()) @db.Uuid
+  workspaceId    String    @db.Uuid
+  customerId     String    @db.Uuid
+  contactId      String?   @db.Uuid
+  projectId      String?   @db.Uuid
+  reference      String
+  kind           String    @default("issue") // issue | request | question
+  title          String
+  body           String
+  category       String    @default("support") // support | change_request (onboarding lives in the sales flow and is shown alongside)
+  status         String    @default("open") // open (New) | in_progress | waiting_customer | customer_replied | resolved | closed
+  priority       String    @default("normal") // low | normal | high | urgent
+  source         String    @default("staff") // portal | staff
+  assigneeId     String?   @db.Uuid // StaffMembership
+  priceMinor     Int? // change requests: what it costs. Empty = included in their plan
+  chargeStatus   String    @default("none") // none | quoted (waiting for the customer) | approved | declined | paid
+  approvedAt     DateTime?
   approvedByName String?
   lastCustomerAt DateTime? // their latest message
-  lastStaffAt DateTime? // our latest reply
-  remindedAt  DateTime? // last nudge sent to the customer
+  lastStaffAt    DateTime? // our latest reply
+  remindedAt     DateTime? // last nudge sent to the customer
   teamRemindedAt DateTime? // last nudge to us that they're waiting
-  resolvedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   customer Customer        @relation(fields: [customerId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
   contact  Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
@@ -883,7 +903,7 @@ model TicketComment {
   internal      Boolean  @default(false) // internal notes are never shown to the customer
   createdAt     DateTime @default(now())
 
-  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   attachments Attachment[]
 
   @@index([ticketId, createdAt])
@@ -937,24 +957,24 @@ model ServicePlan {
 
 /// A client asks for a new person to get portal access. The team checks who they are, then approves or declines.
 model AccessRequest {
-  id               String    @id @default(uuid()) @db.Uuid
-  workspaceId      String    @db.Uuid
-  customerId       String    @db.Uuid
+  id                String    @id @default(uuid()) @db.Uuid
+  workspaceId       String    @db.Uuid
+  customerId        String    @db.Uuid
   requestedByUserId String
-  requestedByName  String
-  requestedByEmail String
-  name             String
-  email            String
-  phone            String?
-  position         String?
-  role             String // admin | member | viewer
-  billing          Boolean   @default(false)
-  reason           String?
-  status           String    @default("pending") // pending | approved | declined
-  decidedByName    String?
-  decidedAt        DateTime?
-  declineReason    String?
-  createdAt        DateTime  @default(now())
+  requestedByName   String
+  requestedByEmail  String
+  name              String
+  email             String
+  phone             String?
+  position          String?
+  role              String // admin | member | viewer
+  billing           Boolean   @default(false)
+  reason            String?
+  status            String    @default("pending") // pending | approved | declined
+  decidedByName     String?
+  decidedAt         DateTime?
+  declineReason     String?
+  createdAt         DateTime  @default(now())
 
   @@index([workspaceId, status])
   @@index([customerId, status])
@@ -992,14 +1012,14 @@ model CompanyLogo {
 
 // ───────── Referrals (see docs/REFERRALS.md) ─────────
 model ReferralLink {
-  id          String   @id @default(uuid()) @db.Uuid
-  workspaceId String   @db.Uuid
-  customerId  String   @db.Uuid
-  code        String
+  id            String   @id @default(uuid()) @db.Uuid
+  workspaceId   String   @db.Uuid
+  customerId    String   @db.Uuid
+  code          String
   rewardType    String? // this company's own deal: fixed | percent (empty = the workspace default)
   rewardValue   Int? // pence if fixed, whole percent of the website fee if percent
   welcomeMonths Int? // free months their referrals get (empty = the workspace default)
-  createdAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   @@unique([code])
   @@unique([workspaceId, customerId])
@@ -1013,7 +1033,7 @@ model Referral {
   refereeId   String    @db.Uuid
   freeMonths  Int       @default(0) // the new company's incentive, once applied: free months at the start of their plan
   freeLabel   String?
-  orderMinor  Int?      // what the website order was worth when the reward was worked out
+  orderMinor  Int? // what the website order was worth when the reward was worked out
   via         String    @default("team") // link | team
   status      String    @default("pending") // pending | review | qualified | rejected | reversed
   flag        String? // why it needs a look
@@ -1047,18 +1067,18 @@ model RewardEntry {
 
 // People or agencies who send us work for a commission. They get a link; a login can come later.
 model Partner {
-  id              String    @id @default(uuid()) @db.Uuid
-  workspaceId     String    @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  workspaceId     String   @db.Uuid
   name            String
-  kind            String    @default("agency") // agency | individual
+  kind            String   @default("agency") // agency | individual
   email           String?
   code            String
-  commissionType  String    @default("fixed") // fixed | percent
-  commissionValue Int       @default(5000) // pence if fixed, whole percent if percent
+  commissionType  String   @default("fixed") // fixed | percent
+  commissionValue Int      @default(5000) // pence if fixed, whole percent if percent
   notes           String?
-  active          Boolean   @default(true)
-  staffId         String?   @db.Uuid // set for a team member's own link
-  createdAt       DateTime  @default(now())
+  active          Boolean  @default(true)
+  staffId         String?  @db.Uuid // set for a team member's own link
+  createdAt       DateTime @default(now())
 
   @@unique([code])
   @@unique([workspaceId, staffId])
