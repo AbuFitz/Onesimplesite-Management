@@ -188,7 +188,7 @@ dialog.dlg::backdrop { background: rgba(14, 16, 22, .4); -webkit-backdrop-filter
 .auth-body .btn { width: 100%; }
 
 /* Customers: framed brand panel beside the form. On phones the panel is a short banner above it. */
-.auth-split { min-height: 100dvh; display: grid; gap: 14px; padding: 12px; }
+.auth-split { min-height: 100dvh; display: grid; gap: 14px; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); }
 .auth-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; gap: 1.1rem; padding: 1.4rem 1.4rem 1.5rem; border-radius: 30px; color: #fff; background: radial-gradient(120% 90% at 100% 0%, #4a6024 0%, transparent 60%), linear-gradient(160deg, #232f10, #10140a); box-shadow: 0 30px 60px -30px rgba(14, 16, 22, .7); }
 .auth-hero::after { content: ""; position: absolute; z-index: -1; right: -90px; bottom: -110px; width: 320px; height: 320px; border-radius: 50%; background: var(--color-lime); opacity: .16; filter: blur(60px); }
 .auth-hero-logo { height: auto; width: 150px; }
@@ -487,7 +487,10 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
 
 /* Phones: the sage gradient of the Mobile AI reference (pale at the top, deepening to green at the bottom), glassier cards, tighter spacing for browsers with chrome. */
 @media (max-width: 1023px) {
-  body::before { background: linear-gradient(180deg, #f1f4ea 0%, #e0e9d5 38%, #bcd0ae 72%, #9db890 100%); }
+  /* The same wash is painted on the page itself (html), not only on the fixed layer: on iPhones the bars at the top and bottom of the screen
+     show the page background, so a flat colour there made a visible band. The ends of the gradient are close to the flat colour on purpose. */
+  html { background-color: #dde8d1; background-image: linear-gradient(180deg, #f1f4ea 0%, #e0e9d5 38%, #c5d7b7 72%, #b3c9a6 100%); background-repeat: no-repeat; background-attachment: fixed; background-size: 100% 100%; }
+  body::before { background: linear-gradient(180deg, #f1f4ea 0%, #e0e9d5 38%, #c5d7b7 72%, #b3c9a6 100%); }
   .card, .list-card, .wdg, .kpi, .card-section { background: rgba(255, 255, 255, .74); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border-color: rgba(255, 255, 255, .7); }
   .oss-bar { padding-top: 10px; padding-bottom: 6px; }
   :root { --dock-h: 4.75rem; }
