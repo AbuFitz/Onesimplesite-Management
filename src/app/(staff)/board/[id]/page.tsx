@@ -30,7 +30,7 @@ export default async function Post({ params }: { params: Promise<{ id: string }>
       <article className="bt-card">
         <header className="mb-5 flex flex-wrap items-center gap-3">
           <Avatar name={author.displayName} size={40} staffId={author.id} />
-          <div className="min-w-0 flex-1"><p className="font-semibold">{author.displayName}{author.jobTitle && <span className="font-normal text-muted"> · {author.jobTitle}</span>}</p><p className="text-sm text-muted">Posted {timeAgo(post.createdAt)}</p></div>
+          <div className="min-w-[9.5rem] flex-1"><p className="font-semibold">{author.displayName}{author.jobTitle && <span className="font-normal text-muted"> · {author.jobTitle}</span>}</p><p className="text-sm text-muted">Posted {timeAgo(post.createdAt)}</p></div>
           <VisBadge v={post.visibility} />{post.channel !== "general" && <span className="chan-pill">{CHANNELS.find(([c]) => c === post.channel)?.[1]}</span>}
           {manage && write && (
             <div className="flex gap-1.5">
