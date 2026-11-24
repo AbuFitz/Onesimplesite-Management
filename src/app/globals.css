@@ -493,13 +493,10 @@ body:has(.switcher) .fcap, body:has(.sheet-wrap) .fcap { opacity: 0; transform: 
   body::after { display: none; }
   /* A solid cap over the status-bar area. Without it the page scrolls underneath the clock and iOS blurs and fades that strip, which looked like a leftover filter. */
   html::after { content: ""; position: fixed; z-index: 90; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: #dde8d1; pointer-events: none; }
-  /* Sheets and the More menu dim the page with a light sage frost, not a dark scrim. iOS repaints the strips behind its bars a moment late, so the strips never change colour:
-     the page is simply kept close to them while an overlay is open. */
-  .sheet-wrap { background: rgba(221, 232, 209, .62); }
-  .switcher { background: rgba(221, 232, 209, .93); }
-  .sw-hint { color: rgba(24, 32, 14, .55); }
-  .sw-name { color: var(--color-ink, #18181b); }
-  .sw-close { background: rgba(24, 32, 14, .1); color: var(--color-ink, #18181b); }
+  /* When a sheet or the More menu opens, the page dims, and the strips behind the iPhone bars must dim with it. They take the colour the dimmed page ends up as.
+     No transition on purpose: iOS reads the colour at the moment it changes, and an animated change made it pick up the old colour and lag a step behind. */
+  html:has(.sheet-wrap), html:has(.sheet-wrap)::after { background: #8e968a; }
+  html:has(.switcher), html:has(.switcher)::after { background: #2b2e30; }
   .card, .list-card, .wdg, .kpi, .card-section { background: rgba(255, 255, 255, .74); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border-color: rgba(255, 255, 255, .7); }
   .oss-bar { padding-top: 10px; padding-bottom: 6px; }
   :root { --dock-h: 4.75rem; }
